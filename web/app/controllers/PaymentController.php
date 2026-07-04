@@ -22,52 +22,58 @@ class PaymentController {
         }
 
         $db = Database::getInstance();
-        $stmt = $db->prepare("SELECT * FROM payment_transactions WHERE reference = ?");
-        $stmt->execute([$ref]);
-        $txn = $stmt->fetch();
+        $db->beginTransaction(); // Start transaction early to prevent race conditions
 
-        if (!$txn) {
-            Session::setFlash('error', 'Transaction not found.');
-            header("Location: /coin-shop");
-            die();
-        }
+        try {
+            // Use FOR UPDATE to lock the row and prevent concurrent verification exploits
+            $stmt = $db->prepare("SELECT * FROM payment_transactions WHERE reference = ? FOR UPDATE");
+            $stmt->execute([$ref]);
+            $txn = $stmt->fetch();
 
-        if ($txn['status'] === 'successful') {
-            Session::setFlash('success', 'Payment already verified.');
-            header("Location: /coin-shop");
-            die();
-        }
+            if (!$txn) {
+                $db->rollBack();
+                Session::setFlash('error', 'Transaction not found.');
+                header("Location: /coin-shop");
+                die();
+            }
 
-        // Actual Payhub Verification call
-        $settings = $this->getPayhubKeys();
-        if (!$settings || empty($settings['payhub_secret_key'])) {
-             Session::setFlash('error', 'Payment gateway not configured.');
-             header("Location: /coin-shop");
-             die();
-        }
+            if ($txn['status'] === 'successful') {
+                $db->rollBack();
+                Session::setFlash('success', 'Payment already verified.');
+                header("Location: /coin-shop");
+                die();
+            }
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "https://merchant.payhub.com.ng/api/transaction/verify/" . urlencode($ref));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer " . $settings['payhub_secret_key'],
-            "Cache-Control: no-cache",
-        ]);
-        $response = curl_exec($ch);
-        $err = curl_error($ch);
-        curl_close($ch);
+            // Actual Payhub Verification call
+            $settings = $this->getPayhubKeys();
+            if (!$settings || empty($settings['payhub_secret_key'])) {
+                 $db->rollBack();
+                 Session::setFlash('error', 'Payment gateway not configured.');
+                 header("Location: /coin-shop");
+                 die();
+            }
 
-        if ($err) {
-            Session::setFlash('error', 'Curl Error checking transaction: ' . $err);
-            header("Location: /coin-shop");
-            die();
-        }
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, "https://merchant.payhub.com.ng/api/transaction/verify/" . urlencode($ref));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                "Authorization: Bearer " . $settings['payhub_secret_key'],
+                "Cache-Control: no-cache",
+            ]);
+            $response = curl_exec($ch);
+            $err = curl_error($ch);
+            curl_close($ch);
 
-        $result = json_decode($response, true);
+            if ($err) {
+                $db->rollBack();
+                Session::setFlash('error', 'Curl Error checking transaction: ' . $err);
+                header("Location: /coin-shop");
+                die();
+            }
 
-        if ($result && isset($result['status']) && $result['status'] === true && $result['data']['status'] === 'success') {
-            $db->beginTransaction();
-            try {
+            $result = json_decode($response, true);
+
+            if ($result && isset($result['status']) && $result['status'] === true && $result['data']['status'] === 'success') {
                 $stmt = $db->prepare("UPDATE payment_transactions SET status = 'successful' WHERE id = ?");
                 $stmt->execute([$txn['id']]);
 
@@ -86,17 +92,18 @@ class PaymentController {
                 Session::setFlash('success', 'Payment successful. Coins added!');
                 header("Location: /coin-shop");
                 die();
-            } catch (\Exception $e) {
-                $db->rollBack();
-                Session::setFlash('error', 'Database error during verification.');
-                header("Location: /coin-shop");
-                die();
             }
-        }
 
-        Session::setFlash('error', 'Transaction was not successful.');
-        header("Location: /coin-shop");
-        die();
+            $db->rollBack();
+            Session::setFlash('error', 'Transaction was not successful.');
+            header("Location: /coin-shop");
+            die();
+        } catch (\Exception $e) {
+            $db->rollBack();
+            Session::setFlash('error', 'Database error during verification.');
+            header("Location: /coin-shop");
+            die();
+        }
     }
 
     public function webhook() {
@@ -110,16 +117,62 @@ class PaymentController {
 
         $settings = $this->getPayhubKeys();
 
-        // Very basic webhook handling structure for virtual accounts deposit
+        // HMAC Signature Validation for Security
+        $signature = $_SERVER['HTTP_X_PAYHUB_SIGNATURE'] ?? '';
+        if (!$settings || empty($settings['payhub_secret_key'])) {
+            http_response_code(500);
+            die("Gateway not configured");
+        }
+
+        $expectedSignature = hash_hmac('sha512', $payload, $settings['payhub_secret_key']);
+        if (!hash_equals($expectedSignature, $signature)) {
+            http_response_code(401);
+            die("Invalid signature");
+        }
+
+        // Handle virtual account deposit webhook
         if ($event['event'] === 'charge.success' && isset($event['data']['reference'])) {
-            // Process the virtual account deposit or checkout success here securely
-            // For now, return 200 OK
-            http_response_code(200);
-            echo json_encode(['status' => 'received']);
-            die();
+            $ref = $event['data']['reference'];
+            $amount = (float)($event['data']['amount'] ?? 0) / 100; // Assuming kobo/cents conversion
+
+            $db = Database::getInstance();
+            $db->beginTransaction();
+            try {
+                // Find user by reference logic depends on how VBA reference was generated
+                // Typically payhub passes metadata or the account_number. Let's assume account_number is in metadata
+                $accountNum = $event['data']['metadata']['account_number'] ?? '';
+
+                $stmt = $db->prepare("SELECT user_id FROM virtual_bank_accounts WHERE account_number = ?");
+                $stmt->execute([$accountNum]);
+                $vba = $stmt->fetch();
+
+                if ($vba) {
+                    $userId = $vba['user_id'];
+
+                    // Prevent duplicate processing
+                    $stmt = $db->prepare("SELECT id FROM coin_transactions WHERE reference_id = ?");
+                    $stmt->execute([$ref]);
+                    if (!$stmt->fetch()) {
+                        // Determine coins to award (assuming 1 NGN = 1 Coin for VBA deposits for simplicity)
+                        $coinsToAward = $amount;
+
+                        $stmt = $db->prepare("UPDATE users SET coin_balance = coin_balance + ? WHERE id = ?");
+                        $stmt->execute([$coinsToAward, $userId]);
+
+                        $stmt = $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description, reference_id) VALUES (?, 'purchase', ?, ?, ?)");
+                        $stmt->execute([$userId, $coinsToAward, 'Virtual Bank Deposit', $ref]);
+                    }
+                }
+                $db->commit();
+            } catch (\Exception $e) {
+                $db->rollBack();
+                http_response_code(500);
+                die("Internal Error");
+            }
         }
 
         http_response_code(200);
+        echo json_encode(['status' => 'received']);
         die();
     }
 }

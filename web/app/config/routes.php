@@ -100,6 +100,8 @@ $router->get('/api/v1/banners', 'Api\BannerController@index');
 $router->get('/api/v1/series/{slug}', 'Api\SeriesController@show');
 $router->get('/api/v1/coin-packages', 'Api\CoinController@packages');
 $router->get('/api/v1/user/profile', 'Api\UserController@profile');
+$router->post('/api/v1/episodes/unlock/{id}', 'Api\TransactionController@unlock');
+$router->post('/api/v1/coins/purchase', 'Api\TransactionController@purchase');
 
 $router->get('/favicon.ico', 'FaviconController@index');
 $router->get('/sitemap.xml', 'SeoController@sitemap');

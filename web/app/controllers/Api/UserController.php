@@ -20,13 +20,20 @@ class UserController {
             $token = $matches[1];
             $parts = explode('.', $token);
             if (count($parts) === 3) {
-                $payload = json_decode(base64_decode($parts[1]), true);
-                if (isset($payload['user_id']) && $payload['exp'] > time()) {
-                    return $payload['user_id'];
+                // Cryptographically verify signature
+                $secret = getenv('JWT_SECRET') ?: 'default_secret_key_change_in_production';
+                $signature = hash_hmac('sha256', $parts[0] . "." . $parts[1], $secret, true);
+                $expectedSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
+
+                if (hash_equals($expectedSignature, $parts[2])) {
+                    $payload = json_decode(base64_decode($parts[1]), true);
+                    if (isset($payload['user_id']) && $payload['exp'] > time()) {
+                        return $payload['user_id'];
+                    }
                 }
             }
         }
-        $this->respondJson(['error' => 'Unauthorized'], 401);
+        $this->respondJson(['error' => 'Unauthorized or invalid token'], 401);
     }
 
     public function profile() {
