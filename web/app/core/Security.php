@@ -26,7 +26,9 @@ class Security {
             $token = $_POST['csrf_token'] ?? '';
             if (!self::verifyCsrfToken($token)) {
                 http_response_code(403);
-                die("CSRF token validation failed.");
+                Session::setFlash('error', 'Session expired. Please try again.');
+                header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/'));
+                die();
             }
         }
     }

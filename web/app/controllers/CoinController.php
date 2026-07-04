@@ -11,19 +11,22 @@ class CoinController {
         \App\Core\Auth::requireLogin();
 
         $db = Database::getInstance();
-        $stmt = $db->query("SELECT * FROM coin_packages WHERE is_active = 1 ORDER BY sort_order ASC");
-        $packages = $stmt->fetchAll();
+        $packages = $db->query("SELECT * FROM coin_packages WHERE is_active = 1 ORDER BY sort_order ASC")->fetchAll();
 
         $userId = Session::get('user_id');
         $stmt = $db->prepare("SELECT * FROM virtual_bank_accounts WHERE user_id = ?");
         $stmt->execute([$userId]);
         $virtualAccount = $stmt->fetch();
 
-        $stmtConfig = $db->query("SELECT setting_value FROM site_config WHERE setting_key = 'bank_transfer_instruction'");
-        $instruction = $stmtConfig->fetchColumn() ?: 'Transfer funds to the dedicated virtual account below to instantly fund your wallet.';
+        $instruction = 'Transfer funds to the dedicated virtual account below to instantly fund your wallet.';
+
+        $debugLog = [];
+        $vbaAttempted = false;
 
         if (!$virtualAccount) {
-            // Live Payhub Virtual Account Integration
+            $debugLog[] = 'No existing VBA found for user ' . $userId . '. Attempting to create one.';
+            $vbaAttempted = true;
+
             $stmtSet = $db->query("SELECT * FROM payment_settings LIMIT 1");
             $settings = $stmtSet->fetch();
 
@@ -35,6 +38,8 @@ class CoinController {
                 if (str_contains($name, ' ')) {
                     [$displayName, $lastName] = explode(' ', $name, 2);
                 }
+
+                $debugLog[] = 'Payhub keys found. Calling VBA API for email=' . $email;
 
                 $payload = json_encode([
                     'email' => $email,
@@ -58,14 +63,21 @@ class CoinController {
                 ]);
                 $response = curl_exec($ch);
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $curlError = curl_error($ch);
                 curl_close($ch);
 
                 $result = json_decode($response, true);
+
+                $debugLog[] = 'VBA API responded with HTTP ' . $httpCode;
+                if ($curlError) $debugLog[] = 'cURL error: ' . $curlError;
+                $debugLog[] = 'Response body: ' . (is_string($response) ? substr($response, 0, 500) : 'empty');
 
                 if ($result && isset($result['status']) && $result['status'] === true && isset($result['data']['account_number'])) {
                     $accNum = $result['data']['account_number'];
                     $bankName = $result['data']['bank_name'] ?? 'Payhub Bank';
                     $ref = $result['data']['reference'] ?? uniqid('vba_');
+
+                    $debugLog[] = 'VBA created: ' . $accNum . ' at ' . $bankName;
 
                     $stmt = $db->prepare("INSERT INTO virtual_bank_accounts (user_id, account_number, bank_name, reference) VALUES (?, ?, ?, ?)");
                     $stmt->execute([$userId, $accNum, $bankName, $ref]);
@@ -73,15 +85,23 @@ class CoinController {
                     $stmt = $db->prepare("SELECT * FROM virtual_bank_accounts WHERE user_id = ?");
                     $stmt->execute([$userId]);
                     $virtualAccount = $stmt->fetch();
+                } else {
+                    $debugLog[] = 'VBA API did not return success. Status: ' . ($result['status'] ?? 'N/A');
+                    $debugLog[] = 'Message: ' . ($result['message'] ?? ($result['data']['message'] ?? 'No message'));
                 }
+            } else {
+                $debugLog[] = 'No payment_settings found or payhub_secret_key is empty.';
+                if (!$settings) $debugLog[] = 'payment_settings table empty';
+                else $debugLog[] = 'payhub_secret_key is empty or not set';
             }
+        } else {
+            $debugLog[] = 'Existing VBA found: ' . $virtualAccount['account_number'];
         }
 
-        // If Payhub API failed or not configured, fallback to mock to prevent errors on UI
         if (!$virtualAccount) {
              $virtualAccount = [
                  'account_number' => 'Setup Required',
-                 'bank_name' => 'Please ask Admin to configure Payhub keys.',
+                 'bank_name' => 'Configuration required',
                  'reference' => 'N/A'
              ];
         }
