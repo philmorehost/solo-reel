@@ -62,12 +62,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->exec($sql);
             }
 
+            // Set site title
+            $stmt = $pdo->prepare("UPDATE site_config SET setting_value = ? WHERE setting_key = 'meta_title'");
+            $stmt->execute([$siteTitle]);
+
             // Insert admin
             $hash = password_hash($adminPass, PASSWORD_ARGON2ID);
             $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, 'super_admin')");
             $stmt->execute([$adminUser, $adminEmail, $hash]);
 
             // Create lock file
+            if(!is_dir(__DIR__ . '/../storage')) mkdir(__DIR__ . '/../storage', 0775, true);
             file_put_contents(__DIR__ . '/../storage/install.lock', date('Y-m-d H:i:s'));
 
             header("Location: ?step=4");

@@ -1,5 +1,8 @@
 <?php
 
+require_once __DIR__ . "/../app/core/Env.php";
+\App\Core\Env::load(__DIR__ . "/../.env");
+
 require_once __DIR__ . '/../app/core/Database.php';
 
 use App\Core\Database;

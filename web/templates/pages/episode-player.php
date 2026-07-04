@@ -66,6 +66,7 @@
 
                 <?php if(\App\Core\Session::isLoggedIn()): ?>
                     <form action="/unlock/<?= $episode['id'] ?>" method="POST" class="w-full max-w-xs">
+                        <?= \App\Core\Security::csrfField() ?>
                         <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-full transition-colors flex items-center justify-center gap-2">
                             Unlock Now
                         </button>

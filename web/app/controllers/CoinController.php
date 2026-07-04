@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Database;
 use App\Core\Session;
+use App\Core\Security;
 
 class CoinController {
     public function shop() {
@@ -35,6 +36,7 @@ class CoinController {
 
     public function unlock(int $episodeId) {
         \App\Core\Auth::requireLogin();
+        Security::validateCsrfPost();
         $userId = Session::get('user_id');
 
         $db = Database::getInstance();

@@ -40,6 +40,19 @@ class Router {
             $method = strtoupper($_POST['_method']);
         }
 
+        // Normalize index.php out of the URL if it's there
+        if (str_ends_with($uri, '/index.php')) {
+            $uri = substr($uri, 0, -10);
+            if ($uri === '') $uri = '/';
+        }
+
+        // Handle subfolder deployments (like /~username/)
+        $scriptDir = dirname($_SERVER['SCRIPT_NAME']);
+        if ($scriptDir !== '/' && str_starts_with($uri, $scriptDir)) {
+            $uri = substr($uri, strlen($scriptDir));
+            if ($uri === '') $uri = '/';
+        }
+
         foreach ($this->routes as $route) {
             if ($route['method'] !== $method) continue;
 
@@ -58,7 +71,7 @@ class Router {
                     [$controllerName, $methodName] = explode('@', $route['callback']);
 
                     // Determine namespace based on path
-                    $namespace = str_starts_with($uri, '/admin')
+                    $namespace = str_starts_with($route['path'], '/admin')
                         ? "\\App\\Admin\\Controllers\\"
                         : "\\App\\Controllers\\";
 

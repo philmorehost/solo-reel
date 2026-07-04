@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Database;
 use App\Core\Session;
 use App\Core\Auth;
+use App\Core\Security;
 
 class AuthController {
 
@@ -17,6 +18,8 @@ class AuthController {
     }
 
     public function login() {
+        Security::validateCsrfPost();
+
         $email = $_POST['email'] ?? '';
         $password = $_POST['password'] ?? '';
 
@@ -50,6 +53,8 @@ class AuthController {
     }
 
     public function register() {
+        Security::validateCsrfPost();
+
         $username = $_POST['username'] ?? '';
         $email = $_POST['email'] ?? '';
         $password = $_POST['password'] ?? '';
