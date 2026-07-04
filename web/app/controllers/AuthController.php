@@ -35,7 +35,11 @@ class AuthController {
                 die();
             }
             Auth::login($user['id'], $user['username'], $user['email'], $user['role'], (float) $user['coin_balance']);
-            header("Location: /");
+            if ($user['role'] === 'admin' || $user['role'] === 'super_admin') {
+                header('Location: /admin');
+            } else {
+                header('Location: /');
+            }
             die();
         }
 
@@ -69,12 +73,51 @@ class AuthController {
         }
 
         $hash = password_hash($password, PASSWORD_ARGON2ID);
-        $stmt = $db->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
-        $stmt->execute([$username, $email, $hash]);
+        $otp = str_pad((string)mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        $expiresAt = date('Y-m-d H:i:s', time() + 900); // 15 minutes
 
-        \App\Core\Mailer::send($email, "Welcome to SOLOREEL", "Thank you for registering, $username!");
-        Auth::login($db->lastInsertId(), $username, $email, 'user', 0.0);
-        header("Location: /");
+        $stmt = $db->prepare("INSERT INTO users (username, email, password_hash, otp_code, otp_expires_at) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$username, $email, $hash, $otp, $expiresAt]);
+        $userId = $db->lastInsertId();
+
+        \App\Core\Mailer::send($email, "SOLOREEL Verification Code", "Your verification code is: $otp");
+
+        Auth::login($userId, $username, $email, 'user', 0.0);
+        Session::set('pending_verification', true);
+
+        header("Location: /verify-otp");
+        die();
+    }
+
+    public function showVerifyOtp() {
+        if (!Session::get('pending_verification')) {
+            header("Location: /");
+            die();
+        }
+        require __DIR__ . '/../../templates/pages/verify-otp.php';
+    }
+
+    public function verifyOtp() {
+        Security::validateCsrfPost();
+        $otp = $_POST['otp'] ?? '';
+        $userId = Session::get('user_id');
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT otp_code, otp_expires_at FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch();
+
+        if ($user && $user['otp_code'] === $otp && strtotime($user['otp_expires_at']) > time()) {
+            $stmt = $db->prepare("UPDATE users SET is_verified = 1, otp_code = NULL, otp_expires_at = NULL WHERE id = ?");
+            $stmt->execute([$userId]);
+            Session::remove('pending_verification');
+            Session::setFlash('success', 'Account verified successfully!');
+            header("Location: /");
+            die();
+        }
+
+        Session::setFlash('error', 'Invalid or expired OTP code.');
+        header("Location: /verify-otp");
         die();
     }
 

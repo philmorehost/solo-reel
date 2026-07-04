@@ -89,4 +89,52 @@ class CoinController {
             die();
         }
     }
+
+
+    public function purchase() {
+        \App\Core\Auth::requireLogin();
+        \App\Core\Security::validateCsrfPost();
+
+        $packageId = $_POST['package_id'] ?? 0;
+        if (!$packageId) {
+            Session::setFlash('error', 'Invalid package.');
+            header("Location: /coin-shop");
+            die();
+        }
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT * FROM coin_packages WHERE id = ? AND is_active = 1");
+        $stmt->execute([$packageId]);
+        $package = $stmt->fetch();
+
+        if (!$package) {
+            Session::setFlash('error', 'Package not available.');
+            header("Location: /coin-shop");
+            die();
+        }
+
+        // Fetch settings
+        $stmt = $db->query("SELECT * FROM payment_settings LIMIT 1");
+        $settings = $stmt->fetch();
+
+        if (!$settings || empty($settings['payhub_public_key'])) {
+             Session::setFlash('error', 'Payment gateway is not configured.');
+             header("Location: /coin-shop");
+             die();
+        }
+
+        $userId = Session::get('user_id');
+        $email = Session::get('user_email');
+        $reference = 'trx_' . uniqid() . '_' . time();
+        $amount = $package['price'];
+
+        // Log transaction as pending
+        $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (?, ?, ?, ?, ?, 'pending', ?)");
+        $stmt->execute([$userId, $package['id'], $reference, $amount, $package['currency'], $package['coins']]);
+
+        // Load inline checkout page
+        $publicKey = $settings['payhub_public_key'];
+        require __DIR__ . '/../../templates/pages/checkout.php';
+        die();
+    }
 }

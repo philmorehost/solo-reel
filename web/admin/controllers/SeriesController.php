@@ -63,8 +63,24 @@ class SeriesController {
             $genre = $_POST['genre'] ?? '';
             $status = $_POST['status'] ?? 'ongoing';
 
-            $stmt = $db->prepare("UPDATE series SET title = ?, slug = ?, synopsis = ?, genre = ?, status = ? WHERE id = ?");
-            $stmt->execute([$title, $slug, $synopsis, $genre, $status, $id]);
+            $stmt_sel = $db->prepare("SELECT cover_image FROM series WHERE id = ?");
+            $stmt_sel->execute([$id]);
+            $series = $stmt_sel->fetch();
+
+            $coverImage = $series['cover_image'] ?? null;
+            if (isset($_FILES['cover_image']) && $_FILES['cover_image']['error'] === UPLOAD_ERR_OK) {
+                $tmpName = $_FILES['cover_image']['tmp_name'];
+                $fileName = basename($_FILES['cover_image']['name']);
+                $uploadDir = __DIR__ . '/../../assets/uploads';
+                if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
+                $destPath = 'assets/uploads/cover_' . time() . '_' . preg_replace('/[^a-zA-Z0-9.\-_]/', '', $fileName);
+                if (move_uploaded_file($tmpName, __DIR__ . '/../../' . $destPath)) {
+                    $coverImage = '/' . $destPath;
+                }
+            }
+
+            $stmt = $db->prepare("UPDATE series SET title = ?, slug = ?, synopsis = ?, genre = ?, status = ?, cover_image = ? WHERE id = ?");
+            $stmt->execute([$title, $slug, $synopsis, $genre, $status, $coverImage, $id]);
 
             \App\Core\Session::setFlash('success', 'Series updated successfully.');
             header("Location: /admin/series");

@@ -10,6 +10,25 @@
         body { background-color: #000; color: #fff; }
         .movie-card:hover { transform: scale(1.05); transition: 0.3s; }
     </style>
+    <!-- Dynamic SEO and Header Code -->
+    <?php
+        $db = \App\Core\Database::getInstance();
+        $stmt = $db->query("SELECT setting_key, setting_value FROM site_config WHERE setting_key IN ('meta_title', 'meta_description', 'custom_header', 'ga_id')");
+        $config = [];
+        while ($row = $stmt->fetch()) { $config[$row['setting_key']] = $row['setting_value']; }
+    ?>
+    <title><?= htmlspecialchars($config['meta_title'] ?? 'SOLOREEL') ?></title>
+    <meta name="description" content="<?= htmlspecialchars($config['meta_description'] ?? '') ?>">
+    <?php if(!empty($config['ga_id'])): ?>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=<?= $config['ga_id'] ?>"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '<?= $config['ga_id'] ?>');
+    </script>
+    <?php endif; ?>
+    <?= $config['custom_header'] ?? '' ?>
 </head>
 <body class="antialiased font-sans">
 
@@ -92,5 +111,11 @@
             <p>&copy; <?= date('Y') ?> SOLOREEL. All rights reserved.</p>
         </div>
     </footer>
+    <!-- Custom Footer Code -->
+    <?php
+        $stmt = $db->prepare("SELECT setting_value FROM site_config WHERE setting_key = 'custom_footer'");
+        $stmt->execute();
+        echo $stmt->fetchColumn();
+    ?>
 </body>
 </html>

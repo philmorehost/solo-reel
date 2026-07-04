@@ -33,6 +33,7 @@
                 </div>
                 <p class="text-gray-300 leading-relaxed mb-8"><?= nl2br(htmlspecialchars($series['synopsis'] ?? '')) ?></p>
 
+                <?php require __DIR__ . '/social-share.php'; ?>
                 <?php if(!empty($episodes)): ?>
                     <a href="/episodes/<?= $episodes[0]['slug'] ?>" class="inline-block bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition-colors text-lg">
                         Play Episode 1

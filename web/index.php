@@ -4,6 +4,11 @@ require_once __DIR__ . '/app/core/Router.php';
 require_once __DIR__ . '/app/core/Database.php';
 require_once __DIR__ . "/app/core/Env.php";
 \App\Core\Env::load(__DIR__ . "/.env");
+require_once __DIR__ . "/app/middleware/SecurityMiddleware.php";
+// Ensure DB connection does not break installer
+if (file_exists(__DIR__ . "/storage/install.lock")) {
+    \App\Middleware\SecurityMiddleware::checkBlacklist();
+}
 require_once __DIR__ . '/app/core/Session.php';
 require_once __DIR__ . '/app/core/Auth.php';
 
