@@ -1,2 +1,13 @@
 storage/temp/
 assets/uploads/
+.idea/
+*.class
+
+# Mac
+.DS_Store
+
+# PHP
+vendor/
+
+# Environment files
+web/.env
