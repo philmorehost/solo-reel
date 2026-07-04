@@ -1,0 +1,30 @@
+name: iOS Release Build
+
+on:
+  push:
+    branches: [ "main", "Solo-Reel-1.0" ]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ios
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build iOS App
+      run: |
+        xcodebuild clean build \
+          -project SOLOREEL.xcodeproj \
+          -scheme SOLOREEL \
+          -sdk iphoneos \
+          -configuration Release \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
