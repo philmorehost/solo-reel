@@ -1,0 +1,8 @@
+total 28
+drwxrwxr-x 3 jules jules 4096 Jul  4 20:31 .
+drwxr-xr-x 7 jules root  4096 Jul  4 21:23 ..
+drwxrwxr-x 3 jules jules 4096 Jul  4 10:17 app
+-rw-rw-r-- 1 jules jules  255 Jul  4 20:31 build.gradle.kts
+-rw-rw-r-- 1 jules jules  109 Jul  4 18:53 gradle.properties
+-rwxrwxr-x 1 jules jules   74 Jul  4 18:53 gradlew
+-rw-rw-r-- 1 jules jules  326 Jul  4 18:53 settings.gradle.kts
