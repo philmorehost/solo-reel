@@ -36,7 +36,10 @@
             Sign in with Google
         </a>
         <p class="mt-4 text-center text-sm text-gray-400">
-            Don't have an account? <a href="/register" class="text-red-500 hover:text-red-400">Sign up</a>
+            <div class="flex justify-between w-full">
+                <a href="/forgot-password" class="text-red-500 hover:text-red-400">Forgot Password?</a>
+                <span>Don't have an account? <a href="/register" class="text-red-500 hover:text-red-400">Sign up</a></span>
+            </div>
         </p>
     </div>
 </body>

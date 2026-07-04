@@ -9,6 +9,10 @@ $router->get('/blog', 'BlogController@index');
 $router->get('/blog/{slug}', 'BlogController@detail');
 
 $router->get('/login', 'AuthController@showLogin');
+$router->get('/forgot-password', 'PasswordController@showForgot');
+$router->post('/forgot-password', 'PasswordController@forgot');
+$router->get('/reset-password', 'PasswordController@showReset');
+$router->post('/reset-password', 'PasswordController@reset');
 $router->get('/auth/google', 'GoogleAuthController@redirect');
 $router->get('/auth/google/callback', 'GoogleAuthController@callback');
 $router->post('/login', 'AuthController@login');
