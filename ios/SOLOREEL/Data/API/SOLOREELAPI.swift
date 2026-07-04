@@ -37,7 +37,7 @@ struct CoinPackage: Codable, Identifiable {
 
 class APIClient {
     static let shared = APIClient()
-    let baseURL = "https://soloreel.tv/api/v1/"
+    let baseURL = "https://soloshort.pmhserver.name.ng/api/v1/"
 
     func fetchSeries(completion: @escaping (Result<[Series], Error>) -> Void) {
         guard let url = URL(string: baseURL + "series") else { return }

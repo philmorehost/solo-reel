@@ -2,12 +2,11 @@ name: Android Build
 
 on:
   push:
-    branches: [main, master]
+    branches: ["main", "master", "Solo-Reel-1.0"]
     paths:
       - 'android/**'
       - '.github/workflows/android.yml'
-  pull_request:
-    branches: [main, master]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -25,23 +24,28 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease
+        run: gradle assembleRelease
 
       - name: Build Release Bundle (AAB)
-        run: ./gradlew bundleRelease
+        run: gradle bundleRelease
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: soloreel-release-apk
           path: android/app/build/outputs/apk/release/*.apk
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: app-bundle
+          name: soloreel-release-aab
           path: android/app/build/outputs/bundle/release/*.aab

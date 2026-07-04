@@ -21,16 +21,27 @@ class DashboardController {
             'episodes' => $db->query("SELECT COUNT(*) FROM episodes")->fetchColumn(),
             'revenue' => $db->query("SELECT COALESCE(SUM(amount), 0) FROM payment_transactions WHERE status = 'successful'")->fetchColumn(),
             'transactions_today' => $db->query("SELECT COUNT(*) FROM payment_transactions WHERE status = 'successful' AND DATE(created_at) = CURDATE()")->fetchColumn(),
-            'pending_videos' => $db->query("SELECT COUNT(*) FROM video_queue WHERE status IN ('pending','processing')")->fetchColumn() ?: 0,
+            'pending_videos' => 0,
+            'total_duration_formatted' => '0h 0m',
         ];
 
-        $totalSec = $db->query("SELECT COALESCE(SUM(video_duration_seconds), 0) FROM episodes")->fetchColumn();
-        $h = floor($totalSec / 3600);
-        $m = floor(($totalSec % 3600) / 60);
-        $stats['total_duration_formatted'] = $h . 'h ' . $m . 'm';
+        try {
+            $totalSec = $db->query("SELECT COALESCE(SUM(duration), 0) FROM episodes")->fetchColumn();
+            $h = floor($totalSec / 3600);
+            $m = floor(($totalSec % 3600) / 60);
+            $stats['total_duration_formatted'] = $h . 'h ' . $m . 'm';
+        } catch (\Throwable $e) {}
 
-        $maintenance = $db->query("SELECT maintenance_mode FROM site_config WHERE id = 1")->fetchColumn();
-        $paymentConfigured = (bool)$db->query("SELECT payhub_secret_key FROM payment_settings WHERE payhub_secret_key IS NOT NULL AND payhub_secret_key != '' LIMIT 1")->fetchColumn();
+        try {
+            $stats['pending_videos'] = $db->query("SELECT COUNT(*) FROM video_queue WHERE status IN ('pending','processing')")->fetchColumn() ?: 0;
+        } catch (\Throwable $e) {}
+
+        try {
+            $maintenance = $db->query("SELECT maintenance_mode FROM site_config WHERE id = 1")->fetchColumn();
+        } catch (\Throwable $e) { $maintenance = 0; }
+        try {
+            $paymentConfigured = (bool)$db->query("SELECT payhub_secret_key FROM payment_settings WHERE payhub_secret_key IS NOT NULL AND payhub_secret_key != '' LIMIT 1")->fetchColumn();
+        } catch (\Throwable $e) { $paymentConfigured = false; }
 
         require __DIR__ . '/../templates/dashboard.php';
     }
