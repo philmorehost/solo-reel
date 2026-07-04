@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Gradle wrapper fallback just in case
+exec gradle "$@"
