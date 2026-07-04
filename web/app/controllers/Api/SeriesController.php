@@ -36,4 +36,21 @@ class SeriesController {
 
         $this->respondJson(['data' => $series]);
     }
+
+    public function show(string $slug) {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT * FROM series WHERE slug = ?");
+        $stmt->execute([$slug]);
+        $series = $stmt->fetch();
+
+        if (!$series) {
+            $this->respondJson(['error' => 'Not found'], 404);
+        }
+
+        $stmt = $db->prepare("SELECT * FROM episodes WHERE series_id = ? ORDER BY episode_number ASC");
+        $stmt->execute([$series['id']]);
+        $series['episodes'] = $stmt->fetchAll();
+
+        $this->respondJson(['data' => $series]);
+    }
 }

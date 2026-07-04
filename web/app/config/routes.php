@@ -93,6 +93,9 @@ $router->post('/api/v1/auth/login', 'Api\AuthController@login');
 $router->post('/api/v1/auth/register', 'Api\AuthController@register');
 $router->get('/api/v1/series', 'Api\SeriesController@index');
 $router->get('/api/v1/banners', 'Api\BannerController@index');
+$router->get('/api/v1/series/{slug}', 'Api\SeriesController@show');
+$router->get('/api/v1/coin-packages', 'Api\CoinController@packages');
+$router->get('/api/v1/user/profile', 'Api\UserController@profile');
 
 $router->get('/favicon.ico', 'FaviconController@index');
 $router->get('/sitemap.xml', 'SeoController@sitemap');
