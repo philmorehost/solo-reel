@@ -38,7 +38,7 @@
         </a>
 
         <?php if($hasAccess): ?>
-            <video id="video" controls autoplay playsinline></video>
+            <video id="video" controls autoplay playsinline controlsList="nodownload" oncontextmenu="return false;"></video>
 
             <script>
                 var video = document.getElementById('video');
@@ -79,5 +79,6 @@
             </div>
         <?php endif; ?>
     </div>
+    <script src="/assets/js/protection.js"></script>
 </body>
 </html>

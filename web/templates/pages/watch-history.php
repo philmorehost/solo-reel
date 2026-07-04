@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Watch History - SOLOREEL</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/png" href="/favicon.ico">
 </head>
 <body class="bg-black text-white antialiased font-sans">
 
@@ -11,7 +12,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
-                    <a href="/" class="text-red-600 font-bold text-2xl tracking-tighter">SOLOREEL</a>
+                    <a href="/"><?= \App\Helpers\Site::getLogoHtml() ?></a>
                 </div>
                 <div class="flex items-center space-x-4">
                     <a href="/profile" class="text-gray-300 hover:text-white">Profile</a>
@@ -42,5 +43,6 @@
             </div>
         <?php endif; ?>
     </main>
+    <script src="/assets/js/protection.js"></script>
 </body>
 </html>

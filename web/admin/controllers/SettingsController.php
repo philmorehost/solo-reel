@@ -24,6 +24,37 @@ class SettingsController {
                 'google_client_id', 'google_client_secret', 'google_auth_enabled'
             ];
 
+            // Handle Branding Uploads (Logo & Favicon)
+            $uploadDir = __DIR__ . '/../../assets/uploads';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
+
+            $brandingFields = ['site_logo', 'site_favicon'];
+            $allowedExtensions = ['png', 'jpg', 'jpeg', 'webp'];
+
+            foreach ($brandingFields as $bField) {
+                if (isset($_FILES[$bField]) && $_FILES[$bField]['error'] === UPLOAD_ERR_OK) {
+                    $tmpName = $_FILES[$bField]['tmp_name'];
+                    $fileName = basename($_FILES[$bField]['name']);
+                    $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+                    if (in_array($ext, $allowedExtensions)) {
+                        $destPath = 'assets/uploads/' . $bField . '_' . time() . '.' . $ext;
+                        if (move_uploaded_file($tmpName, __DIR__ . '/../../' . $destPath)) {
+                            // Update database with new path
+                            $check = $db->prepare("SELECT id FROM site_config WHERE setting_key = ?");
+                            $check->execute([$bField]);
+                            if ($check->fetch()) {
+                                $stmt = $db->prepare("UPDATE site_config SET setting_value = ? WHERE setting_key = ?");
+                                $stmt->execute(['/' . $destPath, $bField]);
+                            } else {
+                                $stmt = $db->prepare("INSERT INTO site_config (setting_key, setting_value) VALUES (?, ?)");
+                                $stmt->execute([$bField, '/' . $destPath]);
+                            }
+                        }
+                    }
+                }
+            }
+
             $db->beginTransaction();
             try {
                 foreach ($fields as $field) {

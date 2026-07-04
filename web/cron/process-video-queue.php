@@ -2,7 +2,6 @@
 
 require_once __DIR__ . "/../app/core/Env.php";
 \App\Core\Env::load(__DIR__ . "/../.env");
-
 require_once __DIR__ . '/../app/core/Database.php';
 
 use App\Core\Database;
@@ -29,7 +28,7 @@ $stmt = $db->prepare("UPDATE video_queue SET status = 'processing', started_at =
 $stmt->execute([$job['id']]);
 
 $videoId = $job['episode_id'];
-$inputFile = __DIR__ . '/../' . $job['original_file'];
+$inputFile = __DIR__ . '/../' . ltrim($job['original_file'], '/');
 
 if (!file_exists($inputFile)) {
     $error = "Input file not found: " . $inputFile;
@@ -44,19 +43,37 @@ if (!is_dir($hlsDir)) {
     mkdir($hlsDir, 0775, true);
 }
 
+// Check for Logo Trademark
+$stmt = $db->query("SELECT setting_value FROM site_config WHERE setting_key = 'site_logo'");
+$logoPath = $stmt->fetchColumn();
+
 // We will do a single 720p conversion for simplicity, adaptive bitrate can be expanded here
 $outputPlaylist = $hlsDir . '/master.m3u8';
 $segmentPattern = $hlsDir . '/segment_%03d.ts';
 
-// FFmpeg command optimized for vertical video (scaling width proportionally to 720p height)
-$ffmpegCmd = "ffmpeg -y -i " . escapeshellarg($inputFile) . " " .
-    "-vf \"scale=-2:720\" " .
-    "-c:v libx264 -crf 23 -preset fast " .
-    "-c:a aac -b:a 128k " .
-    "-hls_time 6 " .
-    "-hls_list_size 0 " .
-    "-hls_segment_filename " . escapeshellarg($segmentPattern) . " " .
-    escapeshellarg($outputPlaylist) . " 2>&1";
+if (!empty($logoPath) && file_exists(__DIR__ . '/../' . ltrim($logoPath, '/'))) {
+    $fullLogoPath = __DIR__ . '/../' . ltrim($logoPath, '/');
+    // FFmpeg command with watermark overlay (bottom right corner with some padding)
+    // Scale video to 720p height, scale watermark to a fixed width (e.g. 100px), overlay them.
+    $ffmpegCmd = "ffmpeg -y -i " . escapeshellarg($inputFile) . " -i " . escapeshellarg($fullLogoPath) . " " .
+        "-filter_complex \"[0:v]scale=-2:720[bg];[1:v]scale=100:-1[wm];[bg][wm]overlay=W-w-10:H-h-10\" " .
+        "-c:v libx264 -crf 23 -preset fast " .
+        "-c:a aac -b:a 128k " .
+        "-hls_time 6 " .
+        "-hls_list_size 0 " .
+        "-hls_segment_filename " . escapeshellarg($segmentPattern) . " " .
+        escapeshellarg($outputPlaylist) . " 2>&1";
+} else {
+    // FFmpeg command optimized for vertical video (scaling width proportionally to 720p height) without watermark
+    $ffmpegCmd = "ffmpeg -y -i " . escapeshellarg($inputFile) . " " .
+        "-vf \"scale=-2:720\" " .
+        "-c:v libx264 -crf 23 -preset fast " .
+        "-c:a aac -b:a 128k " .
+        "-hls_time 6 " .
+        "-hls_list_size 0 " .
+        "-hls_segment_filename " . escapeshellarg($segmentPattern) . " " .
+        escapeshellarg($outputPlaylist) . " 2>&1";
+}
 
 echo "Running command: " . $ffmpegCmd . "\n";
 exec($ffmpegCmd, $output, $returnCode);

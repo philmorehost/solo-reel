@@ -34,13 +34,29 @@
                 <?php endif; ?>
 
                 <div class="bg-white rounded-lg shadow overflow-hidden p-6 w-full max-w-4xl">
-                    <form method="POST">
+                    <form method="POST" enctype="multipart/form-data">
                         <?= \App\Core\Security::csrfField() ?>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <!-- Left Column -->
                             <div>
-                                <h2 class="text-xl font-bold mb-4 border-b pb-2">General / SEO</h2>
+                                <h2 class="text-xl font-bold mb-4 border-b pb-2">Branding</h2>
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-bold mb-2">Site Logo (png, jpg, webp)</label>
+                                    <input type="file" name="site_logo" accept="image/png, image/jpeg, image/webp" class="w-full border rounded px-3 py-2">
+                                    <?php if(!empty($settings['site_logo'])): ?>
+                                        <img src="<?= htmlspecialchars($settings['site_logo']) ?>" class="mt-2 h-12 object-contain bg-gray-900 rounded">
+                                    <?php endif; ?>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-bold mb-2">Favicon (png, jpg, webp)</label>
+                                    <input type="file" name="site_favicon" accept="image/png, image/jpeg, image/webp" class="w-full border rounded px-3 py-2">
+                                    <?php if(!empty($settings['site_favicon'])): ?>
+                                        <img src="<?= htmlspecialchars($settings['site_favicon']) ?>" class="mt-2 h-8 w-8 object-contain bg-gray-900 rounded">
+                                    <?php endif; ?>
+                                </div>
+
+                                <h2 class="text-xl font-bold mt-8 mb-4 border-b pb-2">General / SEO</h2>
 
                                 <div class="mb-4">
                                     <label class="block text-gray-700 font-bold mb-2">Site / Meta Title</label>

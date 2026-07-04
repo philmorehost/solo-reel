@@ -9,6 +9,7 @@
         body { background-color: #000; color: #fff; }
         .movie-card:hover { transform: scale(1.05); transition: 0.3s; }
     </style>
+    <link rel="icon" type="image/png" href="/favicon.ico">
 </head>
 <body class="antialiased font-sans">
 
@@ -17,7 +18,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
-                    <a href="/" class="text-red-600 font-bold text-2xl tracking-tighter">SOLOREEL</a>
+                    <a href="/"><?= \App\Helpers\Site::getLogoHtml() ?></a>
                 </div>
             </div>
         </div>
@@ -55,5 +56,6 @@
             <?php endif; ?>
         <?php endif; ?>
     </main>
+    <script src="/assets/js/protection.js"></script>
 </body>
 </html>

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coin Shop - SOLOREEL</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/png" href="/favicon.ico">
 </head>
 <body class="bg-black text-white antialiased font-sans">
 
@@ -62,5 +63,6 @@
             <?php endforeach; ?>
         </div>
     </main>
+    <script src="/assets/js/protection.js"></script>
 </body>
 </html>

@@ -29,6 +29,7 @@
     </script>
     <?php endif; ?>
     <?= $config['custom_header'] ?? '' ?>
+    <link rel="icon" type="image/png" href="/favicon.ico">
 </head>
 <body class="antialiased font-sans">
 
@@ -37,7 +38,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
-                    <a href="/" class="text-red-600 font-bold text-2xl tracking-tighter">SOLOREEL</a>
+                    <a href="/"><?= \App\Helpers\Site::getLogoHtml() ?></a>
                 </div>
                 <div class="flex items-center space-x-4">
                     <a href="/search" class="text-gray-300 hover:text-white">Search</a>
@@ -117,5 +118,6 @@
         $stmt->execute();
         echo $stmt->fetchColumn();
     ?>
+    <script src="/assets/js/protection.js"></script>
 </body>
 </html>
