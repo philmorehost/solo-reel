@@ -13,7 +13,6 @@ class UserController {
         }
 
         $db = Database::getInstance();
-        // Exclude current admin
         $stmt = $db->prepare("SELECT * FROM users WHERE id != ? ORDER BY created_at DESC");
         $stmt->execute([\App\Core\Session::get('user_id')]);
         $users = $stmt->fetchAll();
@@ -23,7 +22,7 @@ class UserController {
 
     public function create() {
         \App\Core\Session::start();
-        if (\App\Core\Session::get('user_role') !== 'super_admin') { // Only super admin can create users/admins
+        if (\App\Core\Session::get('user_role') !== 'super_admin') {
             header("Location: /admin/users");
             die();
         }
@@ -102,6 +101,22 @@ class UserController {
         die();
     }
 
+    public function suspend($id) {
+        \App\Core\Session::start();
+        if (\App\Core\Session::get('user_role') !== 'super_admin' && \App\Core\Session::get('user_role') !== 'admin') {
+            header("Location: /admin/users");
+            die();
+        }
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare("UPDATE users SET status = IF(status = 'active', 'blocked', 'active') WHERE id = ?");
+        $stmt->execute([$id]);
+
+        \App\Core\Session::setFlash('success', 'User status toggled successfully.');
+        header("Location: /admin/users");
+        die();
+    }
+
     public function loginAs($id) {
         \App\Core\Session::start();
         if (\App\Core\Session::get('user_role') !== 'super_admin') {
@@ -115,7 +130,6 @@ class UserController {
         $targetUser = $stmt->fetch();
 
         if ($targetUser) {
-            // Keep original admin ID to allow reverting back if we implement that
             \App\Core\Session::set('_admin_impersonating', \App\Core\Session::get('user_id'));
             \App\Core\Auth::login($targetUser['id'], $targetUser['username'], $targetUser['email'], $targetUser['role'], (float) $targetUser['coin_balance']);
             header("Location: /");

@@ -131,4 +131,20 @@ class EpisodeController {
 
         require __DIR__ . '/../templates/episode-form.php';
     }
+
+    public function delete($id) {
+        \App\Core\Session::start();
+        if (\App\Core\Session::get('user_role') !== 'super_admin') {
+            header("Location: /admin/episodes");
+            die();
+        }
+
+        $db = \App\Core\Database::getInstance();
+        $stmt = $db->prepare("DELETE FROM episodes WHERE id = ?");
+        $stmt->execute([$id]);
+
+        \App\Core\Session::setFlash('success', 'Episode deleted successfully.');
+        header("Location: /admin/episodes");
+        die();
+    }
 }

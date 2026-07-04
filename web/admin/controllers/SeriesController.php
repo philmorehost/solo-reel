@@ -144,4 +144,20 @@ class SeriesController {
         $genres = $stmt->fetchAll();
         require __DIR__ . '/../templates/series-form.php';
     }
+
+    public function delete($id) {
+        \App\Core\Session::start();
+        if (\App\Core\Session::get('user_role') !== 'super_admin') {
+            header("Location: /admin/series");
+            die();
+        }
+
+        $db = \App\Core\Database::getInstance();
+        $stmt = $db->prepare("DELETE FROM series WHERE id = ?");
+        $stmt->execute([$id]);
+
+        \App\Core\Session::setFlash('success', 'Series deleted successfully.');
+        header("Location: /admin/series");
+        die();
+    }
 }

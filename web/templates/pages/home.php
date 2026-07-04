@@ -44,7 +44,7 @@
                     <a href="/search" class="text-gray-300 hover:text-white">Search</a>
                     <a href="/blog" class="text-gray-300 hover:text-white">Blog</a>
                     <?php if(\App\Core\Session::isLoggedIn()): ?>
-                        <a href="/profile" class="text-gray-300 hover:text-white">Profile</a>
+                        <a href="/profile" class="text-gray-300 hover:text-white">Dashboard</a>
                     <?php else: ?>
                         <a href="/login" class="text-gray-300 hover:text-white">Sign In</a>
                         <a href="/register" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-medium">Sign Up</a>

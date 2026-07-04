@@ -7,7 +7,8 @@
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-900">
     <div class="flex h-screen overflow-hidden">
-        <?php require __DIR__ . "/partials/sidebar.php"; ?>
+
+        <?php require __DIR__ . '/partials/sidebar.php'; ?>
 
         <main class="flex-1 flex flex-col overflow-hidden">
             <header class="h-16 bg-white shadow flex items-center px-6 justify-between">
@@ -23,6 +24,15 @@
                         <div class="mb-4">
                             <label class="block text-gray-700 font-bold mb-2">Package Name</label>
                             <input type="text" name="name" value="<?= htmlspecialchars($package['name'] ?? '') ?>" required class="w-full border rounded px-3 py-2">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-bold mb-2">Theme Color (Hex Code)</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" name="color_code" value="<?= htmlspecialchars($package['color_code'] ?? '#000000') ?>" class="h-10 w-10 border rounded cursor-pointer">
+                                <input type="text" name="color_code_text" value="<?= htmlspecialchars($package['color_code'] ?? '#000000') ?>" class="w-full border rounded px-3 py-2" oninput="this.previousElementSibling.value = this.value">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Used to colorize the package shield on the frontend.</p>
                         </div>
 
                         <div class="mb-4">

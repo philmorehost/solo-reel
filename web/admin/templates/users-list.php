@@ -51,6 +51,7 @@
                                     <?php if(\App\Core\Session::get('user_role') === 'super_admin'): ?>
                                     <a href="/admin/users/delete/<?= $u['id'] ?>" class="text-red-600 hover:text-red-900" onclick="return confirm('Are you sure you want to delete this user?');">Delete</a>
                                     <a href="/admin/users/login-as/<?= $u['id'] ?>" class="text-blue-600 hover:text-blue-900 ml-2" onclick="return confirm('Login as this user?');">Login As</a>
+                                    <a href="/admin/users/suspend/<?= $u['id'] ?>" class="text-yellow-600 hover:text-yellow-900 ml-2" onclick="return confirm('Toggle suspension for this user?');"><?= $u['status'] === 'active' ? 'Suspend' : 'Unsuspend' ?></a>
                                     <?php endif; ?>
                                 </td>
                             </tr>
