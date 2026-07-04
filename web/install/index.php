@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Run schema
             $schemas = ['001_initial_schema_mysql.sql', '002_payment_gateway.sql', '003_add_seo_columns.sql', '004_video_queue.sql'];
             foreach ($schemas as $schema) {
-                $sql = file_get_contents(__DIR__ . '/../../schema/' . $schema);
+                $sql = file_get_contents(__DIR__ . '/../schema/' . $schema);
                 $pdo->exec($sql);
             }
 
