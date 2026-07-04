@@ -45,6 +45,9 @@ class Router {
             $uri = substr($uri, 0, -10);
             if ($uri === '') $uri = '/';
         }
+        if ($uri !== "/" && str_ends_with($uri, "/")) {
+            $uri = rtrim($uri, "/");
+        }
 
         // Handle subfolder deployments (like /~username/)
         $scriptDir = dirname($_SERVER['SCRIPT_NAME']);

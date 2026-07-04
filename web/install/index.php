@@ -70,14 +70,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hash = password_hash($adminPass, PASSWORD_ARGON2ID);
             $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, 'super_admin')");
             $stmt->execute([$adminUser, $adminEmail, $hash]);
+            $adminId = $pdo->lastInsertId();
 
             // Create lock file
             if(!is_dir(__DIR__ . '/../storage')) mkdir(__DIR__ . '/../storage', 0775, true);
             file_put_contents(__DIR__ . '/../storage/install.lock', date('Y-m-d H:i:s'));
 
+            // Automatically login admin for step 4
+            require_once __DIR__ . '/../app/core/Session.php';
+            require_once __DIR__ . '/../app/core/Auth.php';
+            \App\Core\Session::start();
+            \App\Core\Auth::login($adminId, $adminUser, $adminEmail, 'super_admin', 0.0);
+
             header("Location: ?step=4");
             die();
-
         } catch (Exception $e) {
             $error = "Installation failed: " . $e->getMessage();
         }
@@ -141,13 +147,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <svg class="w-20 h-20 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
                 <h2 class="text-2xl font-bold mb-4">Congratulations!</h2>
-                <p class="text-gray-600 mb-6">SOLOREEL has been successfully installed.</p>
+                <p class="text-gray-600 mb-6">SOLOREEL has been successfully installed. You have been automatically logged in.</p>
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 text-left">
                     <p class="text-sm text-yellow-700"><strong>Important Security Notice:</strong> Please delete the <code>/install</code> directory from your server immediately to prevent unauthorized access.</p>
                 </div>
                 <div class="flex gap-4 justify-center">
-                    <a href="/" class="bg-gray-800 text-white font-bold py-2 px-6 rounded hover:bg-gray-700">Visit Site</a>
-                    <a href="/login" class="bg-red-600 text-white font-bold py-2 px-6 rounded hover:bg-red-700">Login to Admin</a>
+                    <a href="/" class="bg-gray-800 text-white font-bold py-3 px-6 rounded hover:bg-gray-700 transition">Visit Site Homepage</a>
+                    <a href="/admin" class="bg-red-600 text-white font-bold py-3 px-6 rounded hover:bg-red-700 transition">Go to Admin Dashboard</a>
                 </div>
             </div>
         <?php endif; ?>

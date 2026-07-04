@@ -8,16 +8,15 @@ class SystemGate {
      * It is intended to be encoded/obfuscated in production.
      */
     public static function verifyLicense(string $licenseKey): bool {
-        $endpoint = 'https://manager.pmhserver.name.ng/api-docs.php'; // Or the actual validation endpoint
+        // Base64 obfuscated endpoint to obscure the license check slightly natively
+        $encodedEndpoint = 'aHR0cHM6Ly9tYW5hZ2VyLnBtaHNlcnZlci5uYW1lLm5nL2FwaS1kb2NzLnBocA==';
 
-        // Mock validation for development purposes based on prompt
         if (empty($licenseKey)) {
             return false;
         }
 
-        // Ideally this does a cURL POST to the license server
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $endpoint);
+        curl_setopt($ch, CURLOPT_URL, base64_decode($encodedEndpoint));
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
             'action' => 'verify',
