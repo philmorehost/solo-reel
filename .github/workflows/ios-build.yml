@@ -15,7 +15,7 @@ jobs:
         working-directory: ios
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Select Xcode
       run: sudo xcode-select -switch /Applications/Xcode_15.0.app
