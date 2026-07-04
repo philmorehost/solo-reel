@@ -21,7 +21,7 @@ if (!file_exists(__DIR__ . "/storage/install.lock")) {
     die();
 }
 
-// AutoHeal disabled globally for performance. Now triggered in Admin Settings.
+\App\Core\Migrator::autoHeal();
 \App\Core\Session::start();
 
 // Handle API preflight CORS if needed

@@ -12,8 +12,8 @@ class SettingsController {
             die();
         }
 
-        // Trigger Auto-Heal strictly from Settings load
-        \App\Core\Migrator::autoHeal();
+
+
 
         $db = Database::getInstance();
 
