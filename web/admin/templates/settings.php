@@ -127,6 +127,44 @@
                                 Save All Settings
                             </button>
                         </div>
+
+                        <!-- Cron Jobs Section -->
+                        <div class="mt-10 border-t pt-8">
+                            <h2 class="text-2xl font-bold mb-4">Cron Jobs Setup</h2>
+                            <p class="text-gray-600 mb-6">Add these entries to your server's crontab to enable scheduled tasks.</p>
+
+                            <div class="space-y-4">
+                                <div class="bg-gray-800 rounded-lg p-5 border border-gray-700">
+                                    <h3 class="font-bold text-white mb-2">Video Queue Processing</h3>
+                                    <p class="text-gray-400 text-sm mb-2">Converts uploaded MP4 videos to HLS streaming format. Runs every minute.</p>
+                                    <code class="block bg-black text-green-400 p-3 rounded text-sm font-mono">
+* * * * * /usr/bin/php <?= dirname($_SERVER['SCRIPT_FILENAME']) ?>/cron/process-video-queue.php >> <?= dirname(dirname($_SERVER['SCRIPT_FILENAME'])) ?>/logs/video-queue.log 2>&1
+                                    </code>
+                                </div>
+
+                                <div class="bg-gray-800 rounded-lg p-5 border border-gray-700">
+                                    <h3 class="font-bold text-white mb-2">Email Queue Processing</h3>
+                                    <p class="text-gray-400 text-sm mb-2">Sends pending emails from the queue. Runs every minute.</p>
+                                    <code class="block bg-black text-green-400 p-3 rounded text-sm font-mono">
+* * * * * /usr/bin/php <?= dirname($_SERVER['SCRIPT_FILENAME']) ?>/cron/process-email-queue.php >> <?= dirname(dirname($_SERVER['SCRIPT_FILENAME'])) ?>/logs/email-queue.log 2>&1
+                                    </code>
+                                </div>
+
+                                <div class="bg-gray-800 p-4 rounded text-sm text-gray-400">
+                                    <p class="font-bold text-amber-400 mb-1">To add cron jobs via cPanel:</p>
+                                    <ol class="list-decimal ml-4 space-y-1">
+                                        <li>Log into cPanel.</li>
+                                        <li>Click <strong>"Cron Jobs"</strong> under the Advanced section.</li>
+                                        <li>Select <strong>"Once Per Minute"</strong> in Common Settings.</li>
+                                        <li>Paste the command from above into the command field.</li>
+                                        <li>Click <strong>"Add New Cron Job"</strong>.</li>
+                                    </ol>
+                                    <p class="font-bold text-amber-400 mt-3 mb-1">To add via SSH:</p>
+                                    <code class="block bg-black text-green-400 p-3 rounded text-sm font-mono">crontab -e</code>
+                                    <p class="text-gray-500 mt-2">Then paste the cron commands above, save, and exit (Ctrl+X, Y, Enter in nano).</p>
+                                </div>
+                            </div>
+                        </div>
                     </form>
                 </div>
             </div>

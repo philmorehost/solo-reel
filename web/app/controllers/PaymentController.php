@@ -77,19 +77,21 @@ class PaymentController {
                 $stmt = $db->prepare("UPDATE payment_transactions SET status = 'successful' WHERE id = ?");
                 $stmt->execute([$txn['id']]);
 
-                $stmt = $db->prepare("UPDATE users SET coin_balance = coin_balance + ? WHERE id = ?");
-                $stmt->execute([$txn['coins_awarded'], $txn['user_id']]);
+                // Credit wallet balance (user can then use wallet to buy coins)
+                $stmt = $db->prepare("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id = ?");
+                $stmt->execute([$txn['amount'], $txn['user_id']]);
 
-                $stmt = $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description, reference_id) VALUES (?, 'purchase', ?, ?, ?)");
-                $stmt->execute([$txn['user_id'], $txn['coins_awarded'], 'Purchased via Web', $ref]);
+                $stmt = $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description, reference_id) VALUES (?, 'wallet_topup', ?, ?, ?)");
+                $stmt->execute([$txn['user_id'], $txn['amount'], 'Card payment - Wallet topped up', $ref]);
 
                 $db->commit();
 
-                $stmt = $db->prepare("SELECT coin_balance FROM users WHERE id = ?");
+                $stmt = $db->prepare("SELECT coin_balance, wallet_balance FROM users WHERE id = ?");
                 $stmt->execute([$txn['user_id']]);
-                Session::set('user_coin_balance', (float) $stmt->fetchColumn());
+                $u = $stmt->fetch();
+                Session::set('user_coin_balance', (float)$u['coin_balance']);
 
-                Session::setFlash('success', 'Payment successful. Coins added!');
+                Session::setFlash('success', 'Payment successful! &#8358;' . number_format((float)$txn['amount'], 2) . ' added to wallet. Use your wallet to buy coins.');
                 header("Location: /coin-shop");
                 die();
             }
@@ -153,14 +155,12 @@ class PaymentController {
                     $stmt = $db->prepare("SELECT id FROM coin_transactions WHERE reference_id = ?");
                     $stmt->execute([$ref]);
                     if (!$stmt->fetch()) {
-                        // Determine coins to award (assuming 1 NGN = 1 Coin for VBA deposits for simplicity)
-                        $coinsToAward = $amount;
+                        // Credit wallet balance for bank transfer deposits
+                        $stmt = $db->prepare("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id = ?");
+                        $stmt->execute([$amount, $userId]);
 
-                        $stmt = $db->prepare("UPDATE users SET coin_balance = coin_balance + ? WHERE id = ?");
-                        $stmt->execute([$coinsToAward, $userId]);
-
-                        $stmt = $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description, reference_id) VALUES (?, 'purchase', ?, ?, ?)");
-                        $stmt->execute([$userId, $coinsToAward, 'Virtual Bank Deposit', $ref]);
+                        $stmt = $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description, reference_id) VALUES (?, 'wallet_topup', ?, ?, ?)");
+                        $stmt->execute([$userId, $amount, 'Virtual Bank Deposit', $ref]);
                     }
                 }
                 $db->commit();

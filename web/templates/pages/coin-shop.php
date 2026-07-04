@@ -12,9 +12,15 @@
         <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
             <a href="/"><?= \App\Helpers\Site::getLogoHtml() ?></a>
             <div class="flex items-center gap-4">
+                <?php if (isset($walletBalance) && $walletBalance > 0): ?>
+                <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-500/10 to-emerald-600/10 border border-emerald-500/20 text-emerald-400 text-sm">
+                    <span>&#8358;<?= number_format((float)$walletBalance, 2) ?></span>
+                    <span class="text-emerald-400/50 text-xs">wallet</span>
+                </div>
+                <?php endif; ?>
                 <div class="flex items-center gap-2">
                     <svg class="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
-                    <span class="font-bold"><?= \App\Core\Session::get('user_coin_balance') ?> Coins</span>
+                    <span class="font-bold"><?= number_format((int)($coinsBalance ?? 0)) ?> Coins</span>
                 </div>
                 <a href="/profile" class="text-gray-400 hover:text-white text-sm">Dashboard</a>
             </div>
@@ -23,6 +29,13 @@
 
     <main class="max-w-4xl mx-auto px-4 py-12">
         <h1 class="text-3xl font-bold mb-8 text-center">Top Up Your Coins</h1>
+
+        <?php if ($walletBalance > 0): ?>
+        <div class="bg-emerald-900/30 border border-emerald-700 rounded-lg p-4 mb-6 text-center">
+            <p class="text-emerald-300 text-sm">Your wallet balance: <span class="text-xl font-bold">&#8358;<?= number_format($walletBalance, 2) ?></span></p>
+            <p class="text-emerald-400/50 text-xs mt-1">Use your wallet to purchase coin packages below.</p>
+        </div>
+        <?php endif; ?>
 
         <?php $error = \App\Core\Session::getFlash('error'); if($error): ?>
             <div class="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-8 text-center text-sm">
@@ -82,7 +95,7 @@
             <?php endforeach; ?>
         </div>
     </main>
-    <?php if (defined('APP_DEBUG') && APP_DEBUG && isset($debugLog) && $vbaAttempted): ?>
+    <?php if (isset($debugLog) && $vbaAttempted): ?>
     <div class="max-w-4xl mx-auto px-4 pb-12">
         <details class="bg-gray-800 border border-gray-700 rounded-lg p-4 text-xs">
             <summary class="text-gray-400 font-bold cursor-pointer">VBA Debug Log (click to expand)</summary>
