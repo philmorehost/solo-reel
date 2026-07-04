@@ -43,6 +43,8 @@ class SeriesController {
             die();
         }
 
+                $stmt = $db->query("SELECT id, name FROM genres ORDER BY name ASC");
+        $genres = $stmt->fetchAll();
         require __DIR__ . '/../templates/series-form.php';
     }
 
@@ -79,8 +81,18 @@ class SeriesController {
                 }
             }
 
-            $stmt = $db->prepare("UPDATE series SET title = ?, slug = ?, synopsis = ?, genre = ?, status = ?, cover_image = ? WHERE id = ?");
-            $stmt->execute([$title, $slug, $synopsis, $genre, $status, $coverImage, $id]);
+                        $isFeatured = isset($_POST['is_featured']) ? 1 : 0;
+            $heroImage = $series['hero_image'] ?? null;
+            if (isset($_FILES['hero_image']) && $_FILES['hero_image']['error'] === UPLOAD_ERR_OK) {
+                $tmpNameHero = $_FILES['hero_image']['tmp_name'];
+                $fileNameHero = basename($_FILES['hero_image']['name']);
+                $destPathHero = 'assets/uploads/hero_' . time() . '_' . preg_replace('/[^a-zA-Z0-9.\-_]/', '', $fileNameHero);
+                if (move_uploaded_file($tmpNameHero, __DIR__ . '/../../' . $destPathHero)) {
+                    $heroImage = '/' . $destPathHero;
+                }
+            }
+            $stmt = $db->prepare("UPDATE series SET title = ?, slug = ?, synopsis = ?, genre = ?, status = ?, cover_image = ?, hero_image = ?, is_featured = ? WHERE id = ?");
+            $stmt->execute([$title, $slug, $synopsis, $genre, $status, $coverImage, $heroImage, $isFeatured, $id]);
 
             \App\Core\Session::setFlash('success', 'Series updated successfully.');
             header("Location: /admin/series");
@@ -91,6 +103,8 @@ class SeriesController {
         $stmt->execute([$id]);
         $series = $stmt->fetch();
 
+                $stmt = $db->query("SELECT id, name FROM genres ORDER BY name ASC");
+        $genres = $stmt->fetchAll();
         require __DIR__ . '/../templates/series-form.php';
     }
 }

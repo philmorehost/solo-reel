@@ -18,7 +18,7 @@ class SettingsController {
             \App\Core\Security::validateCsrfPost();
 
             $fields = [
-                'meta_title', 'meta_description', 'twitter_handle', 'ga_id', 'gtm_id',
+                'meta_title', 'meta_description', 'meta_keywords', 'twitter_handle', 'ga_id', 'gtm_id',
                 'custom_header', 'custom_footer', 'social_facebook', 'social_twitter',
                 'social_instagram', 'social_tiktok', 'seo_llms_enabled', 'seo_sitemap_enabled',
                 'google_client_id', 'google_client_secret', 'google_auth_enabled'

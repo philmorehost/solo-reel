@@ -68,6 +68,11 @@
                                     <textarea name="meta_description" rows="3" class="w-full border rounded px-3 py-2"><?= htmlspecialchars($settings['meta_description'] ?? '') ?></textarea>
                                 </div>
 
+                                                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-bold mb-2">Meta Keywords</label>
+                                    <input type="text" name="meta_keywords" value="<?= htmlspecialchars($settings['meta_keywords'] ?? '') ?>" placeholder="keyword1, keyword2, keyword3" class="w-full border rounded px-3 py-2">
+                                </div>
+
                                 <div class="mb-4 flex gap-4">
                                     <label class="flex items-center">
                                         <input type="hidden" name="seo_llms_enabled" value="0">
