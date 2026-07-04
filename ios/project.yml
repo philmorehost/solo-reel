@@ -1,0 +1,26 @@
+name: SOLOREEL
+options:
+  bundleIdPrefix: com.soloreel
+  deploymentTarget:
+    iOS: "16.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    ENABLE_BITCODE: NO
+
+targets:
+  SOLOREEL:
+    type: application
+    platform: iOS
+    sources:
+      - path: SOLOREEL
+      - path: SOLOREEL/Assets.xcassets
+    settings:
+      base:
+        INFOPLIST_FILE: SOLOREEL/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.soloreel.app
+        PRODUCT_NAME: SOLOREEL
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies: []

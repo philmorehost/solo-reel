@@ -1,6 +1,18 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var showSplash = true
+
+    var body: some View {
+        if showSplash {
+            SplashView(onFinished: { showSplash = false })
+        } else {
+            MainView()
+        }
+    }
+}
+
+struct MainView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
