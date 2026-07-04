@@ -1,8 +1,8 @@
-# SOLOSHORT — Implementation Plan & Architecture
+# SOLOREEL — Implementation Plan & Architecture
 
 ## Project Overview
 
-SOLOSHORT is a vertical short-drama streaming platform with a PHP frontend (web), Go/Node.js backend API, Android app, and iOS app. Users browse series, watch episodes, purchase coins, and interact with content. Admins manage content, users, security, and site configuration via a dedicated admin panel.
+SOLOREEL is a vertical short-drama streaming platform with a PHP frontend (web), Go/Node.js backend API, Android app, and iOS app. Users browse series, watch episodes, purchase coins, and interact with content. Admins manage content, users, security, and site configuration via a dedicated admin panel.
 
 ---
 
@@ -60,7 +60,7 @@ SOLOSHORT is a vertical short-drama streaming platform with a PHP frontend (web)
 ## 2. Directory Structure
 
 ```
-SOLOSHORT/
+SOLOREEL/
 ├── web/                          # PHP Frontend (public_html)
 │   ├── index.php                 # Entry point, bootstrapping, routing
 │   ├── .htaccess                 # URL rewriting, security rules
@@ -166,9 +166,9 @@ SOLOSHORT/
 │       ├── build.gradle.kts      # Build config
 │       ├── src/
 │       │   └── main/
-│       │       ├── java/com/soloshort/app/
+│       │       ├── java/com/SOLOREEL/app/
 │       │       │   ├── MainActivity.kt
-│       │       │   ├── SoloshortApp.kt
+│       │       │   ├── SOLOREELApp.kt
 │       │       │   ├── data/
 │       │       │   │   ├── api/           # Retrofit API service
 │       │       │   │   ├── model/         # Data classes
@@ -191,9 +191,9 @@ SOLOSHORT/
 │       │       └── res/                  # Resources
 │       └── proguard-rules.pro
 ├── ios/                          # iOS app (Swift)
-│   ├── Soloshort.xcodeproj/
-│   ├── Soloshort/
-│   │   ├── SoloshortApp.swift          # App entry point
+│   ├── SOLOREEL.xcodeproj/
+│   ├── SOLOREEL/
+│   │   ├── SOLOREELApp.swift          # App entry point
 │   │   ├── ContentView.swift           # Root view
 │   │   ├── AppDelegate.swift           # App delegate
 │   │   ├── Info.plist                  # App configuration
@@ -218,8 +218,8 @@ SOLOSHORT/
 │   │   ├── DI/                         # Dependency injection
 │   │   ├── Extensions/                 # Swift extensions
 │   │   └── Utilities/                  # Constants, helpers
-│   ├── SoloshortTests/                 # Unit tests
-│   └── SoloshortUITests/               # UI tests
+│   ├── SOLOREELTests/                 # Unit tests
+│   └── SOLOREELUITests/               # UI tests
 ├── docker/                       # Docker compose + nginx/PHP configs
 └── infra/                        # Infrastructure configs
 ```
@@ -552,12 +552,12 @@ android/
 ├── app/
 │   ├── build.gradle.kts
 │   ├── src/main/
-│   │   ├── java/com/soloshort/app/
-│   │   │   ├── SoloshortApp.kt           # Application class (Hilt)
+│   │   ├── java/com/SOLOREEL/app/
+│   │   │   ├── SOLOREELApp.kt           # Application class (Hilt)
 │   │   │   ├── MainActivity.kt           # Single activity
 │   │   │   ├── data/
 │   │   │   │   ├── api/
-│   │   │   │   │   ├── SoloshortApi.kt        # Retrofit interface
+│   │   │   │   │   ├── SOLOREELApi.kt        # Retrofit interface
 │   │   │   │   │   ├── AuthInterceptor.kt     # JWT token injection
 │   │   │   │   │   └── ApiResponse.kt         # Generic wrapper
 │   │   │   │   ├── model/
@@ -695,8 +695,8 @@ Auth Flow (no bottom nav):
 ### 10.5 API Client Setup (Retrofit)
 
 ```kotlin
-// SoloshortApi.kt
-interface SoloshortApi {
+// SOLOREELApi.kt
+interface SOLOREELApi {
     @GET("api/v1/banners")
     suspend fun getBanners(@Query("active") active: String): ApiResponse<List<Banner>>
 
@@ -761,16 +761,16 @@ interface SoloshortApi {
 
 ```
 ios/
-├── Soloshort.xcodeproj/
-├── Soloshort/
-│   ├── SoloshortApp.swift             # @main App struct
+├── SOLOREEL.xcodeproj/
+├── SOLOREEL/
+│   ├── SOLOREELApp.swift             # @main App struct
 │   ├── ContentView.swift              # Root view (auth check → main or login)
 │   ├── AppDelegate.swift              # Push notifications, Firebase config
 │   ├── Info.plist                     # App permissions, URL schemes
 │   ├── Assets.xcassets/               # App icons, colors, images
 │   ├── Data/
 │   │   ├── API/
-│   │   │   ├── SoloshortAPI.swift          # Alamofire router
+│   │   │   ├── SOLOREELAPI.swift          # Alamofire router
 │   │   │   ├── APIClient.swift             # Singleton HTTP client
 │   │   │   ├── AuthInterceptor.swift       # JWT token adapter
 │   │   │   └── Endpoint.swift              # URLRequestConvertible enum
@@ -863,11 +863,11 @@ ios/
 │       ├── Constants.swift                # API_BASE_URL, keys
 │       ├── Logger.swift
 │       └── HapticManager.swift
-├── SoloshortTests/                       # Unit tests (XCTest)
+├── SOLOREELTests/                       # Unit tests (XCTest)
 │   ├── ViewModelTests/
 │   ├── RepositoryTests/
 │   └── APITests/
-└── SoloshortUITests/                     # UI tests (XCUITest)
+└── SOLOREELUITests/                     # UI tests (XCUITest)
 ```
 
 ### 11.3 Key Features
@@ -890,7 +890,7 @@ ios/
 | Dark Mode | Dark-only theme matching web brand (black backgrounds, red accents) |
 | Dynamic Island | Live Activity for video progress (iOS 16.1+) |
 | Widgets | Home Screen widgets: Continue Watching, Trending Today |
-| Siri Shortcuts | "Play SOLOSHORT", "Open my favorites" intents |
+| Siri Shortcuts | "Play SOLOREEL", "Open my favorites" intents |
 | App Clips | Instant preview of trending series without full install |
 
 ### 11.4 Navigation Architecture
@@ -922,10 +922,10 @@ Auth Flow (fullScreenCover over TabView):
 ### 11.5 API Client Setup (Alamofire)
 
 ```swift
-// SoloshortAPI.swift
+// SOLOREELAPI.swift
 import Alamofire
 
-enum SoloshortAPI: URLRequestConvertible {
+enum SOLOREELAPI: URLRequestConvertible {
     case getBanners(active: String)
     case getSeries(shelf: String?, size: Int)
     case getSeriesBySlug(slug: String)
@@ -1059,7 +1059,7 @@ enum SoloshortAPI: URLRequestConvertible {
 3. Open Payhub checkout in Chrome Custom Tab
 4. User completes payment on Payhub page
 5. Payhub redirects to callback URL
-6. App intercepts callback via deep link (soloshort://payment/verify?ref=XXX)
+6. App intercepts callback via deep link (SOLOREEL://payment/verify?ref=XXX)
 7. Return to coin shop with success state
 8. Coin balance updates via API call
 ```
@@ -1111,14 +1111,14 @@ enum SoloshortAPI: URLRequestConvertible {
 
 | Field | Content |
 |-------|---------|
-| App Name | SOLOSHORT |
+| App Name | SOLOREEL |
 | Subtitle | Vertical Short Dramas |
 | Description | Watch thousands of vertical short drama series across multiple genres... |
 | Keywords | short drama, vertical series, episodes, binge, romance, thriller |
 | Category | Entertainment |
 | Age Rating | 12+ (mild themes) |
-| Privacy Policy URL | https://soloshort.com/privacy |
-| Support URL | https://soloshort.com/support |
+| Privacy Policy URL | https://SOLOREEL.com/privacy |
+| Support URL | https://SOLOREEL.com/support |
 
 ### 15.4 CI/CD Pipeline
 
