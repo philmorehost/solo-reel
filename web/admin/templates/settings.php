@@ -7,20 +7,7 @@
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-900">
     <div class="flex h-screen overflow-hidden">
-        <aside class="w-64 bg-gray-900 text-white flex-shrink-0 hidden md:flex flex-col">
-            <div class="h-16 flex items-center justify-center border-b border-gray-800">
-                <span class="text-xl font-bold text-red-500 tracking-tighter">SOLOREEL Admin</span>
-            </div>
-            <nav class="flex-1 overflow-y-auto py-4">
-                <a href="/admin" class="block px-6 py-3 text-gray-400 hover:bg-gray-800 hover:text-white">Dashboard</a>
-                <a href="/admin/series" class="block px-6 py-3 text-gray-400 hover:bg-gray-800 hover:text-white">Series</a>
-                <a href="/admin/episodes" class="block px-6 py-3 text-gray-400 hover:bg-gray-800 hover:text-white">Episodes</a>
-                <a href="/admin/users" class="block px-6 py-3 text-gray-400 hover:bg-gray-800 hover:text-white">Users</a>
-                <a href="/admin/coins" class="block px-6 py-3 text-gray-400 hover:bg-gray-800 hover:text-white">Coins Mgmt</a>
-                <a href="/admin/settings" class="block px-6 py-3 bg-gray-800 border-l-4 border-red-500">Settings</a>
-                <a href="/admin/settings/payments" class="block px-6 py-3 text-gray-400 hover:bg-gray-800 hover:text-white">Payment Gateway</a>
-            </nav>
-        </aside>
+        <?php require __DIR__ . "/partials/sidebar.php"; ?>
 
         <main class="flex-1 flex flex-col overflow-hidden">
             <header class="h-16 bg-white shadow flex items-center px-6">
@@ -113,6 +100,18 @@
                                 </div>
 
                                 <h2 class="text-xl font-bold mt-8 mb-4 border-b pb-2">Google Login Integration</h2>
+                                <div class="mb-4 bg-gray-800 p-4 rounded text-sm text-gray-300">
+                                    <h3 class="font-bold text-white mb-2">How to Setup Google Auth:</h3>
+                                    <ol class="list-decimal ml-4 space-y-1">
+                                        <li>Go to <a href="https://console.cloud.google.com/" target="_blank" class="text-blue-400 hover:underline">Google Cloud Console</a>.</li>
+                                        <li>Create a new Project.</li>
+                                        <li>Navigate to "APIs & Services" > "Credentials".</li>
+                                        <li>Click "Create Credentials" > "OAuth client ID".</li>
+                                        <li>Select "Web application".</li>
+                                        <li>Under "Authorized redirect URIs", add: <br><code class="text-xs bg-black p-1 rounded"><?= (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]/auth/google/callback" ?></code></li>
+                                        <li>Copy the Client ID and Secret into the fields below.</li>
+                                    </ol>
+                                </div>
                                 <div class="mb-2 flex items-center">
                                     <input type="hidden" name="google_auth_enabled" value="0">
                                     <input type="checkbox" name="google_auth_enabled" value="1" <?= (isset($settings['google_auth_enabled']) && $settings['google_auth_enabled'] == '1') ? 'checked' : '' ?> class="mr-2">

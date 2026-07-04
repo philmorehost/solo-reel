@@ -69,26 +69,32 @@ class SeriesController {
             $stmt_sel->execute([$id]);
             $series = $stmt_sel->fetch();
 
-            $coverImage = $series['cover_image'] ?? null;
+                        $coverImage = $series['cover_image'] ?? null;
             if (isset($_FILES['cover_image']) && $_FILES['cover_image']['error'] === UPLOAD_ERR_OK) {
                 $tmpName = $_FILES['cover_image']['tmp_name'];
                 $fileName = basename($_FILES['cover_image']['name']);
-                $uploadDir = __DIR__ . '/../../assets/uploads';
-                if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
-                $destPath = 'assets/uploads/cover_' . time() . '_' . preg_replace('/[^a-zA-Z0-9.\-_]/', '', $fileName);
-                if (move_uploaded_file($tmpName, __DIR__ . '/../../' . $destPath)) {
-                    $coverImage = '/' . $destPath;
+                $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                if (in_array($ext, ['png', 'jpg', 'jpeg', 'webp'])) {
+                    $uploadDir = __DIR__ . '/../../assets/uploads';
+                    if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
+                    $destPath = 'assets/uploads/cover_' . time() . '_' . preg_replace('/[^a-zA-Z0-9.\-_]/', '', $fileName);
+                    if (move_uploaded_file($tmpName, __DIR__ . '/../../' . $destPath)) {
+                        $coverImage = '/' . $destPath;
+                    }
                 }
             }
 
-                        $isFeatured = isset($_POST['is_featured']) ? 1 : 0;
+            $isFeatured = isset($_POST['is_featured']) ? 1 : 0;
             $heroImage = $series['hero_image'] ?? null;
             if (isset($_FILES['hero_image']) && $_FILES['hero_image']['error'] === UPLOAD_ERR_OK) {
                 $tmpNameHero = $_FILES['hero_image']['tmp_name'];
                 $fileNameHero = basename($_FILES['hero_image']['name']);
-                $destPathHero = 'assets/uploads/hero_' . time() . '_' . preg_replace('/[^a-zA-Z0-9.\-_]/', '', $fileNameHero);
-                if (move_uploaded_file($tmpNameHero, __DIR__ . '/../../' . $destPathHero)) {
-                    $heroImage = '/' . $destPathHero;
+                $extHero = strtolower(pathinfo($fileNameHero, PATHINFO_EXTENSION));
+                if (in_array($extHero, ['png', 'jpg', 'jpeg', 'webp'])) {
+                    $destPathHero = 'assets/uploads/hero_' . time() . '_' . preg_replace('/[^a-zA-Z0-9.\-_]/', '', $fileNameHero);
+                    if (move_uploaded_file($tmpNameHero, __DIR__ . '/../../' . $destPathHero)) {
+                        $heroImage = '/' . $destPathHero;
+                    }
                 }
             }
             $stmt = $db->prepare("UPDATE series SET title = ?, slug = ?, synopsis = ?, genre = ?, status = ?, cover_image = ?, hero_image = ?, is_featured = ? WHERE id = ?");

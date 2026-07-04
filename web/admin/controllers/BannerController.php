@@ -34,17 +34,23 @@ class BannerController {
             $sortOrder = (int)($_POST['sort_order'] ?? 0);
             $isActive = isset($_POST['is_active']) ? 1 : 0;
 
-            $imageUrl = '';
+                        $imageUrl = '';
             if (isset($_FILES['image_file']) && $_FILES['image_file']['error'] === UPLOAD_ERR_OK) {
                 $tmpName = $_FILES['image_file']['tmp_name'];
                 $fileName = basename($_FILES['image_file']['name']);
+                $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                if (in_array($ext, ['png', 'jpg', 'jpeg', 'webp'])) {
+                    $uploadDir = __DIR__ . '/../../assets/uploads';
+                    if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
 
-                $uploadDir = __DIR__ . '/../../assets/uploads';
-                if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);
-
-                $destPath = 'assets/uploads/banner_' . time() . '_' . preg_replace('/[^a-zA-Z0-9.\-_]/', '', $fileName);
-                if (move_uploaded_file($tmpName, __DIR__ . '/../../' . $destPath)) {
-                    $imageUrl = '/' . $destPath;
+                    $destPath = 'assets/uploads/banner_' . time() . '_' . preg_replace('/[^a-zA-Z0-9.\-_]/', '', $fileName);
+                    if (move_uploaded_file($tmpName, __DIR__ . '/../../' . $destPath)) {
+                        $imageUrl = '/' . $destPath;
+                    }
+                } else {
+                    \App\Core\Session::setFlash('error', 'Invalid image format.');
+                    header("Location: /admin/banners/create");
+                    die();
                 }
             }
 

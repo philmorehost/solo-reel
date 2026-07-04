@@ -12,6 +12,9 @@ class SettingsController {
             die();
         }
 
+        // Trigger Auto-Heal strictly from Settings load
+        \App\Core\Migrator::autoHeal();
+
         $db = Database::getInstance();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -40,7 +43,6 @@ class SettingsController {
                     if (in_array($ext, $allowedExtensions)) {
                         $destPath = 'assets/uploads/' . $bField . '_' . time() . '.' . $ext;
                         if (move_uploaded_file($tmpName, __DIR__ . '/../../' . $destPath)) {
-                            // Update database with new path
                             $check = $db->prepare("SELECT id FROM site_config WHERE setting_key = ?");
                             $check->execute([$bField]);
                             if ($check->fetch()) {
@@ -59,7 +61,6 @@ class SettingsController {
             try {
                 foreach ($fields as $field) {
                     $val = $_POST[$field] ?? '';
-                    // Check if it exists
                     $check = $db->prepare("SELECT id FROM site_config WHERE setting_key = ?");
                     $check->execute([$field]);
 

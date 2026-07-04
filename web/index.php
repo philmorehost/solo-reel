@@ -8,6 +8,8 @@ require_once __DIR__ . "/app/middleware/SecurityMiddleware.php";
 // Ensure DB connection does not break installer
 if (file_exists(__DIR__ . "/storage/install.lock")) {
     \App\Middleware\SecurityMiddleware::checkBlacklist();
+    require_once __DIR__ . "/app/middleware/AuthMiddleware.php";
+    \App\Middleware\AuthMiddleware::checkVerified();
 }
 require_once __DIR__ . '/app/core/Session.php';
 require_once __DIR__ . '/app/core/Auth.php';
@@ -19,6 +21,7 @@ if (!file_exists(__DIR__ . "/storage/install.lock")) {
     die();
 }
 
+// AutoHeal disabled globally for performance. Now triggered in Admin Settings.
 \App\Core\Session::start();
 
 // Handle API preflight CORS if needed

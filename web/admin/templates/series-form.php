@@ -8,18 +8,7 @@
 <body class="bg-gray-100 font-sans antialiased text-gray-900">
     <div class="flex h-screen overflow-hidden">
 
-        <aside class="w-64 bg-gray-900 text-white flex-shrink-0 hidden md:flex flex-col">
-            <div class="h-16 flex items-center justify-center border-b border-gray-800">
-                <span class="text-xl font-bold text-red-500 tracking-tighter">SOLOREEL Admin</span>
-            </div>
-            <nav class="flex-1 overflow-y-auto py-4">
-                <a href="/admin" class="block px-6 py-3 text-gray-400 hover:bg-gray-800 hover:text-white">Dashboard</a>
-                <a href="/admin/series" class="block px-6 py-3 bg-gray-800 border-l-4 border-red-500">Series</a>
-                <a href="/admin/episodes" class="block px-6 py-3 text-gray-400 hover:bg-gray-800 hover:text-white">Episodes</a>
-                <a href="/admin/users" class="block px-6 py-3 text-gray-400 hover:bg-gray-800 hover:text-white">Users</a>
-                <a href="/admin/settings" class="block px-6 py-3 text-gray-400 hover:bg-gray-800 hover:text-white">Settings</a>
-            </nav>
-        </aside>
+        <?php require __DIR__ . '/partials/sidebar.php'; ?>
 
         <main class="flex-1 flex flex-col overflow-hidden">
             <header class="h-16 bg-white shadow flex items-center px-6 justify-between">
@@ -29,7 +18,7 @@
 
             <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
                 <div class="bg-white rounded-lg shadow overflow-hidden p-6 max-w-2xl mx-auto">
-                    <form method="POST">
+                    <form method="POST" enctype="multipart/form-data">
                         <?= \App\Core\Security::csrfField() ?>
 
                         <div class="mb-4">
@@ -46,7 +35,33 @@
 
                         <div class="mb-4">
                             <label class="block text-gray-700 font-bold mb-2">Genre</label>
-                            <input type="text" name="genre" value="<?= htmlspecialchars($series['genre'] ?? '') ?>" class="w-full border rounded px-3 py-2">
+                            <select name="genre" class="w-full border rounded px-3 py-2">
+                                <option value="">Select Genre</option>
+                                <?php foreach($genres as $g): ?>
+                                    <option value="<?= htmlspecialchars($g['name']) ?>" <?= (isset($series) && $series['genre'] === $g['name']) ? 'selected' : '' ?>><?= htmlspecialchars($g['name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-bold mb-2">Upload Cover Image</label>
+                            <input type="file" name="cover_image" accept="image/*" class="w-full border rounded px-3 py-2 bg-gray-50">
+                            <?php if(isset($series) && !empty($series['cover_image'])): ?>
+                                <img src="<?= htmlspecialchars($series['cover_image']) ?>" class="mt-2 h-32 object-cover rounded shadow">
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-bold mb-2">Upload Featured Hero Image (Recommended for Slider)</label>
+                            <input type="file" name="hero_image" accept="image/*" class="w-full border rounded px-3 py-2 bg-gray-50">
+                            <?php if(isset($series) && !empty($series['hero_image'])): ?>
+                                <img src="<?= htmlspecialchars($series['hero_image']) ?>" class="mt-2 h-24 object-cover rounded shadow">
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="mb-4 flex items-center bg-blue-50 p-3 rounded border border-blue-100">
+                            <input type="checkbox" name="is_featured" id="is_featured" class="mr-2" <?= (!empty($series['is_featured'])) ? 'checked' : '' ?>>
+                            <label for="is_featured" class="text-blue-900 font-bold cursor-pointer">Feature in Landing Page Slider?</label>
                         </div>
 
                         <div class="mb-4">
@@ -62,7 +77,7 @@
                             <textarea name="synopsis" rows="5" class="w-full border rounded px-3 py-2"><?= htmlspecialchars($series['synopsis'] ?? '') ?></textarea>
                         </div>
 
-                        <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded hover:bg-indigo-700">
+                        <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded shadow hover:bg-indigo-700 transition">
                             Save Series
                         </button>
                     </form>
