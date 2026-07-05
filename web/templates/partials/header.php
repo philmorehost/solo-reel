@@ -4,7 +4,8 @@ $logoHtml = \App\Helpers\Site::getLogoHtml();
 $isLoggedIn = \App\Core\Session::isLoggedIn();
 $userName = \App\Core\Session::get('user_name');
 $coinBalance = \App\Core\Session::get('user_coin_balance');
-?><nav x-data="{ scrolled: false, mobileOpen: false }"
+?><script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<nav x-data="{ scrolled: false, mobileOpen: false }"
      @scroll.window="scrolled = (window.pageYOffset > 50)"
      :class="{ 'bg-black/90 backdrop-blur-md shadow-lg': scrolled, 'bg-transparent': !scrolled }"
      class="fixed w-full z-50 transition-all duration-300">
