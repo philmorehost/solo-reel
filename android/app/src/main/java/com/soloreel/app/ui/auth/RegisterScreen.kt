@@ -67,6 +67,7 @@ fun RegisterScreen(
     }
 }
 
+@Composable
 private fun OutlineTextFieldDefaults() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = Color(0xFFDC2626), unfocusedBorderColor = Color(0xFF333333),
     focusedTextColor = Color.White, unfocusedTextColor = Color.White, cursorColor = Color(0xFFDC2626)

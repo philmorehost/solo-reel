@@ -136,7 +136,7 @@ fun AuthScreen(
                     onClick = { viewModel.loginWithBiometric() },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                    border = ButtonDefaults.outlinedButtonBorder(true)
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)
                 ) {
                     Text("Sign in with Fingerprint / Face ID", fontWeight = FontWeight.Medium)
                 }
