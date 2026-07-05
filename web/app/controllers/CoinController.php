@@ -13,11 +13,24 @@ class CoinController {
         $db = Database::getInstance();
         $packages = $db->query("SELECT * FROM coin_packages WHERE is_active = 1 ORDER BY sort_order ASC")->fetchAll();
 
-        $stmt = $db->prepare("SELECT wallet_balance, coin_balance FROM users WHERE id = ?");
-        $stmt->execute([$userId]);
-        $userBal = $stmt->fetch();
-        $walletBalance = (float)($userBal['wallet_balance'] ?? 0);
-        $coinsBalance = (float)($userBal['coin_balance'] ?? 0);
+        $walletBalance = 0;
+        $coinsBalance = 0;
+        try {
+            $stmt = $db->prepare("SELECT wallet_balance, coin_balance FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $userBal = $stmt->fetch();
+            if ($userBal) {
+                $walletBalance = (float)($userBal['wallet_balance'] ?? 0);
+                $coinsBalance = (float)($userBal['coin_balance'] ?? 0);
+            }
+        } catch (\Throwable $e) {
+            try {
+                $stmt = $db->prepare("SELECT coin_balance FROM users WHERE id = ?");
+                $stmt->execute([$userId]);
+                $userBal = $stmt->fetch();
+                $coinsBalance = (float)($userBal['coin_balance'] ?? 0);
+            } catch (\Throwable $e2) {}
+        }
         Session::set('user_coin_balance', $coinsBalance);
 
         $userId = Session::get('user_id');
