@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Checkout - SOLOREEL</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://merchant.payhub.com.ng/inline.js"></script>
+    <script src="<?= htmlspecialchars(($settings['payhub_base_url'] ?? 'https://payhub.pmhserver.name.ng')) ?>/inline.js"></script>
 </head>
 <body class="bg-black text-white antialiased font-sans flex items-center justify-center min-h-screen">
     <div class="text-center">

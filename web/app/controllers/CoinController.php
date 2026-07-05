@@ -68,9 +68,11 @@ class CoinController {
                     'permanent' => true,
                 ]);
 
+                $baseUrl = !empty($settings['payhub_base_url']) ? rtrim($settings['payhub_base_url'], '/') : 'https://payhub.pmhserver.name.ng';
+
                 $ch = curl_init();
                 curl_setopt_array($ch, [
-                    CURLOPT_URL => 'https://merchant.payhub.com.ng/api/virtual-accounts/initialize',
+                    CURLOPT_URL => $baseUrl . '/api/virtual-accounts/initialize',
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_POST => true,
                     CURLOPT_POSTFIELDS => $payload,

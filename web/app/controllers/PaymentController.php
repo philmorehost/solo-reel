@@ -53,8 +53,10 @@ class PaymentController {
                  die();
             }
 
+            $baseUrl = !empty($settings['payhub_base_url']) ? rtrim($settings['payhub_base_url'], '/') : 'https://payhub.pmhserver.name.ng';
+
             $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, "https://merchant.payhub.com.ng/api/transaction/verify/" . urlencode($ref));
+            curl_setopt($ch, CURLOPT_URL, $baseUrl . "/api/transaction/verify/" . urlencode($ref));
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 "Authorization: Bearer " . $settings['payhub_secret_key'],
