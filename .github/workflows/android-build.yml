@@ -29,10 +29,10 @@ jobs:
       run: chmod +x gradlew
 
     - name: Build Release APK
-      run: ./gradlew assembleRelease
+      run: ./gradlew assembleRelease --warning-mode all
 
     - name: Build Release Bundle (AAB)
-      run: ./gradlew bundleRelease
+      run: ./gradlew bundleRelease --warning-mode all
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
@@ -44,4 +44,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: soloreel-release-aab
-        path: android/app/build/outputs/bundle/release/app-release.aab 
+        path: android/app/build/outputs/bundle/release/app-release.aab
