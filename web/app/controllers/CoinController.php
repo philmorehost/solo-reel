@@ -50,7 +50,10 @@ class CoinController {
             $stmtSet = $db->query("SELECT * FROM payment_settings LIMIT 1");
             $settings = $stmtSet->fetch();
 
-            if ($settings && !empty($settings['payhub_secret_key'])) {
+            $secretKey = trim($settings['payhub_secret_key'] ?? '');
+            $publicKey = trim($settings['payhub_public_key'] ?? '');
+
+            if ($settings && !empty($secretKey)) {
                 $email = Session::get('user_email');
                 $name = Session::get('user_name');
                 $displayName = $name;
@@ -78,7 +81,7 @@ class CoinController {
                     CURLOPT_POSTFIELDS => $payload,
                     CURLOPT_TIMEOUT => 15,
                     CURLOPT_HTTPHEADER => [
-                        'Authorization: Bearer ' . $settings['payhub_secret_key'],
+                        'Authorization: Bearer ' . $secretKey,
                         'Content-Type: application/json',
                         'Accept: application/json',
                     ],
@@ -245,7 +248,7 @@ class CoinController {
             $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (?, ?, ?, ?, ?, 'pending', ?)");
             $stmt->execute([$userId, $package['id'], $reference, $amount, $package['currency'], $package['coins']]);
 
-            $publicKey = $settings['payhub_public_key'];
+            $publicKey = trim($settings['payhub_public_key'] ?? '');
             require __DIR__ . '/../../templates/pages/checkout.php';
             die();
 

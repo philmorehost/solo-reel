@@ -46,7 +46,8 @@ class PaymentController {
 
             // Actual Payhub Verification call
             $settings = $this->getPayhubKeys();
-            if (!$settings || empty($settings['payhub_secret_key'])) {
+            $secretKey = trim($settings['payhub_secret_key'] ?? '');
+            if (!$settings || empty($secretKey)) {
                  $db->rollBack();
                  Session::setFlash('error', 'Payment gateway not configured.');
                  header("Location: /coin-shop");
@@ -59,7 +60,7 @@ class PaymentController {
             curl_setopt($ch, CURLOPT_URL, $baseUrl . "/api/transaction/verify/" . urlencode($ref));
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                "Authorization: Bearer " . $settings['payhub_secret_key'],
+                "Authorization: Bearer " . $secretKey,
                 "Cache-Control: no-cache",
             ]);
             $response = curl_exec($ch);
@@ -120,15 +121,16 @@ class PaymentController {
         }
 
         $settings = $this->getPayhubKeys();
+        $secretKey = trim($settings['payhub_secret_key'] ?? '');
 
         // HMAC Signature Validation for Security
         $signature = $_SERVER['HTTP_X_PAYHUB_SIGNATURE'] ?? '';
-        if (!$settings || empty($settings['payhub_secret_key'])) {
+        if (!$settings || empty($secretKey)) {
             http_response_code(500);
             die("Gateway not configured");
         }
 
-        $expectedSignature = hash_hmac('sha512', $payload, $settings['payhub_secret_key']);
+        $expectedSignature = hash_hmac('sha512', $payload, $secretKey);
         if (!hash_equals($expectedSignature, $signature)) {
             http_response_code(401);
             die("Invalid signature");

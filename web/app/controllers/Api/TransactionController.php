@@ -102,8 +102,9 @@ class TransactionController {
 
         $stmt = $db->query("SELECT * FROM payment_settings LIMIT 1");
         $settings = $stmt->fetch();
+        $publicKey = trim($settings['payhub_public_key'] ?? '');
 
-        if (!$settings || empty($settings['payhub_public_key'])) {
+        if (!$settings || empty($publicKey)) {
              $this->respondJson(['error' => 'Payment gateway is not configured.'], 500);
         }
 
@@ -115,7 +116,7 @@ class TransactionController {
 
         $this->respondJson([
             'message' => 'Payment initialized',
-            'public_key' => $settings['payhub_public_key'],
+            'public_key' => $publicKey,
             'amount' => (float)$amount * 100, // Kobo
             'reference' => $reference,
             'email' => 'user_' . $userId . '@soloreel.tv' // In a real app fetch their email

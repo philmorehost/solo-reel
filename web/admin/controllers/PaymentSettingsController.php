@@ -16,8 +16,8 @@ class PaymentSettingsController {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             \App\Core\Security::validateCsrfPost();
-            $publicKey = $_POST['payhub_public_key'] ?? '';
-            $secretKey = $_POST['payhub_secret_key'] ?? '';
+            $publicKey = trim($_POST['payhub_public_key'] ?? '');
+            $secretKey = trim($_POST['payhub_secret_key'] ?? '');
             $mode = $_POST['mode'] ?? 'sandbox';
 
             $stmt = $db->query("SELECT id FROM payment_settings LIMIT 1");
