@@ -2,64 +2,35 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Favorites - SOLOREEL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>My Favorites - SOLOREEL</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .movie-card:hover { transform: scale(1.05); transition: 0.3s; }
-    </style>
-    <link rel="icon" type="image/png" href="/favicon.ico">
+    <link rel="stylesheet" href="/assets/css/responsive.css">
 </head>
-<body class="bg-black text-white antialiased font-sans">
-
-    <nav class="fixed w-full z-50 bg-black/80 backdrop-blur border-b border-gray-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center">
-                    <a href="/"><?= \App\Helpers\Site::getLogoHtml() ?></a>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <a href="/profile" class="text-gray-300 hover:text-white">Profile</a>
-                </div>
+<body class="bg-black text-white antialiased font-sans min-h-screen flex flex-col">
+    <?php require __DIR__ . '/../partials/header.php'; ?>
+    <main class="flex-1 pt-20">
+        <div class="max-w-6xl mx-auto px-4 py-8">
+            <h1 class="text-2xl font-bold mb-6">My Favorites</h1>
+            <?php if (empty($favorites)): ?>
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
+                <p class="text-gray-400">No favorites yet. Browse series and add them to your list.</p>
+                <a href="/search" class="inline-block mt-4 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg font-semibold transition">Browse Series</a>
             </div>
-        </div>
-    </nav>
-
-    <main class="pt-24 max-w-7xl mx-auto px-4 py-12">
-        <h1 class="text-3xl font-bold mb-8">My Favorites</h1>
-
-        <?php $msg = \App\Core\Session::getFlash('success'); if($msg): ?>
-            <div class="bg-green-500/10 border border-green-500 text-green-500 p-3 rounded mb-8 text-center text-sm">
-                <?= htmlspecialchars($msg) ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if(empty($series)): ?>
-            <p class="text-gray-500">You haven't added any series to your favorites yet.</p>
-        <?php else: ?>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                <?php foreach($series as $s): ?>
-                    <div class="relative group">
-                        <a href="/movie/<?= htmlspecialchars($s['slug']) ?>" class="movie-card block cursor-pointer">
-                            <div class="relative aspect-[2/3] overflow-hidden rounded-lg">
-                                <img src="<?= htmlspecialchars($s['cover_image'] ?? '/assets/img/default-cover.jpg') ?>" class="w-full h-full object-cover">
-                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"></path></svg>
-                                </div>
-                            </div>
-                            <h4 class="mt-2 text-sm font-medium text-gray-300 group-hover:text-white truncate"><?= htmlspecialchars($s['title']) ?></h4>
-                        </a>
-                        <form action="/favorites/<?= $s['id'] ?>" method="POST" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition">
-                            <input type="hidden" name="_method" value="DELETE">
-                            <?= \App\Core\Security::csrfField() ?>
-                            <button type="submit" class="bg-red-600/80 hover:bg-red-600 text-white rounded-full p-2" title="Remove from Favorites">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        </form>
+            <?php else: ?>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                <?php foreach ($favorites as $fav): ?>
+                <a href="/movie/<?= htmlspecialchars($fav['slug'] ?? '') ?>" class="group">
+                    <div class="aspect-[2/3] rounded-xl overflow-hidden bg-gray-900">
+                        <img src="<?= htmlspecialchars($fav['cover_image_url'] ?? '') ?>" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
                     </div>
+                    <p class="text-sm font-medium mt-2 text-gray-200 truncate"><?= htmlspecialchars($fav['title'] ?? '') ?></p>
+                </a>
                 <?php endforeach; ?>
             </div>
-        <?php endif; ?>
+            <?php endif; ?>
+        </div>
     </main>
-    <script src="/assets/js/protection.js"></script>
+    <?php require __DIR__ . '/../partials/footer.php'; ?>
 </body>
 </html>

@@ -4,25 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard - SOLOREEL</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="/assets/css/responsive.css">
 </head>
 <body class="bg-black text-white antialiased font-sans">
 
-    <nav class="fixed w-full z-50 bg-black/80 backdrop-blur border-b border-gray-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center">
-                    <a href="/"><?= \App\Helpers\Site::getLogoHtml() ?></a>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <a href="/" class="text-gray-300 hover:text-white">Home</a>
-                    <a href="/logout" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-4 rounded text-sm transition">Logout</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <?php require __DIR__ . '/../partials/header.php'; ?>
 
-    <main class="pt-24 max-w-7xl mx-auto px-4 py-12">
+    <main class="pt-20 max-w-7xl mx-auto px-4 py-12">
         <h1 class="text-3xl font-bold mb-8">My Dashboard</h1>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">

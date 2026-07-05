@@ -25,6 +25,7 @@
     <?= $config['custom_header'] ?? '' ?>
     <link rel="icon" type="image/png" href="/favicon.ico">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/assets/css/responsive.css">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -59,40 +60,7 @@
 </head>
 <body class="antialiased font-sans">
 
-    <!-- Navbar -->
-    <nav x-data="{ scrolled: false }"
-         @scroll.window="scrolled = (window.pageYOffset > 50)"
-         :class="{ 'bg-black/90 backdrop-blur-md shadow-lg': scrolled, 'bg-transparent': !scrolled }"
-         class="fixed w-full z-50 transition-all duration-300">
-        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-20">
-                <div class="flex items-center">
-                    <a href="/" class="transition-transform hover:scale-105"><?= \App\Helpers\Site::getLogoHtml() ?></a>
-                    <div class="hidden md:flex ml-10 space-x-8">
-                        <a href="/" class="text-white font-semibold hover:text-red-500 transition">Home</a>
-                        <a href="/search" class="text-gray-300 font-medium hover:text-white transition">Search</a>
-                        <a href="/blog" class="text-gray-300 font-medium hover:text-white transition">Blog</a>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-6">
-                    <?php if(\App\Core\Session::isLoggedIn()): ?>
-                        <a href="/coin-shop" class="flex items-center gap-2 text-sm font-bold bg-gray-900/80 border border-gray-700 hover:border-yellow-500 px-3 py-1.5 rounded-full transition">
-                            <svg class="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"></path></svg>
-                            <?= \App\Core\Session::get('user_coin_balance') ?>
-                        </a>
-                        <a href="/profile" class="text-gray-300 hover:text-white flex items-center">
-                            <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white font-bold">
-                                <?= strtoupper(substr(\App\Core\Session::get('user_name'), 0, 1)) ?>
-                            </div>
-                        </a>
-                    <?php else: ?>
-                        <a href="/login" class="text-white font-medium hover:text-red-500 transition">Sign In</a>
-                        <a href="/register" class="bg-red-600 hover:bg-red-700 shadow-[0_0_15px_rgba(220,38,38,0.5)] text-white px-5 py-2.5 rounded-md font-semibold transition-all">Sign Up</a>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <?php require __DIR__ . '/../partials/header.php'; ?>
 
     <!-- Banners / Featured Slider -->
     <div x-data="{ activeSlide: 0, slides: <?= count($featuredSeries) ?> }" class="relative h-[85vh] overflow-hidden bg-black">
@@ -206,38 +174,7 @@
         <?php endforeach; ?>
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-[#131315] pt-16 pb-8 border-t border-gray-800/50">
-        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-                <div class="col-span-1 md:col-span-2">
-                    <a href="/"><?= \App\Helpers\Site::getLogoHtml() ?></a>
-                    <p class="mt-4 text-gray-400 max-w-sm">The best vertical short dramas and mini-series streaming platform. Watch anytime, anywhere.</p>
-                </div>
-                <div>
-                    <h4 class="text-white font-bold mb-4">Quick Links</h4>
-                    <ul class="space-y-2 text-gray-400">
-                        <li><a href="/" class="hover:text-white transition">Home</a></li>
-                        <li><a href="/search" class="hover:text-white transition">Search</a></li>
-                        <li><a href="/blog" class="hover:text-white transition">Blog</a></li>
-                        <li><a href="/coin-shop" class="hover:text-white transition">Buy Coins</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="text-white font-bold mb-4">Connect</h4>
-                    <ul class="space-y-2 text-gray-400">
-                        <?php if(!empty($config['social_facebook'])): ?><li><a href="<?= htmlspecialchars($config['social_facebook']) ?>" target="_blank" class="hover:text-white transition">Facebook</a></li><?php endif; ?>
-                        <?php if(!empty($config['social_twitter'])): ?><li><a href="<?= htmlspecialchars($config['social_twitter']) ?>" target="_blank" class="hover:text-white transition">Twitter / X</a></li><?php endif; ?>
-                        <?php if(!empty($config['social_instagram'])): ?><li><a href="<?= htmlspecialchars($config['social_instagram']) ?>" target="_blank" class="hover:text-white transition">Instagram</a></li><?php endif; ?>
-                        <?php if(!empty($config['social_tiktok'])): ?><li><a href="<?= htmlspecialchars($config['social_tiktok']) ?>" target="_blank" class="hover:text-white transition">TikTok</a></li><?php endif; ?>
-                    </ul>
-                </div>
-            </div>
-            <div class="text-center text-gray-600 text-sm pt-8 border-t border-gray-800/50">
-                <p>&copy; <?= date('Y') ?> <?= htmlspecialchars($config['meta_title'] ?? 'SOLOREEL') ?>. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
+    <?php require __DIR__ . '/../partials/footer.php'; ?>
     <script src="/assets/js/protection.js"></script>
     <!-- Custom Footer Code -->
     <?php

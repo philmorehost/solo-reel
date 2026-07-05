@@ -6,6 +6,7 @@
     <title><?= htmlspecialchars($episode['title']) ?> - SOLOREEL</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link rel="stylesheet" href="/assets/css/responsive.css">
     <style>
         /* Mobile vertical optimization */
         .video-container { height: 100vh; width: 100vw; background: #000; position: relative; }

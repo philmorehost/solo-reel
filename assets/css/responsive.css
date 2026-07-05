@@ -1,0 +1,33 @@
+/* Mobile Responsiveness - SOLOREEL */
+@media (max-width: 639px) {
+  .container-px { padding-left: 1rem; padding-right: 1rem; }
+  h1 { font-size: 1.5rem !important; }
+  h2 { font-size: 1.25rem !important; }
+  .text-hero { font-size: 1.75rem !important; }
+  .hide-mobile { display: none !important; }
+  .w-full-mobile { width: 100% !important; }
+  .stack-mobile { flex-direction: column !important; }
+  .gap-mobile { gap: 0.5rem !important; }
+  .p-mobile { padding: 1rem !important; }
+  .center-mobile { text-align: center !important; }
+}
+@media (min-width: 640px) {
+  .show-mobile-only { display: none !important; }
+}
+/* Touch-friendly tap targets */
+a, button, .tap-target { min-height: 44px; display: inline-flex; align-items: center; }
+/* Smooth scroll behavior */
+html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+/* Mobile grid fix */
+.grid-mobile-1 { grid-template-columns: repeat(1, 1fr); }
+@media (min-width: 640px) { .grid-mobile-1 { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .grid-mobile-1 { grid-template-columns: repeat(4, 1fr); } }
+/* Card image aspect ratio fix */
+.aspect-ratio-poster { aspect-ratio: 2/3; object-fit: cover; }
+/* Prevent horizontal scroll */
+body { overflow-x: hidden; width: 100%; }
+img, video { max-width: 100%; height: auto; }
+/* Mobile table scroll */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* Fix Tailwind CDN collisions */
+input, textarea, select { font-size: 16px !important; } /* Prevent iOS zoom on focus */
