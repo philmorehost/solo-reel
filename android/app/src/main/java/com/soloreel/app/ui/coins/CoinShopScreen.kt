@@ -1,6 +1,7 @@
 package com.soloreel.app.ui.coins
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -63,8 +64,12 @@ fun CoinShopScreen(vm: CoinViewModel = hiltViewModel()) {
             item { Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color(0xFFDC2626)) } }
         } else {
             items(state.packages) { pkg ->
+                val context = androidx.compose.ui.platform.LocalContext.current
                 Card(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://soloshort.pmhserver.name.ng/coin-shop"))
+                        context.startActivity(intent)
+                    },
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A)),
                     shape = RoundedCornerShape(12.dp)
                 ) {

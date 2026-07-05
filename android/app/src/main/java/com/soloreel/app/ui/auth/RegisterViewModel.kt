@@ -43,6 +43,7 @@ class RegisterViewModel @Inject constructor(
                 _state.value = _state.value.copy(isLoading = false, error = e.message ?: "Connection error")
             }
         }
+    }
     fun signInWithGoogle(context: android.content.Context, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)

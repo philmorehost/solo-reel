@@ -30,7 +30,7 @@
                     <label class="block text-sm font-medium text-gray-400 mb-1.5">Password</label>
                     <input type="password" name="password" required autocomplete="current-password" class="w-full bg-black border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30">
                 </div>
-                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition-colors text-sm sm:text-base">
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition-colors text-sm sm:text-base text-center flex justify-center items-center">
                     Sign In
                 </button>
             </form>
