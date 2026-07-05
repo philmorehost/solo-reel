@@ -72,7 +72,7 @@ class CoinController {
 
                 $ch = curl_init();
                 curl_setopt_array($ch, [
-                    CURLOPT_URL => $baseUrl . '/api/virtual-accounts/initialize',
+                    CURLOPT_URL => $baseUrl . '/api/virtual-accounts',
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_POST => true,
                     CURLOPT_POSTFIELDS => $payload,
