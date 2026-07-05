@@ -1,0 +1,3 @@
+# Force Unix line endings for shell scripts to prevent execution failures on Linux/macOS runners
+android/gradlew text eol=lf
+android/gradlew.bat text eol=crlf
