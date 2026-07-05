@@ -10,7 +10,16 @@ struct SeriesDetailView: View {
             else if let s = series {
                     VStack(alignment: .leading) {
                     AsyncImage(url: URL(string: s.cover_image_url ?? "")) { phase in
-                        (phase.image?.resizable() ?? Color.gray).frame(height: 220).cornerRadius(16)
+                        if let image = phase.image {
+                            image.resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 220)
+                                .cornerRadius(16)
+                        } else {
+                            Color.gray
+                                .frame(height: 220)
+                                .cornerRadius(16)
+                        }
                     }.padding(.horizontal)
                     Text(s.title).font(.title).bold().padding(.horizontal)
                     Text(s.synopsis ?? "").foregroundColor(.gray).font(.subheadline).padding(.horizontal)
@@ -20,7 +29,16 @@ struct SeriesDetailView: View {
                         NavigationLink(destination: PlayerView(slug: ep.slug)) {
                             HStack {
                                 AsyncImage(url: URL(string: ep.thumbnail_url ?? "")) { phase in
-                                    (phase.image?.resizable() ?? Color.gray).frame(width: 80, height: 56).cornerRadius(8)
+                                    if let image = phase.image {
+                                        image.resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 80, height: 56)
+                                            .cornerRadius(8)
+                                    } else {
+                                        Color.gray
+                                            .frame(width: 80, height: 56)
+                                            .cornerRadius(8)
+                                    }
                                 }
                                 VStack(alignment: .leading) {
                                     Text("Ep \(ep.episode_number ?? 0)").foregroundColor(.red).font(.caption)

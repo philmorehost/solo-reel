@@ -83,6 +83,7 @@ fun ProfileScreen(onLogout: () -> Unit, vm: ProfileViewModel = hiltViewModel()) 
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileMenuItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
     Card(

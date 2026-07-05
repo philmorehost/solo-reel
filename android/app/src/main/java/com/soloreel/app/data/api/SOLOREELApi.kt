@@ -1,6 +1,13 @@
 package com.soloreel.app.data.api
 
-import com.soloreel.app.data.model.*
+import com.soloreel.app.data.model.Banner
+import com.soloreel.app.data.model.Series
+import com.soloreel.app.data.model.Episode
+import com.soloreel.app.data.model.User
+import com.soloreel.app.data.model.Shelf
+import com.soloreel.app.data.model.CoinPackage
+import com.soloreel.app.data.model.PaymentInit
+import com.soloreel.app.data.model.WatchHistoryItem
 import retrofit2.Response
 import retrofit2.http.*
 

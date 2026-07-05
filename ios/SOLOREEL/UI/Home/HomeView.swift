@@ -40,7 +40,16 @@ struct HomeView: View {
                                 NavigationLink(destination: SeriesDetailView(slug: s.slug)) {
                                     VStack(alignment: .leading) {
                                         AsyncImage(url: URL(string: s.cover_image_url ?? "")) { phase in
-                                            (phase.image?.resizable() ?? Color.gray).frame(width: 140, height: 200).cornerRadius(12)
+                                            if let image = phase.image {
+                                                image.resizable()
+                                                    .aspectRatio(contentMode: .fill)
+                                                    .frame(width: 140, height: 200)
+                                                    .cornerRadius(12)
+                                            } else {
+                                                Color.gray
+                                                    .frame(width: 140, height: 200)
+                                                    .cornerRadius(12)
+                                            }
                                         }
                                         Text(s.title).font(.caption).foregroundColor(.white).lineLimit(2).frame(width: 140, alignment: .leading)
                                     }
