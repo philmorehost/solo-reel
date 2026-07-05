@@ -1,4 +1,4 @@
-package com.SOLOREEL.app.ui.splash
+package com.soloreel.app.ui.splash
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.Image
 import androidx.compose.ui.unit.dp
-import com.SOLOREEL.app.R
+import com.soloreel.app.R
 import kotlinx.coroutines.delay
 
 @Composable
