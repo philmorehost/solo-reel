@@ -26,6 +26,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.soloreel.app.data.api.SOLOREELApi
+import com.soloreel.app.data.api.ApiResponse
 import com.soloreel.app.data.model.Episode
 import com.soloreel.app.data.model.Series
 import com.soloreel.app.ui.navigation.Screen
@@ -49,9 +50,12 @@ class SeriesDetailViewModel @Inject constructor(private val api: SOLOREELApi) : 
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
             try {
-                val s = api.getSeriesDetail(slug)
-                val e = if (s.data?.id != null) api.getEpisodes(s.data.id) else null
-                _state.value = SeriesDetailState(series = s.data, episodes = e?.data ?: emptyList())
+                val seriesResp = api.getSeriesDetail(slug)
+                val seriesData = seriesResp.data
+                val episodesList = if (seriesData?.id != null) {
+                    api.getEpisodes(seriesData.id).data ?: emptyList()
+                } else emptyList()
+                _state.value = SeriesDetailState(series = seriesData, episodes = episodesList)
             } catch (e: Exception) { _state.value = SeriesDetailState(error = e.message) }
         }
     }
