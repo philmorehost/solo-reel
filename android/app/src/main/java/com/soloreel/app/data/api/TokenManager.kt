@@ -30,9 +30,13 @@ class TokenManager @Inject constructor(@ApplicationContext context: Context) {
         get() = prefs.getFloat("user_coins", 0f).toDouble()
         set(value) { prefs.edit().putFloat("user_coins", value.toFloat()).apply() }
 
+    var savedPassword: String?
+        get() = prefs.getString("saved_password", null)
+        set(value) { prefs.edit().putString("saved_password", value).apply() }
+
     val isLoggedIn: Boolean get() = accessToken != null
 
     fun clear() {
-        prefs.edit().clear().apply()
+        prefs.edit().remove("access_token").remove("refresh_token").apply()
     }
 }

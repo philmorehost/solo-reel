@@ -39,11 +39,6 @@
                 </button>
             </form>
 
-            <?php
-                $googleEnabled = \App\Helpers\Site::getConfig('google_auth_enabled') === '1'
-                              && !empty(\App\Helpers\Site::getConfig('google_client_id'));
-            ?>
-            <?php if ($googleEnabled): ?>
             <div class="relative flex items-center my-4">
                 <div class="flex-grow border-t border-gray-800"></div>
                 <span class="flex-shrink mx-3 text-xs text-gray-500 uppercase tracking-widest">or</span>
@@ -59,7 +54,6 @@
                 </svg>
                 <span class="text-sm sm:text-base">Continue with Google</span>
             </a>
-            <?php endif; ?>
 
             <p class="text-center text-sm text-gray-400 mt-4">
                 Already have an account? <a href="/login" class="text-red-400 hover:text-red-300 font-medium">Sign in</a>

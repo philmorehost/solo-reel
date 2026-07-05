@@ -62,6 +62,19 @@ fun RegisterScreen(
             state.error?.let { Spacer(Modifier.height(12.dp)); Text(it, color = Color(0xFFEF4444), fontSize = 13.sp, textAlign = TextAlign.Center) }
             Spacer(Modifier.height(16.dp))
             TextButton(onClick = onNavigateToLogin) { Text("Already have an account? Sign in", color = Color(0xFFDC2626)) }
+            
+            Spacer(modifier = Modifier.height(20.dp))
+            val context = androidx.compose.ui.platform.LocalContext.current
+            OutlinedButton(
+                onClick = { viewModel.signInWithGoogle(context, onRegisterSuccess) },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)
+            ) {
+                Text("G", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(end = 12.dp))
+                Text("Continue with Google", fontWeight = FontWeight.Medium)
+            }
+            
             Spacer(Modifier.height(60.dp))
         }
     }

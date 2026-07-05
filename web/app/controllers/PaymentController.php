@@ -53,8 +53,7 @@ class PaymentController {
                  header("Location: /coin-shop");
                  die();
             }
-
-            $baseUrl = !empty($settings['payhub_base_url']) ? rtrim($settings['payhub_base_url'], '/') : 'https://merchant.payhub.com.ng';
+            $baseUrl = 'https://merchant.payhub.com.ng';
 
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $baseUrl . "/api/transaction/verify/" . urlencode($ref));

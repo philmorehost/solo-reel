@@ -37,6 +37,7 @@ fun AuthScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
 
     Box(
         modifier = Modifier
@@ -129,11 +130,44 @@ fun AuthScreen(
                 Text("Don't have an account? Create one", color = Color(0xFFDC2626))
             }
 
+            Spacer(modifier = Modifier.height(20.dp))
+            OutlinedButton(
+                onClick = { viewModel.signInWithGoogle(context) },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)
+            ) {
+                // simple G icon placeholder
+                Text("G", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(end = 12.dp))
+                Text("Continue with Google", fontWeight = FontWeight.Medium)
+            }
+
             Spacer(modifier = Modifier.height(40.dp))
             // Fingerprint login button
             if (viewModel.isBiometricAvailable()) {
                 OutlinedButton(
-                    onClick = { viewModel.loginWithBiometric() },
+                    onClick = {
+                        val fragmentActivity = context as? androidx.fragment.app.FragmentActivity
+                        if (fragmentActivity != null) {
+                            val prompt = androidx.biometric.BiometricPrompt(
+                                fragmentActivity, 
+                                androidx.core.content.ContextCompat.getMainExecutor(context),
+                                object : androidx.biometric.BiometricPrompt.AuthenticationCallback() {
+                                    override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
+                                        viewModel.onBiometricSuccess()
+                                    }
+                                }
+                            )
+                            prompt.authenticate(
+                                androidx.biometric.BiometricPrompt.PromptInfo.Builder()
+                                    .setTitle("SOLOREEL Login")
+                                    .setSubtitle("Sign in with your fingerprint")
+                                    .setNegativeButtonText("Cancel")
+                                    .setAllowedAuthenticators(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                                    .build()
+                            )
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)

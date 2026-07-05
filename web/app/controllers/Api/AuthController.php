@@ -105,4 +105,70 @@ class AuthController {
 
         return $this->respondJson(['error' => 'Registration failed'], 500);
     }
+
+    public function googleLogin() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return $this->respondJson(['error' => 'Method Not Allowed'], 405);
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $email = $input['email'] ?? '';
+        $displayName = $input['displayName'] ?? '';
+
+        if (empty($email)) {
+            return $this->respondJson(['error' => 'Email is required for Google login'], 400);
+        }
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT id, username, email, password_hash, role, coin_balance, status FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+
+        if ($user) {
+            if ($user['status'] === 'blocked') {
+                return $this->respondJson(['error' => 'Account is blocked'], 403);
+            }
+        } else {
+            // Register new user
+            $username = strtolower(str_replace(' ', '', $displayName)) . rand(1000, 9999);
+            if (empty($displayName)) {
+                $username = 'user' . rand(10000, 99999);
+                $displayName = $username;
+            }
+            // Generate a random password since they use Google
+            $randomPassword = bin2hex(random_bytes(10));
+            $hash = password_hash($randomPassword, PASSWORD_ARGON2ID);
+            
+            $stmt = $db->prepare("INSERT INTO users (username, email, password_hash, display_name) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$username, $email, $hash, $displayName]);
+            
+            // Fetch newly created user
+            $stmt = $db->prepare("SELECT id, username, email, password_hash, role, coin_balance, status FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch();
+        }
+
+        // Generate Token
+        $secret = getenv('JWT_SECRET') ?: 'default_secret_key_change_in_production';
+        $payload = [
+            'user_id' => $user['id'],
+            'email' => $user['email'],
+            'role' => $user['role'],
+            'exp' => time() + (86400 * 30) // 30 days
+        ];
+
+        $token = $this->generateJWT($payload, $secret);
+
+        $this->respondJson([
+            'message' => 'Login successful',
+            'token' => $token,
+            'user' => [
+                'id' => $user['id'],
+                'username' => $user['username'],
+                'email' => $user['email'],
+                'role' => $user['role'],
+                'coin_balance' => (float) $user['coin_balance']
+            ]
+        ]);
+    }
 }

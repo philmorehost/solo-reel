@@ -18,8 +18,10 @@ import com.soloreel.app.data.api.TokenManager
 import javax.inject.Inject
 import dagger.hilt.android.AndroidEntryPoint
 
+import androidx.fragment.app.FragmentActivity
+
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     @Inject
     lateinit var tokenManager: TokenManager
 

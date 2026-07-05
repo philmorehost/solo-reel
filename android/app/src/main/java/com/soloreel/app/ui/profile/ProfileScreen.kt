@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class ProfileState(val user: User? = null, val coins: Double = 0.0, val isLoading: Boolean = false)
+data class ProfileState(val user: User? = null, val coins: Double = 0.0, val isLoading: Boolean = false, val isLoggedIn: Boolean = false)
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
@@ -40,7 +40,11 @@ class ProfileViewModel @Inject constructor(
     init { load() }
     fun load() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, coins = tokenManager.userCoins)
+            if (!tokenManager.isLoggedIn) {
+                _state.value = ProfileState(isLoggedIn = false)
+                return@launch
+            }
+            _state.value = _state.value.copy(isLoading = true, coins = tokenManager.userCoins, isLoggedIn = true)
             try { val r = api.getProfile(); _state.value = _state.value.copy(user = r.data, isLoading = false) }
             catch (e: Exception) { _state.value = _state.value.copy(isLoading = false) }
         }
@@ -49,7 +53,7 @@ class ProfileViewModel @Inject constructor(
 }
 
 @Composable
-fun ProfileScreen(onLogout: () -> Unit, vm: ProfileViewModel = hiltViewModel()) {
+fun ProfileScreen(onLogout: () -> Unit, onNavigateToLogin: () -> Unit = {}, vm: ProfileViewModel = hiltViewModel()) {
     val state by vm.state.collectAsState()
 
     Column(
@@ -57,6 +61,22 @@ fun ProfileScreen(onLogout: () -> Unit, vm: ProfileViewModel = hiltViewModel()) 
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(24.dp))
+        
+        if (!state.isLoggedIn) {
+            Icon(Icons.Default.Person, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(80.dp))
+            Spacer(Modifier.height(16.dp))
+            Text("Sign in to view your profile", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            Text("Access your watch history, favorites, and coins.", color = Color.Gray, fontSize = 14.sp)
+            Spacer(Modifier.height(32.dp))
+            Button(
+                onClick = onNavigateToLogin,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) { Text("Sign In", fontWeight = FontWeight.Bold) }
+            return@Column
+        }
+
         Box(
             modifier = Modifier.size(80.dp).clip(CircleShape).background(Color(0xFFDC2626)),
             contentAlignment = Alignment.Center

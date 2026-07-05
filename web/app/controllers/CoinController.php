@@ -71,8 +71,7 @@ class CoinController {
                     'last_name' => $lastName ?: 'User',
                     'permanent' => true,
                 ]);
-
-                $baseUrl = !empty($settings['payhub_base_url']) ? rtrim($settings['payhub_base_url'], '/') : 'https://merchant.payhub.com.ng';
+                $baseUrl = 'https://merchant.payhub.com.ng';
 
                 $ch = curl_init();
                 curl_setopt_array($ch, [

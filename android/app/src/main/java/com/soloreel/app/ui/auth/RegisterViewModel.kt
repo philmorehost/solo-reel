@@ -43,5 +43,41 @@ class RegisterViewModel @Inject constructor(
                 _state.value = _state.value.copy(isLoading = false, error = e.message ?: "Connection error")
             }
         }
+    fun signInWithGoogle(context: android.content.Context, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true, error = null)
+            try {
+                val credentialManager = androidx.credentials.CredentialManager.create(context)
+                val googleIdOption = com.google.android.libraries.identity.googleid.GetGoogleIdOption.Builder()
+                    .setFilterByAuthorizedAccounts(false)
+                    .setServerClientId("YOUR_WEB_CLIENT_ID") 
+                    .build()
+                val request = androidx.credentials.GetCredentialRequest.Builder()
+                    .addCredentialOption(googleIdOption)
+                    .build()
+                val result = credentialManager.getCredential(context, request)
+                val credential = result.credential
+                if (credential is androidx.credentials.CustomCredential && credential.type == com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                    val googleIdTokenCredential = com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.createFrom(credential.data)
+                    val email = googleIdTokenCredential.id
+                    val displayName = googleIdTokenCredential.displayName ?: ""
+                    
+                    val res = api.googleLogin(GoogleLoginBody(email, displayName))
+                    if (res.status == true && res.data?.token != null) {
+                        tokenManager.accessToken = res.data.token
+                        tokenManager.userEmail = email
+                        res.data.user?.let { tokenManager.userName = it.username; tokenManager.userCoins = it.coin_balance ?: 0.0 }
+                        _state.value = _state.value.copy(isLoading = false, success = "Welcome!")
+                        onSuccess()
+                    } else {
+                        _state.value = _state.value.copy(isLoading = false, error = res.message ?: "Google Login failed")
+                    }
+                } else {
+                    _state.value = _state.value.copy(isLoading = false, error = "Invalid credential type")
+                }
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(isLoading = false, error = "Google Sign In requires Configuration.")
+            }
+        }
     }
 }

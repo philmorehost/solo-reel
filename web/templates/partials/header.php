@@ -9,7 +9,7 @@ $coinBalance = \App\Core\Session::get('user_coin_balance');
      @scroll.window="scrolled = (window.pageYOffset > 50)"
      :class="{ 'bg-black/90 backdrop-blur-md shadow-lg': scrolled, 'bg-transparent': !scrolled }"
      class="fixed w-full z-50 transition-all duration-300">
-    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-50">
         <div class="flex items-center justify-between h-16 sm:h-20">
             <div class="flex items-center">
                 <a href="/" class="transition-transform hover:scale-105 mr-6"><?= $logoHtml ?></a>

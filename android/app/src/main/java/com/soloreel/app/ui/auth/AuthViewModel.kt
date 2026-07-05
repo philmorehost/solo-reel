@@ -45,6 +45,7 @@ class AuthViewModel @Inject constructor(
                 if (res.status == true && res.data?.token != null) {
                     tokenManager.accessToken = res.data.token
                     tokenManager.userEmail = s.email
+                    tokenManager.savedPassword = s.password
                     res.data.user?.let { tokenManager.userName = it.username; tokenManager.userCoins = it.coin_balance ?: 0.0 }
                     _state.value = _state.value.copy(isLoading = false, isLoggedIn = true, success = "Welcome!")
                 } else {
@@ -57,24 +58,53 @@ class AuthViewModel @Inject constructor(
     }
 
     fun isBiometricAvailable(): Boolean {
+        if (tokenManager.userEmail == null || tokenManager.savedPassword == null) return false
         val bm = BiometricManager.from(context)
         return bm.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
     }
 
-    fun loginWithBiometric() {
-        if (context !is FragmentActivity) return
-        val prompt = BiometricPrompt(context, ContextCompat.getMainExecutor(context),
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    _state.value = _state.value.copy(isLoggedIn = true, success = "Biometric OK")
+    fun onBiometricSuccess() {
+        val email = tokenManager.userEmail ?: return
+        val pwd = tokenManager.savedPassword ?: return
+        _state.value = _state.value.copy(email = email, password = pwd)
+        login()
+    }
+
+    fun signInWithGoogle(context: Context) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true, error = null)
+            try {
+                val credentialManager = androidx.credentials.CredentialManager.create(context)
+                val googleIdOption = com.google.android.libraries.identity.googleid.GetGoogleIdOption.Builder()
+                    .setFilterByAuthorizedAccounts(false)
+                    .setServerClientId("YOUR_WEB_CLIENT_ID") // Requires a valid Web Client ID in production
+                    .build()
+                val request = androidx.credentials.GetCredentialRequest.Builder()
+                    .addCredentialOption(googleIdOption)
+                    .build()
+                val result = credentialManager.getCredential(context, request)
+                val credential = result.credential
+                if (credential is androidx.credentials.CustomCredential && credential.type == com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                    val googleIdTokenCredential = com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.createFrom(credential.data)
+                    val email = googleIdTokenCredential.id
+                    val displayName = googleIdTokenCredential.displayName ?: ""
+                    
+                    val res = api.googleLogin(GoogleLoginBody(email, displayName))
+                    if (res.status == true && res.data?.token != null) {
+                        tokenManager.accessToken = res.data.token
+                        tokenManager.userEmail = email
+                        res.data.user?.let { tokenManager.userName = it.username; tokenManager.userCoins = it.coin_balance ?: 0.0 }
+                        _state.value = _state.value.copy(isLoading = false, isLoggedIn = true, success = "Welcome!")
+                    } else {
+                        _state.value = _state.value.copy(isLoading = false, error = res.message ?: "Google Login failed")
+                    }
+                } else {
+                    _state.value = _state.value.copy(isLoading = false, error = "Invalid credential type")
                 }
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    _state.value = _state.value.copy(error = errString.toString())
-                }
-            })
-        prompt.authenticate(BiometricPrompt.PromptInfo.Builder()
-            .setTitle("SOLOREEL Login").setSubtitle("Use your fingerprint")
-            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-            .build())
+            } catch (e: Exception) {
+                // If they don't have a Client ID, it'll fail here gracefully
+                _state.value = _state.value.copy(isLoading = false, error = "Google Sign In requires Configuration.")
+            }
+        }
     }
 }
