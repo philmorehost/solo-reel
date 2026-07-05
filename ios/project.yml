@@ -16,7 +16,6 @@ targets:
     platform: iOS
     sources:
       - path: SOLOREEL
-      - path: SOLOREEL/Assets.xcassets
     settings:
       base:
         INFOPLIST_FILE: SOLOREEL/Info.plist
