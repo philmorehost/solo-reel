@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($post['title']) ?> - SOLOREEL</title>
     <meta name="description" content="<?= htmlspecialchars($post['excerpt']) ?>">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="/assets/css/responsive.css">
     <style>
         body { background-color: #000; color: #fff; }
         .blog-content p { margin-bottom: 1.5rem; color: #d1d5db; line-height: 1.8; }
