@@ -43,5 +43,7 @@
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 	</dict>
+	<key>NSFaceIDUsageDescription</key>
+	<string>SOLOREEL uses Face ID to securely log you in.</string>
 </dict>
 </plist>

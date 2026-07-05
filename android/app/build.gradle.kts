@@ -73,4 +73,13 @@ dependencies {
 
     // Coil (Image Loading)
     implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // Biometric (Fingerprint / Face ID)
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
+
+    // Navigation Compose
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+
+    // Material Icons Extended
+    implementation("androidx.compose.material:material-icons-extended:1.6.0")
 }

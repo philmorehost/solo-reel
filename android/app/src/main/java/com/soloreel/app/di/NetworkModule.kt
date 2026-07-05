@@ -1,6 +1,8 @@
 package com.soloreel.app.di
 
+import com.soloreel.app.data.api.AuthInterceptor
 import com.soloreel.app.data.api.SOLOREELApi
+import com.soloreel.app.data.api.TokenManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -9,25 +11,26 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    @Provides @Singleton
+    fun provideTokenManager() = TokenManager::class.java
 
-    @Provides
-    @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
-        val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
+    @Provides @Singleton
+    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         return OkHttpClient.Builder()
-            .addInterceptor(logging)
+            .addInterceptor(authInterceptor)
+            .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
             .build()
     }
 
-    @Provides
-    @Singleton
+    @Provides @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
             .baseUrl("https://soloshort.pmhserver.name.ng/")
@@ -36,9 +39,6 @@ object NetworkModule {
             .build()
     }
 
-    @Provides
-    @Singleton
-    fun provideSOLOREELApi(retrofit: Retrofit): SOLOREELApi {
-        return retrofit.create(SOLOREELApi::class.java)
-    }
+    @Provides @Singleton
+    fun provideApi(retrofit: Retrofit): SOLOREELApi = retrofit.create(SOLOREELApi::class.java)
 }
