@@ -18,3 +18,8 @@ ios/build/
 ios/DerivedData/
 ios/.build/
 android_ls.txt
+
+# Build artifacts
+soloreel-release-apk*
+*.apk
+*.aab
