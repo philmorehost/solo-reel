@@ -62,7 +62,8 @@ class CoinController {
                     [$displayName, $lastName] = explode(' ', $name, 2);
                 }
 
-                $debugLog[] = 'Payhub keys found. Calling VBA API for email=' . $email;
+                $keyPrefix = substr($secretKey, 0, 8);
+                $debugLog[] = "Payhub keys found. Using Secret Key prefix: {$keyPrefix}*** for email=" . $email;
 
                 $payload = json_encode([
                     'email' => $email,
