@@ -2,7 +2,7 @@ CREATE TABLE `payment_settings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `payhub_public_key` varchar(255) DEFAULT NULL,
   `payhub_secret_key` varchar(255) DEFAULT NULL,
-  `payhub_base_url` varchar(255) DEFAULT 'https://payhub.pmhserver.name.ng',
+  `payhub_base_url` varchar(255) DEFAULT 'https://merchant.payhub.com.ng',
   `mode` enum('sandbox','live') DEFAULT 'sandbox',
   `is_enabled` tinyint(1) DEFAULT 1,
   PRIMARY KEY (`id`)
