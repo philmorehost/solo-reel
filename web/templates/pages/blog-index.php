@@ -11,21 +11,9 @@
 </head>
 <body class="antialiased font-sans">
 
-    <nav class="fixed w-full z-50 bg-black/80 backdrop-blur border-b border-gray-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center">
-                    <a href="/"><?= \App\Helpers\Site::getLogoHtml() ?></a>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <a href="/search" class="text-gray-300 hover:text-white">Search</a>
-                    <a href="/blog" class="text-white font-bold">Blog</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <?php require __DIR__ . '/../partials/header.php'; ?>
 
-    <main class="pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 min-h-screen">
+    <main class="pt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 min-h-screen">
         <h1 class="text-4xl font-bold mb-12 border-b border-gray-800 pb-4">Latest News & Updates</h1>
 
         <?php if(empty($posts)): ?>

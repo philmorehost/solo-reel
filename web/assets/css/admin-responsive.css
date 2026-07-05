@@ -1,21 +1,67 @@
-/* Admin Mobile Responsiveness */
+/* Admin Mobile Responsiveness - Comprehensive */
 @media (max-width: 767px) {
-  .admin-sidebar-overlay {
-    position: fixed; inset: 0; z-index: 50;
-    background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
-  }
-  .admin-sidebar-panel {
-    position: fixed; top: 0; left: 0; bottom: 0; z-index: 51;
-    width: 280px; transform: translateX(-100%);
-    transition: transform 0.3s ease;
-  }
+  /* Sidebar overlay */
+  .admin-sidebar-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+  .admin-sidebar-panel { position: fixed; top: 0; left: 0; bottom: 0; z-index: 51; width: 280px; transform: translateX(-100%); transition: transform 0.3s ease; }
   .admin-sidebar-panel.open { transform: translateX(0); }
-  .admin-main { margin-left: 0 !important; }
-  .admin-stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Content area */
+  .admin-main, main.flex-1 { margin-left: 0 !important; }
+
+  /* Make ALL tables scrollable */
+  .overflow-hidden > table, .shadow > table, div:has(> table) { overflow-x: auto; display: block; -webkit-overflow-scrolling: touch; }
+  table { min-width: 500px; }
+
+  /* Fix card grids */
+  .grid { gap: 0.5rem !important; }
+  .grid-cols-1 > *, .grid-cols-2 > *, .grid-cols-3 > *, .grid-cols-4 > * { min-width: 0 !important; }
+
+  /* Stack flex layouts */
+  .flex.justify-between, .flex.items-center.justify-between { flex-wrap: wrap; gap: 0.5rem; }
+  .flex.gap-4, .flex.gap-3, .flex.gap-2 { gap: 0.25rem; }
+  .flex.gap-4 > *, .flex.gap-3 > *, .flex.gap-2 > * { min-width: 0; }
+
+  /* Prevent overflow */
+  body { overflow-x: hidden; }
+  .space-x-3 > *, .space-x-4 > *, .space-x-2 > * { margin-right: 0.25rem !important; }
+
+  /* Responsive spacing */
+  .p-4, .p-5, .p-6, .px-4, .px-5, .px-6, .py-4, .py-5, .py-6 { padding: 0.75rem !important; }
+  .p-3 { padding: 0.5rem !important; }
+  .gap-4, .gap-5, .gap-6 { gap: 0.5rem !important; }
+
+  /* Smaller text */
+  .text-sm, .text-xs, body { font-size: 13px !important; }
+  .text-lg { font-size: 0.95rem !important; }
+  .text-xl { font-size: 1.1rem !important; }
+  .text-2xl { font-size: 1.25rem !important; }
+  .text-3xl { font-size: 1.5rem !important; }
+  .form-title { font-size: 1rem !important; }
+
+  /* Form inputs should be full-width and tap-friendly */
+  input, select, textarea, button, a { min-height: 40px; font-size: 16px !important; }
+
+  /* Wrap text that should nowrap on desktop */
+  .whitespace-nowrap { white-space: normal !important; }
+
+  /* Stack stat cards 2 per row */
+  .grid-cols-1.md\:grid-cols-2, .grid-cols-1.sm\:grid-cols-2 { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Fix admin stat cards on dashboard */
+  .grid-cols-1.md\:grid-cols-2.xl\:grid-cols-4 { grid-template-columns: repeat(2, 1fr) !important; }
+  .grid-cols-1.lg\:grid-cols-2 { grid-template-columns: 1fr !important; }
+
+  /* Stack buttons on mobile */
+  .space-x-3, .space-x-4 { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .space-x-3 > a, .space-x-3 > button, .space-x-4 > a, .space-x-4 > button { margin-right: 0 !important; }
+
+  /* Labels smaller */
+  label { font-size: 0.8rem !important; }
+
+  /* Hide secondary elements */
   .hide-mobile-admin { display: none !important; }
-  .admin-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .admin-card { padding: 0.75rem !important; }
 }
-/* Mobile hamburger visible only on small screens */
+
+/* Hamburger button */
 .admin-hamburger { display: none; }
 @media (max-width: 767px) { .admin-hamburger { display: inline-flex; } }

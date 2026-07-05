@@ -4,30 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coin Shop - SOLOREEL</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="/assets/css/responsive.css">
 </head>
 <body class="bg-black text-white antialiased font-sans">
 
-    <nav class="w-full bg-gray-900 border-b border-gray-800">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <a href="/"><?= \App\Helpers\Site::getLogoHtml() ?></a>
-            <div class="flex items-center gap-4">
-                <?php if (isset($walletBalance) && $walletBalance > 0): ?>
-                <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-500/10 to-emerald-600/10 border border-emerald-500/20 text-emerald-400 text-sm">
-                    <span>&#8358;<?= number_format((float)$walletBalance, 2) ?></span>
-                    <span class="text-emerald-400/50 text-xs">wallet</span>
-                </div>
-                <?php endif; ?>
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
-                    <span class="font-bold"><?= number_format((int)($coinsBalance ?? 0)) ?> Coins</span>
-                </div>
-                <a href="/profile" class="text-gray-400 hover:text-white text-sm">Dashboard</a>
-            </div>
-        </div>
-    </nav>
+    <?php require __DIR__ . '/../partials/header.php'; ?>
 
-    <main class="max-w-4xl mx-auto px-4 py-12">
+    <main class="max-w-4xl mx-auto px-4 py-8 pt-20">
         <h1 class="text-3xl font-bold mb-8 text-center">Top Up Your Coins</h1>
 
         <?php if ($walletBalance > 0): ?>

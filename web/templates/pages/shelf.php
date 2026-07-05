@@ -13,16 +13,7 @@
 </head>
 <body class="antialiased font-sans">
 
-    <!-- Navbar -->
-    <nav class="fixed w-full z-50 bg-black/80 backdrop-blur border-b border-gray-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center">
-                    <a href="/"><?= \App\Helpers\Site::getLogoHtml() ?></a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <?php require __DIR__ . '/../partials/header.php'; ?>
 
     <main class="pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="flex items-center mb-8">
