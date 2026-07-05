@@ -29,6 +29,8 @@ $router->post('/favorites/{seriesId}', 'UserController@addFavorite');
 $router->delete('/favorites/{seriesId}', 'UserController@removeFavorite');
 
 $router->get('/coin-shop', 'CoinController@shop');
+require_once __DIR__ . '/../controllers/CoinController.php';
+require_once __DIR__ . '/../controllers/PaymentController.php';
 $router->post('/unlock/{episodeId}', 'CoinController@unlock');
 $router->post('/coins/purchase', 'CoinController@purchase');
 $router->get('/payment/verify', 'PaymentController@verify');

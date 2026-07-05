@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Series Management - SOLOREEL Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel='stylesheet' href='/assets/css/admin-responsive.css'>
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-900">
     <div class="flex h-screen overflow-hidden">
@@ -12,6 +14,7 @@
 
         <main class="flex-1 flex flex-col overflow-hidden">
             <header class="h-16 bg-white shadow flex items-center px-6 justify-between">
+            <button onclick="toggleAdminSidebar()" class="admin-hamburger mr-3 p-2 text-gray-600 hover:text-gray-900"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg></button>
                 <h1 class="text-2xl font-semibold text-gray-800">Series Management</h1>
                 <a href="/admin/series/create" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow">Add New Series</a>
             </header>
@@ -21,6 +24,7 @@
                     <div class="bg-green-100 text-green-700 p-2 rounded mb-4 text-sm"><?= htmlspecialchars($msg) ?></div>
                 <?php endif; ?>
                 <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="table-responsive">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -54,6 +58,7 @@
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </main>

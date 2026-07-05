@@ -99,12 +99,13 @@ class Router {
             header('Content-Type: application/json');
             echo json_encode(['error' => 'Not Found']);
         } else {
-            // Check if 404 template exists
+            $debugUri = $uri;
+            $debugMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
             $notFoundTemplate = __DIR__ . '/../../templates/pages/404.php';
             if (file_exists($notFoundTemplate)) {
                 require $notFoundTemplate;
             } else {
-                echo "404 Not Found";
+                echo "404 Not Found - " . $debugMethod . " " . $debugUri;
             }
         }
     }

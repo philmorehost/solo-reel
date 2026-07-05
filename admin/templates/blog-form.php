@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Write Blog Post - SOLOREEL Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel='stylesheet' href='/assets/css/admin-responsive.css'>
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-900">
     <div class="flex h-screen overflow-hidden">
@@ -11,6 +13,7 @@
 
         <main class="flex-1 flex flex-col overflow-hidden">
             <header class="h-16 bg-white shadow flex items-center px-6 justify-between">
+            <button onclick="toggleAdminSidebar()" class="admin-hamburger mr-3 p-2 text-gray-600 hover:text-gray-900"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg></button>
                 <h1 class="text-2xl font-semibold text-gray-800">Write New Post</h1>
                 <a href="/admin/blog" class="text-gray-500 hover:text-gray-700">Back</a>
             </header>
