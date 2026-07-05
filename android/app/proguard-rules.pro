@@ -7,8 +7,9 @@
 -dontwarn retrofit2.**
 -keep class retrofit2.** { *; }
 
-# Gson
--keep class com.soloreel.app.data.model.** { *; }
+# Keep all data and model classes for Retrofit/Gson deserialization
+-keep class com.soloreel.app.data.** { *; }
+-keepclassmembers class com.soloreel.app.data.** { *; }
 
 # Kotlin Coroutines
 -dontwarn kotlinx.coroutines.**
