@@ -75,31 +75,35 @@ class PaymentController {
 
             $result = json_decode($response, true);
 
-            if ($result && isset($result['status']) && $result['status'] === true && $result['data']['status'] === 'success') {
-                $stmt = $db->prepare("UPDATE payment_transactions SET status = 'successful' WHERE id = ?");
-                $stmt->execute([$txn['id']]);
+            if ($result && isset($result['status']) && $result['status'] === true) {
+                $dataStatus = $result['data']['status'] ?? '';
+                if ($dataStatus === 'success' || $dataStatus === 'successful') {
+                    $stmt = $db->prepare("UPDATE payment_transactions SET status = 'successful' WHERE id = ?");
+                    $stmt->execute([$txn['id']]);
 
-                // Credit wallet balance (user can then use wallet to buy coins)
-                $stmt = $db->prepare("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id = ?");
-                $stmt->execute([$txn['amount'], $txn['user_id']]);
+                    // Credit wallet balance (user can then use wallet to buy coins)
+                    $stmt = $db->prepare("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id = ?");
+                    $stmt->execute([$txn['amount'], $txn['user_id']]);
 
-                $stmt = $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description, reference_id) VALUES (?, 'wallet_topup', ?, ?, ?)");
-                $stmt->execute([$txn['user_id'], $txn['amount'], 'Card payment - Wallet topped up', $ref]);
+                    $stmt = $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description, reference_id) VALUES (?, 'wallet_topup', ?, ?, ?)");
+                    $stmt->execute([$txn['user_id'], $txn['amount'], 'Card payment - Wallet topped up', $ref]);
 
-                $db->commit();
+                    $db->commit();
 
-                $stmt = $db->prepare("SELECT coin_balance, wallet_balance FROM users WHERE id = ?");
-                $stmt->execute([$txn['user_id']]);
-                $u = $stmt->fetch();
-                Session::set('user_coin_balance', (float)$u['coin_balance']);
+                    $stmt = $db->prepare("SELECT coin_balance, wallet_balance FROM users WHERE id = ?");
+                    $stmt->execute([$txn['user_id']]);
+                    $u = $stmt->fetch();
+                    Session::set('user_coin_balance', (float)$u['coin_balance']);
 
-                Session::setFlash('success', 'Payment successful! &#8358;' . number_format((float)$txn['amount'], 2) . ' added to wallet. Use your wallet to buy coins.');
-                header("Location: /coin-shop");
-                die();
+                    Session::setFlash('success', 'Payment successful! &#8358;' . number_format((float)$txn['amount'], 2) . ' added to wallet. Use your wallet to buy coins.');
+                    header("Location: /coin-shop");
+                    die();
+                }
             }
 
             $db->rollBack();
-            Session::setFlash('error', 'Transaction was not successful.');
+            $debugResponse = is_string($response) ? substr($response, 0, 300) : 'Invalid Response';
+            Session::setFlash('error', 'Transaction was not successful. Status: ' . ($result['data']['status'] ?? 'unknown') . ' | Debug: ' . htmlspecialchars($debugResponse));
             header("Location: /coin-shop");
             die();
         } catch (\Exception $e) {

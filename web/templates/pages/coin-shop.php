@@ -32,26 +32,9 @@
             </div>
         <?php endif; ?>
 
-        <!-- Virtual Account Info -->
-        <div class="bg-gray-800 rounded-lg p-6 mb-10 text-center border border-gray-700 shadow-xl">
-            <h2 class="text-lg text-gray-300 mb-2">Your Dedicated Virtual Account</h2>
-            <p class="text-sm text-gray-400 mb-4"><?= htmlspecialchars($instruction) ?></p>
-            <?php if($virtualAccount && $virtualAccount['account_number'] !== 'Setup Required'): ?>
-                <div class="bg-black border border-gray-700 p-4 sm:p-6 rounded-lg inline-block mx-auto w-full max-w-[340px] sm:max-w-md">
-                    <p class="text-gray-500 text-xs sm:text-sm mb-1 uppercase tracking-wider">Account Number</p>
-                    <p class="text-2xl sm:text-4xl font-mono tracking-wider sm:tracking-widest text-white mb-2"><?= htmlspecialchars($virtualAccount['account_number']) ?></p>
-                    <p class="text-gray-400 font-bold text-sm sm:text-base"><?= htmlspecialchars($virtualAccount['bank_name']) ?></p>
-                    <p class="text-[10px] sm:text-xs text-gray-600 mt-4">Ref: <?= htmlspecialchars($virtualAccount['reference']) ?></p>
-                </div>
-            <?php else: ?>
-                <div class="bg-red-900/50 text-red-200 border border-red-800 p-6 rounded-lg inline-block mx-auto">
-                    <p class="font-bold mb-2">Account setup pending or Payhub keys not configured.</p>
-                    <p class="text-sm">Please contact support.</p>
-                </div>
-            <?php endif; ?>
-        </div>
 
-        <h2 class="text-2xl font-bold mb-6 text-center">Or Buy Instantly via Card</h2>
+
+        <h2 class="text-2xl font-bold mb-6 text-center">Buy Coin Packages</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <?php foreach($packages as $pkg): ?>
                 <div class="bg-gray-900 border border-gray-800 rounded-lg p-6 text-center hover:scale-105 transition cursor-pointer relative overflow-hidden flex flex-col h-full shadow-lg">
