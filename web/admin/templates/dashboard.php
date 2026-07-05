@@ -6,6 +6,7 @@
     <title>Dashboard - SOLOREEL Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/assets/css/cinematic.css">
+    <link rel="stylesheet" href="/assets/css/admin-responsive.css">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
 </head>
 <body class="bg-black text-white antialiased font-sans">
@@ -14,6 +15,9 @@
 
         <main class="flex-1 flex flex-col overflow-hidden">
             <header class="h-16 bg-zinc-950 border-b border-white/[0.06] flex items-center px-6">
+                <button onclick="toggleAdminSidebar()" class="admin-hamburger mr-3 p-2 text-white/40 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
                 <h1 class="text-2xl font-bold">Dashboard</h1>
                 <span class="ml-auto text-sm text-white/40"><?= date('l, F j, Y') ?></span>
             </header>

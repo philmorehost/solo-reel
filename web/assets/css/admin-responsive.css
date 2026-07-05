@@ -1,0 +1,21 @@
+/* Admin Mobile Responsiveness */
+@media (max-width: 767px) {
+  .admin-sidebar-overlay {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  }
+  .admin-sidebar-panel {
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 51;
+    width: 280px; transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  .admin-sidebar-panel.open { transform: translateX(0); }
+  .admin-main { margin-left: 0 !important; }
+  .admin-stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .hide-mobile-admin { display: none !important; }
+  .admin-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .admin-card { padding: 0.75rem !important; }
+}
+/* Mobile hamburger visible only on small screens */
+.admin-hamburger { display: none; }
+@media (max-width: 767px) { .admin-hamburger { display: inline-flex; } }
