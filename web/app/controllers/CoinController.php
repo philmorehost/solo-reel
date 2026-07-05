@@ -9,6 +9,7 @@ use App\Core\Security;
 class CoinController {
     public function shop() {
         \App\Core\Auth::requireLogin();
+        $userId = Session::get('user_id');
 
         $db = Database::getInstance();
         $packages = $db->query("SELECT * FROM coin_packages WHERE is_active = 1 ORDER BY sort_order ASC")->fetchAll();
@@ -33,7 +34,6 @@ class CoinController {
         }
         Session::set('user_coin_balance', $coinsBalance);
 
-        $userId = Session::get('user_id');
         $stmt = $db->prepare("SELECT * FROM virtual_bank_accounts WHERE user_id = ?");
         $stmt->execute([$userId]);
         $virtualAccount = $stmt->fetch();
