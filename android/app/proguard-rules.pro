@@ -23,3 +23,10 @@
 -dontwarn dagger.hilt.**
 -keep class dagger.hilt.** { *; }
 -keep class javax.inject.** { *; }
+
+# Jetpack Compose
+-keep class androidx.compose.** { *; }
+-dontwarn androidx.compose.**
+-keepclassmembers class * {
+    @androidx.compose.runtime.Composable <methods>;
+}
