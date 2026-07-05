@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management - SOLOREEL Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel='stylesheet' href='/assets/css/admin-responsive.css'>
@@ -21,6 +22,7 @@
 
             <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
                 <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="table-responsive">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -60,6 +62,7 @@
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </main>

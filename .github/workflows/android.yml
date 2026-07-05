@@ -31,8 +31,8 @@ jobs:
           unzip -q /tmp/gradle-8.7.zip -d /tmp/gradle
           echo "Gradle 8.7 installed"
 
-      - name: Generate Gradle Wrapper
-        run: /tmp/gradle/gradle-8.7/bin/gradle wrapper --gradle-version 8.7
+      - name: Make gradlew executable
+        run: chmod +x gradlew
 
       - name: Build Release APK
         run: ./gradlew assembleRelease --no-daemon

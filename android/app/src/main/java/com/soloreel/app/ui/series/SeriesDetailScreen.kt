@@ -104,6 +104,7 @@ fun SeriesDetailScreen(slug: String, navController: NavHostController, vm: Serie
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EpisodeRow(episode: Episode, onClick: () -> Unit) {
     Card(

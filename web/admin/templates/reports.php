@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports & Analytics - SOLOREEL Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel='stylesheet' href='/assets/css/admin-responsive.css'>
@@ -20,6 +21,7 @@
 
                 <h2 class="text-xl font-bold mb-4">Top Episodes by Traffic</h2>
                 <div class="bg-white rounded-lg shadow overflow-hidden mb-8">
+                    <div class="table-responsive">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -40,10 +42,12 @@
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
 
                 <h2 class="text-xl font-bold mb-4">Recent Coin Transactions</h2>
                 <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="table-responsive">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -70,6 +74,7 @@
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
 
             </div>

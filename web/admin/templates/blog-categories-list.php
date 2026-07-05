@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blog Categories - SOLOREEL Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel='stylesheet' href='/assets/css/admin-responsive.css'>
@@ -32,6 +33,7 @@
                 </div>
 
                 <div class="md:col-span-2 bg-white rounded-lg shadow overflow-hidden">
+                    <div class="table-responsive">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -48,6 +50,7 @@
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </main>
