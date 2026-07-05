@@ -2,7 +2,6 @@ package com.soloreel.app.di
 
 import com.soloreel.app.data.api.AuthInterceptor
 import com.soloreel.app.data.api.SOLOREELApi
-import com.soloreel.app.data.api.TokenManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,9 +16,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    @Provides @Singleton
-    fun provideTokenManager() = TokenManager::class.java
-
     @Provides @Singleton
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         return OkHttpClient.Builder()

@@ -2,7 +2,7 @@ import SwiftUI
 import LocalAuthentication
 
 struct AuthView: View {
-    @State private var email = ""; @State private var password = ""
+    @State private var email = ""; @State private var password = ""; @State private var username = ""
     @State private var isLoading = false; @State private var error: String?
     @State private var isRegister = false
 
@@ -17,7 +17,7 @@ struct AuthView: View {
 
                 VStack(spacing: 12) {
                     if isRegister {
-                        TextField("Username", text: .constant("")).textFieldStyle(.plain).padding().background(Color(white: 0.1)).cornerRadius(12).foregroundColor(.white)
+                        TextField("Username", text: $username).textFieldStyle(.plain).padding().background(Color(white: 0.1)).cornerRadius(12).foregroundColor(.white).autocapitalization(.none)
                     }
                     TextField("Email", text: $email).textFieldStyle(.plain).padding().background(Color(white: 0.1)).cornerRadius(12).foregroundColor(.white).keyboardType(.emailAddress).autocapitalization(.none)
                     SecureField("Password", text: $password).textFieldStyle(.plain).padding().background(Color(white: 0.1)).cornerRadius(12).foregroundColor(.white)
@@ -47,12 +47,16 @@ struct AuthView: View {
         isLoading = true; error = nil
         Task {
             do {
-                let r = isRegister ? try await APIClient.shared.register(username: "", email: email, password: password)
-                    : try await APIClient.shared.login(email: email, password: password)
-                await MainActor.run {
-                    TokenManager.shared.token = r.token; TokenManager.shared.email = email
-                    TokenManager.shared.username = r.user?.username
-                    isLoading = false
+                if isRegister {
+                    _ = try await APIClient.shared.register(username: username, email: email, password: password)
+                } else {
+                    let r = try await APIClient.shared.login(email: email, password: password)
+                    await MainActor.run {
+                        TokenManager.shared.token = r.token
+                        TokenManager.shared.email = email
+                        TokenManager.shared.username = r.user?.username
+                        isLoading = false
+                    }
                 }
             } catch { await MainActor.run { isLoading = false; self.error = error.localizedDescription } }
         }
