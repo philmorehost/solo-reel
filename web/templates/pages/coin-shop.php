@@ -37,11 +37,11 @@
             <h2 class="text-lg text-gray-300 mb-2">Your Dedicated Virtual Account</h2>
             <p class="text-sm text-gray-400 mb-4"><?= htmlspecialchars($instruction) ?></p>
             <?php if($virtualAccount && $virtualAccount['account_number'] !== 'Setup Required'): ?>
-                <div class="bg-black border border-gray-700 p-6 rounded-lg inline-block mx-auto min-w-[300px]">
-                    <p class="text-gray-500 text-sm mb-1 uppercase tracking-wider">Account Number</p>
-                    <p class="text-4xl font-mono tracking-widest text-white mb-2"><?= htmlspecialchars($virtualAccount['account_number']) ?></p>
-                    <p class="text-gray-400 font-bold"><?= htmlspecialchars($virtualAccount['bank_name']) ?></p>
-                    <p class="text-xs text-gray-600 mt-4">Ref: <?= htmlspecialchars($virtualAccount['reference']) ?></p>
+                <div class="bg-black border border-gray-700 p-4 sm:p-6 rounded-lg inline-block mx-auto w-full max-w-[340px] sm:max-w-md">
+                    <p class="text-gray-500 text-xs sm:text-sm mb-1 uppercase tracking-wider">Account Number</p>
+                    <p class="text-2xl sm:text-4xl font-mono tracking-wider sm:tracking-widest text-white mb-2"><?= htmlspecialchars($virtualAccount['account_number']) ?></p>
+                    <p class="text-gray-400 font-bold text-sm sm:text-base"><?= htmlspecialchars($virtualAccount['bank_name']) ?></p>
+                    <p class="text-[10px] sm:text-xs text-gray-600 mt-4">Ref: <?= htmlspecialchars($virtualAccount['reference']) ?></p>
                 </div>
             <?php else: ?>
                 <div class="bg-red-900/50 text-red-200 border border-red-800 p-6 rounded-lg inline-block mx-auto">
