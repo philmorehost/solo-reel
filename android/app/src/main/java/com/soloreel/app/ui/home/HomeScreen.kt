@@ -25,16 +25,29 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.compose.ui.platform.LocalContext
 import coil.compose.rememberAsyncImagePainter
 import com.soloreel.app.data.model.Banner
 import com.soloreel.app.data.model.Series
 import com.soloreel.app.ui.navigation.Screen
+import com.soloreel.app.ui.notifications.NotificationBell
+import com.soloreel.app.ui.notifications.NotificationsViewModel
 
 @Composable
-fun HomeScreen(navController: NavHostController, viewModel: HomeViewModel = hiltViewModel()) {
+fun HomeScreen(
+    navController: NavHostController,
+    viewModel: HomeViewModel = hiltViewModel(),
+    notificationsViewModel: NotificationsViewModel = hiltViewModel()
+) {
     val state by viewModel.state.collectAsState()
-    LaunchedEffect(Unit) { viewModel.load() }
+    val notifState by notificationsViewModel.state.collectAsState()
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        viewModel.load()
+        notificationsViewModel.load(context)
+    }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A0A)),
         contentPadding = PaddingValues(bottom = 8.dp)
@@ -106,6 +119,14 @@ fun HomeScreen(navController: NavHostController, viewModel: HomeViewModel = hilt
         state.error?.let { err ->
             item { Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { Text(err, color = Color.Red) } }
         }
+    }
+
+    // Notification bell overlay (top-right)
+    Box(modifier = Modifier.align(Alignment.TopEnd).padding(top = 16.dp, end = 16.dp)) {
+        NotificationBell(unreadCount = notifState.unreadCount) {
+            navController.navigate(Screen.Notifications.route)
+        }
+    }
     }
 }
 

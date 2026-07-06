@@ -40,6 +40,11 @@ fun AuthScreen(
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
 
+    // Navigate into the app as soon as a login (email, biometric, or Google) succeeds.
+    LaunchedEffect(state.isLoggedIn) {
+        if (state.isLoggedIn) onLoginSuccess()
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()

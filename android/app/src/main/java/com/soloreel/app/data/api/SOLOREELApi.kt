@@ -5,11 +5,33 @@ import retrofit2.http.*
 import com.google.gson.JsonElement
 
 data class ApiResponse<T>(val status: Boolean?, val data: T?, val message: String?, val error: String?)
+
+/** Extracts the server's `error`/`message` field from an HTTP error body instead of "HTTP 401 ...". */
+fun Throwable.apiMessage(fallback: String): String {
+    if (this is retrofit2.HttpException) {
+        try {
+            val body = response()?.errorBody()?.string()
+            if (!body.isNullOrBlank()) {
+                val json = com.google.gson.Gson().fromJson(body, com.google.gson.JsonObject::class.java)
+                val errorEl = json?.get("error")
+                val messageEl = json?.get("message")
+                val msg = when {
+                    errorEl != null && errorEl.isJsonPrimitive -> errorEl.asString
+                    messageEl != null && messageEl.isJsonPrimitive -> messageEl.asString
+                    else -> null
+                }
+                if (!msg.isNullOrBlank()) return msg
+            }
+        } catch (_: Exception) { }
+    }
+    return message ?: fallback
+}
 data class LoginBody(val email: String, val password: String)
 data class RegisterBody(val username: String, val email: String, val password: String, val display_name: String)
 data class GoogleLoginBody(val email: String, val displayName: String)
 data class AuthResult(val user: User?, val token: String?)
 data class GuestInitBody(val guest_id: String)
+data class GuestPurchaseBody(val package_id: Int, val guest_id: String, val email: String? = null)
 
 interface SOLOREELApi {
     @GET("api/v1/banners")
@@ -69,6 +91,9 @@ interface SOLOREELApi {
     @POST("api/v1/coins/purchase")
     suspend fun purchaseCoins(@Body body: Map<String, Int>): ApiResponse<PaymentInit>
 
+    @POST("api/v1/coins/guest-purchase")
+    suspend fun guestPurchaseCoins(@Body body: GuestPurchaseBody): ApiResponse<PaymentInit>
+
     @GET("api/v1/payment/verify")
     suspend fun verifyPayment(@Query("reference") reference: String): ApiResponse<JsonElement>
 
@@ -82,4 +107,11 @@ interface SOLOREELApi {
     // Series requests
     @POST("api/v1/series-requests")
     suspend fun createSeriesRequest(@Body body: SeriesRequest): ApiResponse<JsonElement>
+
+    // In-app notifications
+    @GET("api/v1/notifications")
+    suspend fun getNotifications(@Query("guest_id") guestId: String? = null): ApiResponse<List<AppNotification>>
+
+    @POST("api/v1/notifications/{id}/read")
+    suspend fun markNotificationRead(@Path("id") id: Int, @Body body: Map<String, String> = emptyMap()): ApiResponse<JsonElement>
 }

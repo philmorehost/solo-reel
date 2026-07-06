@@ -49,10 +49,10 @@ class AuthViewModel @Inject constructor(
                     res.data.user?.let { tokenManager.userName = it.username; tokenManager.userCoins = it.coin_balance ?: 0.0 }
                     _state.value = _state.value.copy(isLoading = false, isLoggedIn = true, success = "Welcome!")
                 } else {
-                    _state.value = _state.value.copy(isLoading = false, error = res.message ?: "Login failed")
+                    _state.value = _state.value.copy(isLoading = false, error = res.error ?: res.message ?: "Login failed")
                 }
             } catch (e: Exception) {
-                _state.value = _state.value.copy(isLoading = false, error = e.message ?: "Connection error")
+                _state.value = _state.value.copy(isLoading = false, error = e.apiMessage("Connection error"))
             }
         }
     }
@@ -71,13 +71,20 @@ class AuthViewModel @Inject constructor(
     }
 
     fun signInWithGoogle(context: Context) {
+        val webClientId = com.soloreel.app.BuildConfig.GOOGLE_WEB_CLIENT_ID
+        if (webClientId.isBlank() || webClientId == "YOUR_WEB_CLIENT_ID") {
+            _state.value = _state.value.copy(
+                error = "Google Sign-In is not configured yet. Add GOOGLE_WEB_CLIENT_ID (see GOOGLE_SIGNIN_SETUP.md)."
+            )
+            return
+        }
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
             try {
                 val credentialManager = androidx.credentials.CredentialManager.create(context)
                 val googleIdOption = com.google.android.libraries.identity.googleid.GetGoogleIdOption.Builder()
                     .setFilterByAuthorizedAccounts(false)
-                    .setServerClientId("YOUR_WEB_CLIENT_ID") // Requires a valid Web Client ID in production
+                    .setServerClientId(webClientId)
                     .build()
                 val request = androidx.credentials.GetCredentialRequest.Builder()
                     .addCredentialOption(googleIdOption)
@@ -96,14 +103,18 @@ class AuthViewModel @Inject constructor(
                         res.data.user?.let { tokenManager.userName = it.username; tokenManager.userCoins = it.coin_balance ?: 0.0 }
                         _state.value = _state.value.copy(isLoading = false, isLoggedIn = true, success = "Welcome!")
                     } else {
-                        _state.value = _state.value.copy(isLoading = false, error = res.message ?: "Google Login failed")
+                        _state.value = _state.value.copy(isLoading = false, error = res.error ?: res.message ?: "Google Login failed")
                     }
                 } else {
                     _state.value = _state.value.copy(isLoading = false, error = "Invalid credential type")
                 }
+            } catch (e: androidx.credentials.exceptions.GetCredentialCancellationException) {
+                _state.value = _state.value.copy(isLoading = false, error = null) // user dismissed the sheet
             } catch (e: Exception) {
-                // If they don't have a Client ID, it'll fail here gracefully
-                _state.value = _state.value.copy(isLoading = false, error = "Google Sign In requires Configuration.")
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = e.apiMessage("Google Sign-In failed. Check that the Web Client ID and app signature are configured (GOOGLE_SIGNIN_SETUP.md).")
+                )
             }
         }
     }

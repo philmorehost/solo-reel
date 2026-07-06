@@ -35,6 +35,10 @@ $router->post('/unlock/{episodeId}', 'CoinController@unlock');
 $router->post('/coins/purchase', 'CoinController@purchase');
 $router->get('/payment/verify', 'PaymentController@verify');
 $router->post('/payment/webhook', 'PaymentController@webhook');
+// Hosted checkout for the mobile apps (opened inside the in-app WebView)
+$router->get('/pay/checkout', 'PaymentController@mobileCheckout');
+$router->get('/pay/verify', 'PaymentController@mobileVerify');
+$router->get('/pay/closed', 'PaymentController@mobileClosed');
 
 // Admin Routes
 $router->get('/admin', 'DashboardController@index');
@@ -89,6 +93,8 @@ $router->get('/admin/shelves/edit/{id}', 'ShelfController@edit');
 $router->post('/admin/shelves/edit/{id}', 'ShelfController@edit');
 $router->get('/admin/shelves/delete/{id}', 'ShelfController@delete');
 $router->get('/admin/reports', 'ReportController@index');
+$router->get('/admin/series-requests', 'SeriesRequestController@index');
+$router->post('/admin/series-requests/mark-available/{id}', 'SeriesRequestController@markAvailable');
 $router->get('/admin/settings', 'SettingsController@index');
 $router->post('/admin/settings', 'SettingsController@index');
 $router->get('/admin/settings/payments', 'PaymentSettingsController@index');
@@ -104,6 +110,7 @@ $router->get('/api/v1/banners', 'Api\BannerController@index');
 $router->get('/api/v1/series/{slug}/by-slug', 'Api\SeriesController@showBySlug');
 $router->get('/api/v1/series/{slug}', 'Api\SeriesController@show');
 $router->get('/api/v1/series/{id}/episodes', 'Api\SeriesController@episodes');
+$router->get('/api/v1/episodes/{slug}/by-slug', 'Api\SeriesController@episodeBySlug');
 $router->get('/api/v1/coin-packages', 'Api\CoinController@packages');
 $router->get('/api/v1/user/profile', 'Api\UserController@profile');
 $router->put('/api/v1/user/profile', 'Api\UserController@updateProfile');
@@ -123,6 +130,8 @@ $router->post('/api/v1/episodes/unlock/{id}', 'Api\TransactionController@unlock'
 $router->post('/api/v1/coins/purchase', 'Api\TransactionController@purchase');
 $router->post('/api/v1/coins/guest-purchase', 'Api\TransactionController@guestPurchase');
 $router->get('/api/v1/admin/series-requests', 'Api\SeriesRequestController@index');
+$router->get('/api/v1/notifications', 'Api\NotificationController@index');
+$router->post('/api/v1/notifications/{id}/read', 'Api\NotificationController@markRead');
 
 
 $router->get('/favicon.ico', 'FaviconController@index');

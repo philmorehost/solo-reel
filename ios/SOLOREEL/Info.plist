@@ -41,5 +41,16 @@
 	</dict>
 	<key>NSFaceIDUsageDescription</key>
 	<string>SOLOREEL uses Face ID to securely log you in.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.soloreel.app.auth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>soloreel</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

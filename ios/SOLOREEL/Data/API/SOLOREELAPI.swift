@@ -34,25 +34,51 @@ struct User: Codable {
 struct WatchHistoryItem: Codable, Identifiable { let id: Int; let series_title: String?; let episode_title: String?; let thumbnail_url: String?; let slug: String?; let watched_at: String?; let progress_seconds: Int? }
 struct WeeklyBonusStatus: Codable { let bonus_coins: Double; let bonus_expires_at: String?; let weekly_amount: Double }
 struct PaymentInit: Codable { let authorization_url: String?; let reference: String? }
+struct GuestPurchaseBody: Codable { let package_id: Int; let guest_id: String }
+struct PaymentVerifyResult: Codable { let coin_balance: Double?; let coins_awarded: Double? }
+struct AppNotification: Codable, Identifiable {
+    let id: Int; let title: String; let body: String?; let type: String?
+    let series_id: Int?; let is_read: Bool; let created_at: String?
+}
 
 // MARK: - API Client
 class APIClient {
     static let shared = APIClient()
     private let base = "https://soloshort.pmhserver.name.ng/api/v1/"
-    var token: String?
 
-    private func request<T: Codable>(_ path: String, method: String = "GET", body: Data? = nil) async throws -> T {
+    // Proxy to the persisted token so requests always carry the current login,
+    // even after an app restart (previously an in-memory value that was never set).
+    var token: String? {
+        get { TokenManager.shared.token }
+        set { TokenManager.shared.token = newValue }
+    }
+
+    private func rawRequest(_ path: String, method: String, body: Data?) async throws -> Data {
         var req = URLRequest(url: URL(string: base + path)!)
         req.httpMethod = method
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if let t = token { req.setValue("Bearer \(t)", forHTTPHeaderField: "Authorization") }
         req.httpBody = body
         let (data, _) = try await URLSession.shared.data(for: req)
+        return data
+    }
+
+    private func request<T: Codable>(_ path: String, method: String = "GET", body: Data? = nil) async throws -> T {
+        let data = try await rawRequest(path, method: method, body: body)
         let decoded = try JSONDecoder().decode(ApiResponse<T>.self, from: data)
         guard let responseData = decoded.data else {
             throw NSError(domain: "APIError", code: 0, userInfo: [NSLocalizedDescriptionKey: decoded.error ?? decoded.message ?? "Unknown API error"])
         }
         return responseData
+    }
+
+    /** For endpoints whose success response carries no `data` payload. */
+    private func requestVoid(_ path: String, method: String = "GET", body: Data? = nil) async throws {
+        struct Envelope: Codable { let status: Bool?; let message: String?; let error: String? }
+        let data = try await rawRequest(path, method: method, body: body)
+        if let decoded = try? JSONDecoder().decode(Envelope.self, from: data), decoded.status != true {
+            throw NSError(domain: "APIError", code: 0, userInfo: [NSLocalizedDescriptionKey: decoded.error ?? decoded.message ?? "Request failed"])
+        }
     }
 
     func login(email: String, password: String) async throws -> AuthResult {
@@ -85,6 +111,26 @@ class APIClient {
         let body = try JSONEncoder().encode(["package_id": packageId])
         return try await request("coins/purchase", method: "POST", body: body)
     }
+    func guestPurchaseCoins(packageId: Int, guestId: String) async throws -> PaymentInit {
+        let body = try JSONEncoder().encode(GuestPurchaseBody(package_id: packageId, guest_id: guestId))
+        return try await request("coins/guest-purchase", method: "POST", body: body)
+    }
+    func verifyPayment(reference: String) async throws -> PaymentVerifyResult {
+        let ref = reference.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? reference
+        return try await request("payment/verify?reference=\(ref)")
+    }
+    func getGuestBalance(guestId: String) async throws -> GuestWallet {
+        try await request("guest/balance?guest_id=\(guestId)")
+    }
+    func getNotifications(guestId: String? = nil) async throws -> [AppNotification] {
+        let q = guestId.map { "?guest_id=\($0)" } ?? ""
+        return try await request("notifications\(q)")
+    }
+    func markNotificationRead(id: Int, guestId: String? = nil) async throws {
+        var body: Data? = nil
+        if let g = guestId { body = try JSONEncoder().encode(["guest_id": g]) }
+        try await requestVoid("notifications/\(id)/read", method: "POST", body: body)
+    }
     func createSeriesRequest(title: String, description: String?, email: String?, guestId: String?) async throws {
         let body = try JSONEncoder().encode(SeriesRequestBody(title: title, description: description, email: email, guest_id: guestId))
         let _: Bool = try await { () async throws -> Bool in
@@ -101,7 +147,12 @@ class APIClient {
 // MARK: - Token Manager
 class TokenManager: ObservableObject {
     static let shared = TokenManager()
-    @Published var isLoggedIn = false
+    @Published var isLoggedIn: Bool
+
+    private init() {
+        // Restore login state from the persisted token so users stay signed in.
+        isLoggedIn = UserDefaults.standard.string(forKey: "token") != nil
+    }
 
     var token: String? {
         get { UserDefaults.standard.string(forKey: "token") }
@@ -132,11 +183,20 @@ class TokenManager: ObservableObject {
     }
     var isGuest: Bool { !isLoggedIn }
 
+    // Guest browsing: lets unregistered users into the app (search, watch, buy coins).
+    @Published var guestMode: Bool = UserDefaults.standard.bool(forKey: "guest_mode")
+
+    func continueAsGuest() {
+        UserDefaults.standard.set(true, forKey: "guest_mode")
+        guestMode = true
+    }
+
     func logout() {
         let gid = guestId; let gc = guestCoins
-        ["token","email","username","coins"].forEach { UserDefaults.standard.removeObject(forKey: $0) }
+        ["token","email","username","coins","guest_mode"].forEach { UserDefaults.standard.removeObject(forKey: $0) }
         UserDefaults.standard.set(gid, forKey: "guest_id")
         UserDefaults.standard.set(gc, forKey: "guest_coins")
         isLoggedIn = false
+        guestMode = false
     }
 }

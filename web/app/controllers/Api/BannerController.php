@@ -4,14 +4,7 @@ namespace App\Controllers\Api;
 
 use App\Core\Database;
 
-class BannerController {
-
-    private function respondJson($data, $statusCode = 200) {
-        header('Content-Type: application/json');
-        http_response_code($statusCode);
-        echo json_encode($data);
-        die();
-    }
+class BannerController extends BaseApiController {
 
     public function index() {
         $db = Database::getInstance();
@@ -27,6 +20,11 @@ class BannerController {
         $stmt->execute();
         $banners = $stmt->fetchAll();
 
-        $this->respondJson(['data' => $banners]);
+        foreach ($banners as &$banner) {
+            $banner['image_url'] = $this->absoluteUrl($banner['image_url'] ?? null);
+        }
+        unset($banner);
+
+        $this->respondJson(['status' => true, 'data' => $banners]);
     }
 }

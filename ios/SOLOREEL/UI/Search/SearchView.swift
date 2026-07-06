@@ -22,7 +22,7 @@ struct SearchView: View {
                             Task { try? await Task.sleep(nanoseconds: 400_000_000); await performSearch() }
                         }
                     if !query.isEmpty {
-                        Button { query = ""; results = [] } label: { Image(systemName: "xmark.circle.fill").foregroundColor(Color(white: 0.4)) }
+                        Button { query = ""; Task { await loadAllSeries() } } label: { Image(systemName: "xmark.circle.fill").foregroundColor(Color(white: 0.4)) }
                     }
                 }.padding(12).background(Color(white: 0.08)).cornerRadius(14).padding(.horizontal).padding(.vertical, 12)
 
@@ -31,11 +31,11 @@ struct SearchView: View {
                     ProgressView().tint(.red).frame(maxWidth: .infinity)
                     Spacer()
                 } else if results.isEmpty && query.isEmpty {
-                    // Idle state
+                    // Empty catalogue fallback (all series load automatically on open)
                     VStack(spacing: 12) {
                         Spacer()
                         Text("🎬").font(.system(size: 52))
-                        Text("Search for your favourite series").foregroundColor(Color(white: 0.35)).multilineTextAlignment(.center)
+                        Text("No series available yet").foregroundColor(Color(white: 0.35)).multilineTextAlignment(.center)
                         Spacer()
                     }.frame(maxWidth: .infinity)
                 } else if showNoResults {
@@ -76,6 +76,7 @@ struct SearchView: View {
             .background(Color(red: 0.04, green: 0.04, blue: 0.04))
             .preferredColorScheme(.dark)
         }
+        .task { await loadAllSeries() }
         .sheet(isPresented: $showRequestSheet) {
             SeriesRequestSheet(initialTitle: query, onSubmit: { title, desc, email in
                 Task {
@@ -90,8 +91,15 @@ struct SearchView: View {
         }
     }
 
+    /// Lists the full catalogue — the search box then filters it live as the user types.
+    func loadAllSeries() async {
+        isLoading = true
+        do { results = try await APIClient.shared.search(q: "") } catch { results = [] }
+        isLoading = false
+    }
+
     func performSearch() async {
-        guard !query.isEmpty else { results = []; return }
+        guard !query.isEmpty else { await loadAllSeries(); return }
         isLoading = true
         do { results = try await APIClient.shared.search(q: query) } catch { results = [] }
         isLoading = false

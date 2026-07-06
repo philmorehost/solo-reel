@@ -8,6 +8,7 @@ struct CoinShopView: View {
     @State private var paymentUrl: String? = nil
     @State private var paymentRef: String? = nil
     @State private var showSuccess = false
+    @State private var purchaseError: String? = nil
 
     var currentCoins: Double { tokenManager.isLoggedIn ? tokenManager.coins : tokenManager.guestCoins }
 
@@ -63,6 +64,9 @@ struct CoinShopView: View {
         .alert("Payment Successful! 🎉", isPresented: $showSuccess) {
             Button("Great, Thanks!", role: .cancel) {}
         } message: { Text("Your coins have been added to your account.") }
+        .alert("Payment Error", isPresented: Binding(get: { purchaseError != nil }, set: { if !$0 { purchaseError = nil } })) {
+            Button("OK", role: .cancel) { purchaseError = nil }
+        } message: { Text(purchaseError ?? "") }
     }
 
     func loadPackages() async {
@@ -73,15 +77,38 @@ struct CoinShopView: View {
 
     func purchasePackage(_ pkg: CoinPackage) {
         Task {
-            if let result = try? await APIClient.shared.purchaseCoins(packageId: pkg.id) {
-                paymentUrl = result.authorization_url
-                paymentRef = result.reference
+            do {
+                // Guests use the guest-purchase endpoint (no login needed);
+                // registered users go through the authenticated endpoint.
+                let result: PaymentInit
+                if tokenManager.isLoggedIn {
+                    result = try await APIClient.shared.purchaseCoins(packageId: pkg.id)
+                } else {
+                    result = try await APIClient.shared.guestPurchaseCoins(packageId: pkg.id, guestId: tokenManager.guestId)
+                }
+                await MainActor.run {
+                    if let url = result.authorization_url {
+                        paymentUrl = url
+                        paymentRef = result.reference
+                    } else {
+                        purchaseError = "Could not initiate payment. Please try again."
+                    }
+                }
+            } catch {
+                await MainActor.run { purchaseError = error.localizedDescription }
             }
         }
     }
 
     func handlePaymentSuccess(ref: String) async {
-        if let user = try? await APIClient.shared.getProfile() {
+        // Confirm with the gateway and credit the coins server-side.
+        if let result = try? await APIClient.shared.verifyPayment(reference: ref) {
+            if tokenManager.isLoggedIn {
+                tokenManager.coins = result.coin_balance ?? tokenManager.coins
+            } else {
+                tokenManager.guestCoins = result.coin_balance ?? tokenManager.guestCoins
+            }
+        } else if tokenManager.isLoggedIn, let user = try? await APIClient.shared.getProfile() {
             tokenManager.coins = user.coin_balance ?? tokenManager.coins
         }
         showSuccess = true
@@ -126,7 +153,8 @@ struct WebViewRepresentable: UIViewRepresentable {
             self.onSuccess = onSuccess; self.onDismiss = onDismiss
         }
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-            if let url = action.request.url?.absoluteString {
+            // Only react to top-level redirects — the Payhub iframe navigates internally too
+            if action.targetFrame?.isMainFrame == true, let url = action.request.url?.absoluteString {
                 if url.contains("callback") || url.contains("verify") || url.contains("success") {
                     let components = URLComponents(string: url)
                     let ref = components?.queryItems?.first(where: { $0.name == "reference" || $0.name == "trxref" })?.value ?? ""

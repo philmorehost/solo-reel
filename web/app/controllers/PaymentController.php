@@ -114,6 +114,76 @@ class PaymentController {
         }
     }
 
+    /**
+     * GET /pay/checkout?reference=X
+     * Hosted checkout for the mobile apps. Looks up the pending transaction by
+     * reference (no session required) and renders the Payhub inline popup.
+     */
+    public function mobileCheckout() {
+        $reference = trim((string)($_GET['reference'] ?? ''));
+        if ($reference === '') {
+            http_response_code(400);
+            die('Missing payment reference.');
+        }
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT * FROM payment_transactions WHERE reference = ?");
+        $stmt->execute([$reference]);
+        $txn = $stmt->fetch();
+
+        if (!$txn) {
+            http_response_code(404);
+            die('Transaction not found.');
+        }
+        if ($txn['status'] === 'successful') {
+            header("Location: /pay/verify?reference=" . urlencode($reference));
+            die();
+        }
+
+        $settings = $this->getPayhubKeys();
+        $publicKey = trim($settings['payhub_public_key'] ?? '');
+        if (!$settings || $publicKey === '') {
+            http_response_code(500);
+            die('Payment gateway is not configured.');
+        }
+
+        // Resolve a payer email: registered user's email or a stable guest alias.
+        if (!empty($txn['user_id'])) {
+            $stmt = $db->prepare("SELECT email FROM users WHERE id = ?");
+            $stmt->execute([$txn['user_id']]);
+            $u = $stmt->fetch();
+            $email = $u['email'] ?? ('user_' . $txn['user_id'] . '@soloreel.tv');
+        } else {
+            $email = 'guest_' . substr(md5((string)($txn['guest_id'] ?? $reference)), 0, 10) . '@soloreel.tv';
+        }
+
+        $amount = (float)$txn['amount'];
+        require __DIR__ . '/../../templates/pages/checkout-mobile.php';
+        die();
+    }
+
+    /**
+     * GET /pay/verify?reference=X
+     * Post-payment landing for the mobile checkout. The apps intercept this URL
+     * in their WebView before it loads; if it does load (fallback), it verifies
+     * via the JSON API and shows a friendly result page.
+     */
+    public function mobileVerify() {
+        $reference = trim((string)($_GET['reference'] ?? ''));
+        require __DIR__ . '/../../templates/pages/checkout-mobile-result.php';
+        die();
+    }
+
+    /** GET /pay/closed — shown when the user closes the checkout without paying. */
+    public function mobileClosed() {
+        header('Content-Type: text/html; charset=UTF-8');
+        echo '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Payment Cancelled</title></head>'
+           . '<body style="background:#000;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;margin:0">'
+           . '<div><div style="font-size:56px">&#128683;</div><h2 style="font-size:20px">Payment Cancelled</h2>'
+           . '<p style="color:#9ca3af;font-size:14px">No charge was made. Close this window to return to the app.</p></div></body></html>';
+        die();
+    }
+
     public function webhook() {
         $payload = file_get_contents('php://input');
         $event = json_decode($payload, true);

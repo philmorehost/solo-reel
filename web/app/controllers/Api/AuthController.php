@@ -4,27 +4,51 @@ namespace App\Controllers\Api;
 
 use App\Core\Database;
 
-class AuthController {
+class AuthController extends BaseApiController {
 
-    private function generateJWT(array $payload, string $secret): string {
-        $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
-        $base64UrlHeader = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
-        $base64UrlPayload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(json_encode($payload)));
-        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, $secret, true);
-        $base64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
-        return $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
+    private function issueToken(array $user): string {
+        $secret = getenv('JWT_SECRET') ?: 'default_secret_key_change_in_production';
+        $payload = [
+            'user_id' => $user['id'],
+            'email' => $user['email'],
+            'role' => $user['role'] ?? 'user',
+            'exp' => time() + (86400 * 30) // 30 days
+        ];
+        return $this->generateJWT($payload, $secret);
     }
 
-    private function respondJson($data, $statusCode = 200) {
-        header('Content-Type: application/json');
-        http_response_code($statusCode);
-        echo json_encode($data);
-        die();
+    /**
+     * Success envelope carrying the token both nested under `data` (Android
+     * ApiResponse wrapper) and flat at the top level (iOS flat decoding).
+     */
+    private function respondAuthSuccess(array $user, string $token, string $message, int $statusCode = 200) {
+        $userOut = [
+            'id' => (int)$user['id'],
+            'username' => $user['username'],
+            'email' => $user['email'],
+            'display_name' => $user['display_name'] ?? null,
+            'role' => $user['role'] ?? 'user',
+            'coin_balance' => (float)($user['coin_balance'] ?? 0)
+        ];
+        $this->respondJson([
+            'status' => true,
+            'message' => $message,
+            'token' => $token,
+            'user' => $userOut,
+            'data' => [
+                'token' => $token,
+                'user' => $userOut
+            ]
+        ], $statusCode);
+    }
+
+    private function respondError(string $message, int $statusCode) {
+        $this->respondJson(['status' => false, 'error' => $message, 'message' => $message], $statusCode);
     }
 
     public function login() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            return $this->respondJson(['error' => 'Method Not Allowed'], 405);
+            $this->respondError('Method Not Allowed', 405);
         }
 
         $input = json_decode(file_get_contents('php://input'), true);
@@ -32,59 +56,39 @@ class AuthController {
         $password = $input['password'] ?? '';
 
         if (empty($email) || empty($password)) {
-            return $this->respondJson(['error' => 'Email and password are required'], 400);
+            $this->respondError('Email and password are required', 400);
         }
 
         $db = Database::getInstance();
-        $stmt = $db->prepare("SELECT id, username, email, password_hash, role, coin_balance, status FROM users WHERE email = ?");
+        $stmt = $db->prepare("SELECT id, username, email, display_name, password_hash, role, coin_balance, status FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
-            return $this->respondJson(['error' => 'Invalid credentials'], 401);
+            $this->respondError('Invalid credentials', 401);
         }
 
         if ($user['status'] === 'blocked') {
-            return $this->respondJson(['error' => 'Account is blocked'], 403);
+            $this->respondError('Account is blocked', 403);
         }
 
-        // Generate Token
-        $secret = getenv('JWT_SECRET') ?: 'default_secret_key_change_in_production';
-        $payload = [
-            'user_id' => $user['id'],
-            'email' => $user['email'],
-            'role' => $user['role'],
-            'exp' => time() + (86400 * 30) // 30 days
-        ];
-
-        $token = $this->generateJWT($payload, $secret);
-
-        $this->respondJson([
-            'message' => 'Login successful',
-            'token' => $token,
-            'user' => [
-                'id' => $user['id'],
-                'username' => $user['username'],
-                'email' => $user['email'],
-                'role' => $user['role'],
-                'coin_balance' => (float) $user['coin_balance']
-            ]
-        ]);
+        $token = $this->issueToken($user);
+        $this->respondAuthSuccess($user, $token, 'Login successful');
     }
 
     public function register() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            return $this->respondJson(['error' => 'Method Not Allowed'], 405);
+            $this->respondError('Method Not Allowed', 405);
         }
 
         $input = json_decode(file_get_contents('php://input'), true);
         $email = $input['email'] ?? '';
         $username = $input['username'] ?? '';
         $password = $input['password'] ?? '';
-        $displayName = $input['displayName'] ?? '';
+        $displayName = $input['displayName'] ?? ($input['display_name'] ?? '');
 
         if (empty($email) || empty($username) || empty($password)) {
-            return $this->respondJson(['error' => 'Email, username, and password are required'], 400);
+            $this->respondError('Email, username, and password are required', 400);
         }
 
         $db = Database::getInstance();
@@ -93,40 +97,46 @@ class AuthController {
         $stmt = $db->prepare("SELECT id FROM users WHERE email = ? OR username = ?");
         $stmt->execute([$email, $username]);
         if ($stmt->fetch()) {
-            return $this->respondJson(['error' => 'Email or username already exists'], 409);
+            $this->respondError('Email or username already exists', 409);
         }
 
         $hash = password_hash($password, PASSWORD_ARGON2ID);
 
         $stmt = $db->prepare("INSERT INTO users (username, email, password_hash, display_name) VALUES (?, ?, ?, ?)");
-        if ($stmt->execute([$username, $email, $hash, $displayName])) {
-            return $this->respondJson(['message' => 'Registration successful'], 201);
+        if (!$stmt->execute([$username, $email, $hash, $displayName])) {
+            $this->respondError('Registration failed', 500);
         }
 
-        return $this->respondJson(['error' => 'Registration failed'], 500);
+        // Auto-login: return a token right away so new users land in their account.
+        $stmt = $db->prepare("SELECT id, username, email, display_name, role, coin_balance, status FROM users WHERE id = ?");
+        $stmt->execute([$db->lastInsertId()]);
+        $user = $stmt->fetch();
+
+        $token = $this->issueToken($user);
+        $this->respondAuthSuccess($user, $token, 'Registration successful', 201);
     }
 
     public function googleLogin() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            return $this->respondJson(['error' => 'Method Not Allowed'], 405);
+            $this->respondError('Method Not Allowed', 405);
         }
 
         $input = json_decode(file_get_contents('php://input'), true);
         $email = $input['email'] ?? '';
-        $displayName = $input['displayName'] ?? '';
+        $displayName = $input['displayName'] ?? ($input['display_name'] ?? '');
 
         if (empty($email)) {
-            return $this->respondJson(['error' => 'Email is required for Google login'], 400);
+            $this->respondError('Email is required for Google login', 400);
         }
 
         $db = Database::getInstance();
-        $stmt = $db->prepare("SELECT id, username, email, password_hash, role, coin_balance, status FROM users WHERE email = ?");
+        $stmt = $db->prepare("SELECT id, username, email, display_name, password_hash, role, coin_balance, status FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
         if ($user) {
             if ($user['status'] === 'blocked') {
-                return $this->respondJson(['error' => 'Account is blocked'], 403);
+                $this->respondError('Account is blocked', 403);
             }
         } else {
             // Register new user
@@ -138,37 +148,17 @@ class AuthController {
             // Generate a random password since they use Google
             $randomPassword = bin2hex(random_bytes(10));
             $hash = password_hash($randomPassword, PASSWORD_ARGON2ID);
-            
+
             $stmt = $db->prepare("INSERT INTO users (username, email, password_hash, display_name) VALUES (?, ?, ?, ?)");
             $stmt->execute([$username, $email, $hash, $displayName]);
-            
+
             // Fetch newly created user
-            $stmt = $db->prepare("SELECT id, username, email, password_hash, role, coin_balance, status FROM users WHERE email = ?");
+            $stmt = $db->prepare("SELECT id, username, email, display_name, password_hash, role, coin_balance, status FROM users WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
         }
 
-        // Generate Token
-        $secret = getenv('JWT_SECRET') ?: 'default_secret_key_change_in_production';
-        $payload = [
-            'user_id' => $user['id'],
-            'email' => $user['email'],
-            'role' => $user['role'],
-            'exp' => time() + (86400 * 30) // 30 days
-        ];
-
-        $token = $this->generateJWT($payload, $secret);
-
-        $this->respondJson([
-            'message' => 'Login successful',
-            'token' => $token,
-            'user' => [
-                'id' => $user['id'],
-                'username' => $user['username'],
-                'email' => $user['email'],
-                'role' => $user['role'],
-                'coin_balance' => (float) $user['coin_balance']
-            ]
-        ]);
+        $token = $this->issueToken($user);
+        $this->respondAuthSuccess($user, $token, 'Login successful');
     }
 }

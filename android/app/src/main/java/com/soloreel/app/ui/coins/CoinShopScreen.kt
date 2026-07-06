@@ -24,8 +24,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.soloreel.app.data.api.GuestPurchaseBody
 import com.soloreel.app.data.api.SOLOREELApi
 import com.soloreel.app.data.api.TokenManager
+import com.soloreel.app.data.api.apiMessage
 import com.soloreel.app.data.model.CoinPackage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,15 +75,22 @@ class CoinViewModel @Inject constructor(
 
     fun initiatePurchase(packageId: Int) {
         viewModelScope.launch {
+            _state.value = _state.value.copy(error = null)
             try {
-                val r = api.purchaseCoins(mapOf("package_id" to packageId))
+                val r = if (tokenManager.isLoggedIn) {
+                    api.purchaseCoins(mapOf("package_id" to packageId))
+                } else {
+                    api.guestPurchaseCoins(GuestPurchaseBody(packageId, tokenManager.guestId))
+                }
                 val url = r.data?.authorization_url
                 val ref = r.data?.reference
                 if (url != null) {
                     _state.value = _state.value.copy(paymentUrl = url, paymentRef = ref)
+                } else {
+                    _state.value = _state.value.copy(error = r.error ?: r.message ?: "Could not initiate payment")
                 }
             } catch (e: Exception) {
-                _state.value = _state.value.copy(error = "Could not initiate payment: ${e.message}")
+                _state.value = _state.value.copy(error = "Could not initiate payment: ${e.apiMessage("please try again")}")
             }
         }
     }
@@ -90,10 +99,18 @@ class CoinViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 api.verifyPayment(ref)
-                val r = api.getProfile()
-                r.data?.coin_balance?.let {
-                    tokenManager.userCoins = it
-                    _state.value = _state.value.copy(coins = it, paymentSuccess = true, paymentUrl = null)
+                if (tokenManager.isLoggedIn) {
+                    val r = api.getProfile()
+                    r.data?.coin_balance?.let { tokenManager.userCoins = it }
+                    _state.value = _state.value.copy(
+                        coins = tokenManager.userCoins, paymentSuccess = true, paymentUrl = null
+                    )
+                } else {
+                    val r = api.getGuestBalance(tokenManager.guestId)
+                    r.data?.coin_balance?.let { tokenManager.guestCoins = it }
+                    _state.value = _state.value.copy(
+                        coins = tokenManager.guestCoins, paymentSuccess = true, paymentUrl = null
+                    )
                 }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(paymentUrl = null, paymentSuccess = true)
@@ -217,6 +234,8 @@ fun PaymentWebView(url: String, onSuccess: (String) -> Unit, onDismiss: () -> Un
                             webViewClient = object : WebViewClient() {
                                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                                     val redirectUrl = request?.url?.toString() ?: return false
+                                    // Only react to top-level redirects — the Payhub iframe navigates internally too
+                                    if (!request.isForMainFrame) return false
                                     if (redirectUrl.contains("callback") || redirectUrl.contains("verify") || redirectUrl.contains("success")) {
                                         val ref = request.url?.getQueryParameter("reference") ?: request.url?.getQueryParameter("trxref") ?: ""
                                         if (ref.isNotEmpty()) onSuccess(ref)

@@ -55,10 +55,25 @@ class SearchViewModel @Inject constructor(
     val state: StateFlow<SearchState> = _state.asStateFlow()
     private var searchJob: Job? = null
 
+    init { loadAllSeries() }
+
+    private fun loadAllSeries() {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
+            try {
+                val r = api.search("", size = 100)
+                _state.value = _state.value.copy(results = r.data ?: emptyList(), isLoading = false)
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(isLoading = false)
+            }
+        }
+    }
+
     fun search(q: String) {
         _state.value = _state.value.copy(query = q, requestSent = false, requestError = null)
         searchJob?.cancel()
-        if (q.isBlank()) { _state.value = _state.value.copy(results = emptyList()); return }
+        if (q.isBlank()) { loadAllSeries(); return }
         searchJob = viewModelScope.launch {
             delay(400)
             _state.value = _state.value.copy(isLoading = true)

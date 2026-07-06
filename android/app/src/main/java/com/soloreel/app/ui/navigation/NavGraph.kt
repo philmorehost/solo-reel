@@ -21,6 +21,7 @@ import com.soloreel.app.ui.auth.AuthScreen
 import com.soloreel.app.ui.auth.RegisterScreen
 import com.soloreel.app.ui.coins.CoinShopScreen
 import com.soloreel.app.ui.home.HomeScreen
+import com.soloreel.app.ui.notifications.NotificationsScreen
 import com.soloreel.app.ui.player.PlayerScreen
 import com.soloreel.app.ui.profile.ProfileScreen
 import com.soloreel.app.ui.search.SearchScreen
@@ -99,6 +100,7 @@ fun NavGraph(isLoggedIn: Boolean) {
                 )
             }
             composable(Screen.Home.route) { HomeScreen(navController = navController) }
+            composable(Screen.Notifications.route) { NotificationsScreen(navController = navController) }
             composable(Screen.Search.route) { SearchScreen(navController = navController) }
             composable(Screen.Coins.route) { CoinShopScreen() }
             composable(Screen.Profile.route) {

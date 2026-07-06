@@ -7,7 +7,7 @@ struct ContentView: View {
     var body: some View {
         if showSplash {
             SplashView(onFinished: { showSplash = false })
-        } else if !tokenManager.isLoggedIn {
+        } else if !tokenManager.isLoggedIn && !tokenManager.guestMode {
             AuthView()
         } else {
             TabView {

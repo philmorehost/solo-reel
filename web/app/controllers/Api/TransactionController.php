@@ -4,44 +4,50 @@ namespace App\Controllers\Api;
 
 use App\Core\Database;
 
-class TransactionController {
+class TransactionController extends BaseApiController {
 
-    private function respondJson($data, $statusCode = 200) {
-        header('Content-Type: application/json');
-        http_response_code($statusCode);
-        echo json_encode($data);
-        die();
+    private function paymentSettings(): array {
+        $db = Database::getInstance();
+        $stmt = $db->query("SELECT * FROM payment_settings LIMIT 1");
+        $settings = $stmt->fetch();
+        if (!$settings || empty(trim($settings['payhub_public_key'] ?? ''))) {
+            $this->respondJson(['status' => false, 'error' => 'Payment gateway is not configured.'], 500);
+        }
+        return $settings;
     }
 
-    private function getUserIdFromToken() {
-        $headers = getallheaders();
-        $auth = $headers['Authorization'] ?? '';
-        if (preg_match('/Bearer\s(\S+)/', $auth, $matches)) {
-            $token = $matches[1];
-            $parts = explode('.', $token);
-            if (count($parts) === 3) {
-                // Cryptographically verify signature
-                $secret = getenv('JWT_SECRET') ?: 'default_secret_key_change_in_production';
-                $signature = hash_hmac('sha256', $parts[0] . "." . $parts[1], $secret, true);
-                $expectedSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
-
-                if (hash_equals($expectedSignature, $parts[2])) {
-                    $payload = json_decode(base64_decode($parts[1]), true);
-                    if (isset($payload['user_id']) && $payload['exp'] > time()) {
-                        return $payload['user_id'];
-                    }
-                }
-            }
+    private function loadPackage(int $packageId): array {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT * FROM coin_packages WHERE id = ? AND is_active = 1");
+        $stmt->execute([$packageId]);
+        $package = $stmt->fetch();
+        if (!$package) {
+            $this->respondJson(['status' => false, 'error' => 'Package not available'], 400);
         }
-        $this->respondJson(['error' => 'Unauthorized or invalid token'], 401);
+        return $package;
+    }
+
+    private function respondPaymentInit(array $package, string $reference, string $publicKey, string $email) {
+        $data = [
+            'authorization_url' => $this->baseUrl() . '/pay/checkout?reference=' . urlencode($reference),
+            'reference'         => $reference,
+            'public_key'        => $publicKey,
+            'amount'            => (float)$package['price'] * 100, // Kobo
+            'email'             => $email,
+        ];
+        $this->respondJson([
+            'status'  => true,
+            'message' => 'Payment initialized',
+            'data'    => $data,
+        ] + $data);
     }
 
     public function unlock(int $episodeId) {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->respondJson(['error' => 'Method Not Allowed'], 405);
+            $this->respondJson(['status' => false, 'error' => 'Method Not Allowed'], 405);
         }
 
-        $userId = $this->getUserIdFromToken();
+        $userId = $this->requireUserId();
         $db = Database::getInstance();
         $db->beginTransaction();
 
@@ -52,7 +58,7 @@ class TransactionController {
 
             if (!$episode) {
                 $db->rollBack();
-                $this->respondJson(['error' => 'Episode not found'], 404);
+                $this->respondJson(['status' => false, 'error' => 'Episode not found'], 404);
             }
 
             $stmt = $db->prepare("SELECT coin_balance FROM users WHERE id = ? FOR UPDATE");
@@ -61,7 +67,7 @@ class TransactionController {
 
             if ((float)$user['coin_balance'] < (float)$episode['coin_cost']) {
                 $db->rollBack();
-                $this->respondJson(['error' => 'Insufficient coins'], 400);
+                $this->respondJson(['status' => false, 'error' => 'Insufficient coins'], 400);
             }
 
             $newBalance = (float)$user['coin_balance'] - (float)$episode['coin_cost'];
@@ -75,51 +81,168 @@ class TransactionController {
             $stmt->execute([$userId, -$episode['coin_cost'], 'Unlocked episode ' . $episodeId]);
 
             $db->commit();
-            $this->respondJson(['message' => 'Episode unlocked successfully', 'coin_balance' => $newBalance]);
+            $this->respondJson(['status' => true, 'message' => 'Episode unlocked successfully', 'coin_balance' => $newBalance, 'data' => ['coin_balance' => $newBalance]]);
         } catch (\Exception $e) {
             $db->rollBack();
-            $this->respondJson(['error' => 'Transaction failed: ' . $e->getMessage()], 500);
+            $this->respondJson(['status' => false, 'error' => 'Transaction failed: ' . $e->getMessage()], 500);
         }
     }
 
+    /** POST /api/v1/coins/purchase — registered users (JWT). */
     public function purchase() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->respondJson(['error' => 'Method Not Allowed'], 405);
+            $this->respondJson(['status' => false, 'error' => 'Method Not Allowed'], 405);
         }
 
-        $userId = $this->getUserIdFromToken();
+        $userId = $this->requireUserId();
         $input = json_decode(file_get_contents('php://input'), true);
-        $packageId = $input['package_id'] ?? 0;
+        $package = $this->loadPackage((int)($input['package_id'] ?? 0));
+        $settings = $this->paymentSettings();
 
         $db = Database::getInstance();
-        $stmt = $db->prepare("SELECT * FROM coin_packages WHERE id = ? AND is_active = 1");
-        $stmt->execute([$packageId]);
-        $package = $stmt->fetch();
-
-        if (!$package) {
-            $this->respondJson(['error' => 'Package not available'], 400);
-        }
-
-        $stmt = $db->query("SELECT * FROM payment_settings LIMIT 1");
-        $settings = $stmt->fetch();
-        $publicKey = trim($settings['payhub_public_key'] ?? '');
-
-        if (!$settings || empty($publicKey)) {
-             $this->respondJson(['error' => 'Payment gateway is not configured.'], 500);
-        }
+        $stmt = $db->prepare("SELECT email FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch();
+        $email = $user['email'] ?? ('user_' . $userId . '@soloreel.tv');
 
         $reference = 'trx_' . uniqid() . '_' . time();
-        $amount = $package['price'];
 
         $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (?, ?, ?, ?, ?, 'pending', ?)");
-        $stmt->execute([$userId, $package['id'], $reference, $amount, $package['currency'], $package['coins']]);
+        $stmt->execute([$userId, $package['id'], $reference, $package['price'], $package['currency'], $package['coins']]);
 
-        $this->respondJson([
-            'message' => 'Payment initialized',
-            'public_key' => $publicKey,
-            'amount' => (float)$amount * 100, // Kobo
-            'reference' => $reference,
-            'email' => 'user_' . $userId . '@soloreel.tv' // In a real app fetch their email
-        ]);
+        $this->respondPaymentInit($package, $reference, trim($settings['payhub_public_key']), $email);
+    }
+
+    /** POST /api/v1/coins/guest-purchase — guests identified by guest_id (no JWT). */
+    public function guestPurchase() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->respondJson(['status' => false, 'error' => 'Method Not Allowed'], 405);
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $guestId = trim((string)($input['guest_id'] ?? ''));
+        if ($guestId === '') {
+            $this->respondJson(['status' => false, 'error' => 'guest_id is required'], 400);
+        }
+
+        $package = $this->loadPackage((int)($input['package_id'] ?? 0));
+        $settings = $this->paymentSettings();
+
+        $db = Database::getInstance();
+        // Make sure the guest has a wallet to credit after payment.
+        $stmt = $db->prepare("INSERT IGNORE INTO guest_wallets (guest_id, coin_balance) VALUES (?, 0)");
+        $stmt->execute([$guestId]);
+
+        $email = trim((string)($input['email'] ?? ''));
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $email = 'guest_' . substr(md5($guestId), 0, 10) . '@soloreel.tv';
+        }
+
+        $reference = 'gtrx_' . uniqid() . '_' . time();
+
+        $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, guest_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (NULL, ?, ?, ?, ?, ?, 'pending', ?)");
+        $stmt->execute([$guestId, $package['id'], $reference, $package['price'], $package['currency'], $package['coins']]);
+
+        $this->respondPaymentInit($package, $reference, trim($settings['payhub_public_key']), $email);
+    }
+
+    /** GET /api/v1/payment/verify?reference=X — verifies with Payhub and credits coins. */
+    public function verifyPayment() {
+        $ref = trim((string)($_GET['reference'] ?? ''));
+        if ($ref === '') {
+            $this->respondJson(['status' => false, 'error' => 'No reference provided'], 400);
+        }
+
+        $db = Database::getInstance();
+        $db->beginTransaction();
+
+        try {
+            $stmt = $db->prepare("SELECT * FROM payment_transactions WHERE reference = ? FOR UPDATE");
+            $stmt->execute([$ref]);
+            $txn = $stmt->fetch();
+
+            if (!$txn) {
+                $db->rollBack();
+                $this->respondJson(['status' => false, 'error' => 'Transaction not found'], 404);
+            }
+
+            if ($txn['status'] === 'successful') {
+                $db->rollBack();
+                $this->respondJson(['status' => true, 'message' => 'Payment already verified', 'data' => $this->balanceFor($txn)]);
+            }
+
+            $stmt = $db->query("SELECT * FROM payment_settings LIMIT 1");
+            $settings = $stmt->fetch();
+            $secretKey = trim($settings['payhub_secret_key'] ?? '');
+            if (!$settings || $secretKey === '') {
+                $db->rollBack();
+                $this->respondJson(['status' => false, 'error' => 'Payment gateway not configured'], 500);
+            }
+            $payhubBase = rtrim($settings['payhub_base_url'] ?: 'https://merchant.payhub.com.ng', '/');
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $payhubBase . "/api/transaction/verify/" . urlencode($ref));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                "Authorization: Bearer " . $secretKey,
+                "Cache-Control: no-cache",
+            ]);
+            $response = curl_exec($ch);
+            $err = curl_error($ch);
+            curl_close($ch);
+
+            if ($err) {
+                $db->rollBack();
+                $this->respondJson(['status' => false, 'error' => 'Could not reach payment gateway: ' . $err], 502);
+            }
+
+            $result = json_decode($response, true);
+            $dataStatus = $result['data']['status'] ?? '';
+            $verified = $result && ($result['status'] ?? false) === true
+                && ($dataStatus === 'success' || $dataStatus === 'successful');
+
+            if (!$verified) {
+                $db->rollBack();
+                $this->respondJson(['status' => false, 'error' => 'Payment not successful yet', 'gateway_status' => $dataStatus ?: 'unknown'], 402);
+            }
+
+            $stmt = $db->prepare("UPDATE payment_transactions SET status = 'successful' WHERE id = ?");
+            $stmt->execute([$txn['id']]);
+
+            $coins = (float)$txn['coins_awarded'];
+            if (!empty($txn['user_id'])) {
+                $stmt = $db->prepare("UPDATE users SET coin_balance = coin_balance + ? WHERE id = ?");
+                $stmt->execute([$coins, $txn['user_id']]);
+                $stmt = $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description, reference_id) VALUES (?, 'purchase', ?, ?, ?)");
+                $stmt->execute([$txn['user_id'], $coins, 'Coin purchase via card', $ref]);
+            } elseif (!empty($txn['guest_id'])) {
+                $stmt = $db->prepare("INSERT INTO guest_wallets (guest_id, coin_balance) VALUES (?, ?) ON DUPLICATE KEY UPDATE coin_balance = coin_balance + VALUES(coin_balance)");
+                $stmt->execute([$txn['guest_id'], $coins]);
+            }
+
+            $db->commit();
+            $this->respondJson(['status' => true, 'message' => 'Payment verified. Coins added!', 'data' => $this->balanceFor($txn)]);
+        } catch (\Exception $e) {
+            $db->rollBack();
+            $this->respondJson(['status' => false, 'error' => 'Verification failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+    private function balanceFor(array $txn): array {
+        $db = Database::getInstance();
+        if (!empty($txn['user_id'])) {
+            $stmt = $db->prepare("SELECT coin_balance FROM users WHERE id = ?");
+            $stmt->execute([$txn['user_id']]);
+            $row = $stmt->fetch();
+            return ['coin_balance' => (float)($row['coin_balance'] ?? 0), 'coins_awarded' => (float)$txn['coins_awarded']];
+        }
+        if (!empty($txn['guest_id'])) {
+            $stmt = $db->prepare("SELECT coin_balance FROM guest_wallets WHERE guest_id = ?");
+            $stmt->execute([$txn['guest_id']]);
+            $row = $stmt->fetch();
+            return ['coin_balance' => (float)($row['coin_balance'] ?? 0), 'coins_awarded' => (float)$txn['coins_awarded']];
+        }
+        return ['coin_balance' => 0, 'coins_awarded' => (float)$txn['coins_awarded']];
     }
 }

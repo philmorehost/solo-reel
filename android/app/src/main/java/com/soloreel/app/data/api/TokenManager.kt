@@ -49,6 +49,11 @@ class TokenManager @Inject constructor(@ApplicationContext context: Context) {
         get() = prefs.getFloat("guest_coins", 0f).toDouble()
         set(value) { prefs.edit().putFloat("guest_coins", value.toFloat()).apply() }
 
+    // Highest notification id already surfaced as a phone notification
+    var lastSeenNotificationId: Int
+        get() = prefs.getInt("last_seen_notification_id", 0)
+        set(value) { prefs.edit().putInt("last_seen_notification_id", value).apply() }
+
     val isLoggedIn: Boolean get() = accessToken != null
 
     val isGuest: Boolean get() = !isLoggedIn

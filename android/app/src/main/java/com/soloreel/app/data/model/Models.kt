@@ -80,3 +80,13 @@ data class SeriesRequest(
     val email: String?,
     val guest_id: String?
 )
+
+data class AppNotification(
+    val id: Int,
+    val title: String,
+    val body: String?,
+    val type: String?,
+    val series_id: Int?,
+    val is_read: Boolean,
+    val created_at: String?
+)

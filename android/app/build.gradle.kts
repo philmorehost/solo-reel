@@ -1,9 +1,22 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.kapt")
     id("com.google.dagger.hilt.android")
 }
+
+// Google OAuth Web Client ID — set in local.properties (GOOGLE_WEB_CLIENT_ID=...)
+// or as a Gradle/environment property. See GOOGLE_SIGNIN_SETUP.md.
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+val googleWebClientId: String = (localProps.getProperty("GOOGLE_WEB_CLIENT_ID")
+    ?: project.findProperty("GOOGLE_WEB_CLIENT_ID") as String?
+    ?: System.getenv("GOOGLE_WEB_CLIENT_ID")
+    ?: "")
 
 android {
     namespace = "com.soloreel.app"
@@ -20,6 +33,8 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
     }
 
     buildTypes {
@@ -42,6 +57,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.8"

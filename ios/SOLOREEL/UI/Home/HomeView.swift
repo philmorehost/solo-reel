@@ -60,11 +60,15 @@ struct HomeView: View {
                     }
                 }
             }.background(Color.black).preferredColorScheme(.dark)
+            .overlay(alignment: .topTrailing) {
+                NotificationBell().padding(.trailing, 16).padding(.top, 8)
+            }
         }
         .task {
             isLoading = true
             do { banners = try await APIClient.shared.getBanners(); series = try await APIClient.shared.getSeries(); isLoading = false }
             catch { isLoading = false }
+            await NotificationCenterStore.shared.load(postSystemNotifications: true)
         }
     }
 }
