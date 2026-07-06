@@ -114,7 +114,7 @@ class AuthViewModel @Inject constructor(
                     val email = googleIdTokenCredential.id
                     val displayName = googleIdTokenCredential.displayName ?: ""
                     
-                    val res = api.googleLogin(GoogleLoginBody(email, displayName))
+                    val res = api.googleLogin(GoogleLoginBody(email, displayName, tokenManager.guestId))
                     if (res.status == true && res.data?.token != null) {
                         tokenManager.accessToken = res.data.token
                         tokenManager.userEmail = email

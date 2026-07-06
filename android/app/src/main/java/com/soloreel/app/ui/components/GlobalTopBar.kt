@@ -39,7 +39,7 @@ fun GlobalTopBar(
         Image(
             painter = androidx.compose.ui.res.painterResource(id = com.soloreel.app.R.drawable.logo_splash),
             contentDescription = "Logo",
-            modifier = Modifier.height(48.dp), // Increased logo size
+            modifier = Modifier.height(72.dp), // Increased logo size
             contentScale = ContentScale.Fit
         )
         NotificationBell(unreadCount = notifState.unreadCount) {

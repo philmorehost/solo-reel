@@ -27,8 +27,8 @@ fun Throwable.apiMessage(fallback: String): String {
     return message ?: fallback
 }
 data class LoginBody(val email: String, val password: String)
-data class RegisterBody(val username: String, val email: String, val password: String, val display_name: String)
-data class GoogleLoginBody(val email: String, val displayName: String)
+data class RegisterBody(val username: String, val email: String, val password: String, val display_name: String, val guest_id: String? = null)
+data class GoogleLoginBody(val email: String, val displayName: String, val guest_id: String? = null)
 data class AuthResult(val user: User?, val token: String?)
 data class GuestInitBody(val guest_id: String)
 data class GuestPurchaseBody(val package_id: Int, val guest_id: String, val email: String? = null)

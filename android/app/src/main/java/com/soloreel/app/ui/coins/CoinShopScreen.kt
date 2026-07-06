@@ -221,7 +221,7 @@ fun CoinPackageCard(pkg: CoinPackage, onClick: () -> Unit) {
 fun PaymentWebView(url: String, onSuccess: (String) -> Unit, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxSize(0.95f)) {
-            Column {
+            Column(modifier = Modifier.fillMaxSize()) {
                 Row(modifier = Modifier.fillMaxWidth().background(Color(0xFF111111)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("Complete Payment", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.weight(1f))
                     IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, null, tint = Color.White) }

@@ -53,7 +53,7 @@
                 window.location.href = "/coin-shop";
               },
               callback: function(response){
-                window.location.href = "/payment/verify?reference=" + response.reference;
+                window.location.href = "/payment/verify?reference=<?= htmlspecialchars($reference) ?>";
               }
             });
 

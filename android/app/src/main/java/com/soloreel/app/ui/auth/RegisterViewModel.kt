@@ -30,7 +30,7 @@ class RegisterViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = s.copy(isLoading = true, error = null)
             try {
-                val res = api.register(RegisterBody(s.username, s.email, s.password, s.username))
+                val res = api.register(RegisterBody(s.username, s.email, s.password, s.username, tokenManager.guestId))
                 if (res.status == true && res.data?.token != null) {
                     tokenManager.accessToken = res.data.token; tokenManager.userEmail = s.email
                     res.data.user?.let { tokenManager.userName = it.username }
@@ -63,7 +63,7 @@ class RegisterViewModel @Inject constructor(
                     val email = googleIdTokenCredential.id
                     val displayName = googleIdTokenCredential.displayName ?: ""
                     
-                    val res = api.googleLogin(GoogleLoginBody(email, displayName))
+                    val res = api.googleLogin(GoogleLoginBody(email, displayName, tokenManager.guestId))
                     if (res.status == true && res.data?.token != null) {
                         tokenManager.accessToken = res.data.token
                         tokenManager.userEmail = email

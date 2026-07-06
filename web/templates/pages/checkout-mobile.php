@@ -59,7 +59,7 @@
                 window.location.href = "/pay/closed";
               },
               callback: function(response){
-                window.location.href = "/pay/verify?reference=" + encodeURIComponent(response.reference);
+                window.location.href = "/pay/verify?reference=<?= urlencode($reference) ?>";
               }
             });
 

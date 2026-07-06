@@ -113,6 +113,32 @@ class AuthController extends BaseApiController {
         $user = $stmt->fetch();
 
         $token = $this->issueToken($user);
+
+        // Migrate Guest Coins
+        $guestId = trim((string)($input['guest_id'] ?? ''));
+        if ($guestId !== '') {
+            $stmt = $db->prepare("SELECT coin_balance FROM guest_wallets WHERE guest_id = ?");
+            $stmt->execute([$guestId]);
+            $guestWallet = $stmt->fetch();
+            if ($guestWallet && (float)$guestWallet['coin_balance'] > 0) {
+                $guestCoins = (float)$guestWallet['coin_balance'];
+                
+                // Add to user balance
+                $stmt = $db->prepare("UPDATE users SET coin_balance = coin_balance + ? WHERE id = ?");
+                $stmt->execute([$guestCoins, $user['id']]);
+                
+                // Log transaction
+                $stmt = $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description) VALUES (?, 'wallet_topup', ?, 'Migrated from guest wallet')");
+                $stmt->execute([$user['id'], $guestCoins]);
+                
+                // Clear guest wallet to prevent double-spending
+                $stmt = $db->prepare("UPDATE guest_wallets SET coin_balance = 0 WHERE guest_id = ?");
+                $stmt->execute([$guestId]);
+                
+                $user['coin_balance'] = (float)$user['coin_balance'] + $guestCoins;
+            }
+        }
+
         $this->respondAuthSuccess($user, $token, 'Registration successful', 201);
     }
 
@@ -159,6 +185,32 @@ class AuthController extends BaseApiController {
         }
 
         $token = $this->issueToken($user);
+
+        // Migrate Guest Coins
+        $guestId = trim((string)($input['guest_id'] ?? ''));
+        if ($guestId !== '') {
+            $stmt = $db->prepare("SELECT coin_balance FROM guest_wallets WHERE guest_id = ?");
+            $stmt->execute([$guestId]);
+            $guestWallet = $stmt->fetch();
+            if ($guestWallet && (float)$guestWallet['coin_balance'] > 0) {
+                $guestCoins = (float)$guestWallet['coin_balance'];
+                
+                // Add to user balance
+                $stmt = $db->prepare("UPDATE users SET coin_balance = coin_balance + ? WHERE id = ?");
+                $stmt->execute([$guestCoins, $user['id']]);
+                
+                // Log transaction
+                $stmt = $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description) VALUES (?, 'wallet_topup', ?, 'Migrated from guest wallet')");
+                $stmt->execute([$user['id'], $guestCoins]);
+                
+                // Clear guest wallet to prevent double-spending
+                $stmt = $db->prepare("UPDATE guest_wallets SET coin_balance = 0 WHERE guest_id = ?");
+                $stmt->execute([$guestId]);
+                
+                $user['coin_balance'] = (float)$user['coin_balance'] + $guestCoins;
+            }
+        }
+
         $this->respondAuthSuccess($user, $token, 'Login successful');
     }
 
