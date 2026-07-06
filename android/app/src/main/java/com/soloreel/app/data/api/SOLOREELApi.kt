@@ -31,9 +31,11 @@ fun Throwable.apiMessage(fallback: String): String {
 data class LoginBody(val email: String, val password: String)
 data class RegisterBody(val username: String, val email: String, val password: String, val display_name: String, val guest_id: String? = null)
 data class GoogleLoginBody(val email: String, val displayName: String, val guest_id: String? = null)
-data class AuthResult(val user: User?, val token: String?)
+data class AuthResult(val user: User?, val token: String?, val requires_verification: Boolean? = null, val user_id: Int? = null)
 data class GuestInitBody(val guest_id: String)
 data class GuestPurchaseBody(val package_id: Int, val guest_id: String, val email: String? = null)
+data class VerifyOtpBody(val user_id: Int, val otp: String, val guest_id: String? = null)
+data class ResendOtpBody(val email: String)
 
 interface SOLOREELApi {
     @GET("api/v1/banners")
@@ -68,6 +70,12 @@ interface SOLOREELApi {
 
     @POST("api/v1/auth/register")
     suspend fun register(@Body body: RegisterBody): ApiResponse<AuthResult>
+
+    @POST("api/v1/auth/verify-otp")
+    suspend fun verifyOtp(@Body body: VerifyOtpBody): ApiResponse<AuthResult>
+
+    @POST("api/v1/auth/resend-otp")
+    suspend fun resendOtp(@Body body: ResendOtpBody): ApiResponse<JsonElement>
 
     @GET("api/v1/user/profile")
     suspend fun getProfile(): ApiResponse<User>

@@ -1,12 +1,14 @@
-﻿import Foundation
+import Foundation
 
 // MARK: - Models
 struct ApiResponse<T: Codable>: Codable { let status: Bool?; let data: T?; let message: String?; let error: String? }
 struct LoginBody: Codable { let email: String; let password: String }
 struct RegisterBody: Codable { let username: String; let email: String; let password: String; let display_name: String }
-struct AuthResult: Codable { let user: User?; let token: String? }
+struct AuthResult: Codable { let user: User?; let token: String?; let requires_verification: Bool?; let user_id: Int? }
 struct GuestInitBody: Codable { let guest_id: String }
 struct GuestWallet: Codable { let guest_id: String; let coin_balance: Double }
+struct VerifyOtpBody: Codable { let user_id: Int; let otp: String; let guest_id: String? }
+struct ResendOtpBody: Codable { let email: String }
 struct SeriesRequestBody: Codable { let title: String; let description: String?; let email: String?; let guest_id: String? }
 
 struct Banner: Codable, Identifiable {
@@ -98,9 +100,20 @@ class APIClient {
         let body = try JSONEncoder().encode(LoginBody(email: email, password: password))
         return try await request("auth/login", method: "POST", body: body)
     }
+
     func register(username: String, email: String, password: String) async throws -> AuthResult {
         let body = try JSONEncoder().encode(RegisterBody(username: username, email: email, password: password, display_name: username))
         return try await request("auth/register", method: "POST", body: body)
+    }
+    
+    func verifyOTP(userId: Int, otp: String, guestId: String?) async throws -> AuthResult {
+        let body = try JSONEncoder().encode(VerifyOtpBody(user_id: userId, otp: otp, guest_id: guestId))
+        return try await request("auth/verify-otp", method: "POST", body: body)
+    }
+    
+    func resendOTP(email: String) async throws {
+        let body = try JSONEncoder().encode(ResendOtpBody(email: email))
+        try await requestVoid("auth/resend-otp", method: "POST", body: body)
     }
     func getBanners() async throws -> [Banner] { try await request("banners?active=true") }
     func getSeries(shelf: String? = nil) async throws -> [Series] {

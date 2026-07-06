@@ -63,6 +63,18 @@ class AuthController {
         $email = $_POST['email'] ?? '';
         $password = $_POST['password'] ?? '';
 
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Session::setFlash('error', 'Please enter a valid email address.');
+            header("Location: /register");
+            die();
+        }
+        $domain = substr(strrchr($email, "@"), 1);
+        if (!checkdnsrr($domain, 'MX') && !checkdnsrr($domain, 'A')) {
+            Session::setFlash('error', 'Email domain does not exist or cannot receive emails.');
+            header("Location: /register");
+            die();
+        }
+
         $db = Database::getInstance();
         $stmt = $db->prepare("SELECT id FROM users WHERE email = ? OR username = ?");
         $stmt->execute([$email, $username]);

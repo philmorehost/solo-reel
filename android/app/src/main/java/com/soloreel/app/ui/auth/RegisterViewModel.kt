@@ -24,18 +24,25 @@ class RegisterViewModel @Inject constructor(
     fun setEmail(v: String) { _state.value = _state.value.copy(email = v, error = null) }
     fun setPassword(v: String) { _state.value = _state.value.copy(password = v, error = null) }
 
-    fun register(onSuccess: () -> Unit) {
+    fun register(onSuccess: (requiresVerification: Boolean, userId: Int, email: String) -> Unit) {
         val s = _state.value
         if (s.username.isBlank() || s.email.isBlank() || s.password.isBlank()) { _state.value = s.copy(error = "Fill all fields"); return }
         viewModelScope.launch {
             _state.value = s.copy(isLoading = true, error = null)
             try {
                 val res = api.register(RegisterBody(s.username, s.email, s.password, s.username, tokenManager.guestId))
-                if (res.status == true && res.data?.token != null) {
-                    tokenManager.accessToken = res.data.token; tokenManager.userEmail = s.email
-                    res.data.user?.let { tokenManager.userName = it.username }
-                    _state.value = _state.value.copy(isLoading = false, success = "Registered!")
-                    onSuccess()
+                if (res.status == true) {
+                    if (res.data?.requires_verification == true) {
+                        _state.value = _state.value.copy(isLoading = false, success = "OTP Sent!")
+                        onSuccess(true, res.data.user_id ?: 0, s.email)
+                    } else if (res.data?.token != null) {
+                        tokenManager.accessToken = res.data.token; tokenManager.userEmail = s.email
+                        res.data.user?.let { tokenManager.userName = it.username }
+                        _state.value = _state.value.copy(isLoading = false, success = "Registered!")
+                        onSuccess(false, 0, "")
+                    } else {
+                        _state.value = _state.value.copy(isLoading = false, error = "Invalid response")
+                    }
                 } else {
                     _state.value = _state.value.copy(isLoading = false, error = res.message ?: "Registration failed")
                 }

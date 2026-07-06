@@ -91,6 +91,14 @@ class AuthController extends BaseApiController {
             $this->respondError('Email, username, and password are required', 400);
         }
 
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->respondError('Please enter a valid email address', 400);
+        }
+        $domain = substr(strrchr($email, "@"), 1);
+        if (!checkdnsrr($domain, 'MX') && !checkdnsrr($domain, 'A')) {
+            $this->respondError('Email domain does not exist or cannot receive emails', 400);
+        }
+
         $db = Database::getInstance();
 
         // Check existing
@@ -102,17 +110,55 @@ class AuthController extends BaseApiController {
 
         $hash = password_hash($password, PASSWORD_ARGON2ID);
 
-        $stmt = $db->prepare("INSERT INTO users (username, email, password_hash, display_name) VALUES (?, ?, ?, ?)");
-        if (!$stmt->execute([$username, $email, $hash, $displayName])) {
+        $otp = str_pad((string)mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        $expiresAt = date('Y-m-d H:i:s', time() + 900); // 15 minutes
+
+        $stmt = $db->prepare("INSERT INTO users (username, email, password_hash, display_name, otp_code, otp_expires_at) VALUES (?, ?, ?, ?, ?, ?)");
+        if (!$stmt->execute([$username, $email, $hash, $displayName, $otp, $expiresAt])) {
             $this->respondError('Registration failed', 500);
         }
+        $userId = $db->lastInsertId();
 
-        // Auto-login: return a token right away so new users land in their account.
-        $stmt = $db->prepare("SELECT id, username, email, display_name, role, coin_balance, status FROM users WHERE id = ?");
-        $stmt->execute([$db->lastInsertId()]);
+        \App\Core\Mailer::send($email, "SOLOREEL Verification Code", "Your verification code is: $otp");
+
+        $this->respondJson([
+            'status' => true,
+            'requires_verification' => true,
+            'message' => 'OTP sent to your email. Please verify to complete registration.',
+            'user_id' => (int)$userId,
+            'email' => $email
+        ], 201);
+    }
+
+    public function verifyOtp() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->respondError('Method Not Allowed', 405);
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $userId = $input['user_id'] ?? 0;
+        $otp = $input['otp'] ?? '';
+
+        if (empty($userId) || empty($otp)) {
+            $this->respondError('User ID and OTP are required', 400);
+        }
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT id, username, email, display_name, role, coin_balance, status, otp_code, otp_expires_at FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
         $user = $stmt->fetch();
 
-        $token = $this->issueToken($user);
+        if (!$user) {
+            $this->respondError('User not found', 404);
+        }
+
+        if ($user['otp_code'] !== $otp || strtotime($user['otp_expires_at']) <= time()) {
+            $this->respondError('Invalid or expired OTP code', 400);
+        }
+
+        // Mark as verified
+        $stmt = $db->prepare("UPDATE users SET is_verified = 1, otp_code = NULL, otp_expires_at = NULL WHERE id = ?");
+        $stmt->execute([$userId]);
 
         // Migrate Guest Coins
         $guestId = trim((string)($input['guest_id'] ?? ''));
@@ -123,15 +169,12 @@ class AuthController extends BaseApiController {
             if ($guestWallet && (float)$guestWallet['coin_balance'] > 0) {
                 $guestCoins = (float)$guestWallet['coin_balance'];
                 
-                // Add to user balance
                 $stmt = $db->prepare("UPDATE users SET coin_balance = coin_balance + ? WHERE id = ?");
                 $stmt->execute([$guestCoins, $user['id']]);
                 
-                // Log transaction
                 $stmt = $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description) VALUES (?, 'wallet_topup', ?, 'Migrated from guest wallet')");
                 $stmt->execute([$user['id'], $guestCoins]);
                 
-                // Clear guest wallet to prevent double-spending
                 $stmt = $db->prepare("UPDATE guest_wallets SET coin_balance = 0 WHERE guest_id = ?");
                 $stmt->execute([$guestId]);
                 
@@ -139,7 +182,47 @@ class AuthController extends BaseApiController {
             }
         }
 
-        $this->respondAuthSuccess($user, $token, 'Registration successful', 201);
+        $token = $this->issueToken($user);
+        $this->respondAuthSuccess($user, $token, 'Account verified and login successful', 200);
+    }
+
+    public function resendOtp() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->respondError('Method Not Allowed', 405);
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $email = $input['email'] ?? '';
+
+        if (empty($email)) {
+            $this->respondError('Email is required', 400);
+        }
+
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT id, email, is_verified FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+
+        if (!$user) {
+            $this->respondError('User not found', 404);
+        }
+
+        if ($user['is_verified'] == 1) {
+            $this->respondError('Account is already verified', 400);
+        }
+
+        $otp = str_pad((string)mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        $expiresAt = date('Y-m-d H:i:s', time() + 900); // 15 minutes
+
+        $stmt = $db->prepare("UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE id = ?");
+        $stmt->execute([$otp, $expiresAt, $user['id']]);
+
+        \App\Core\Mailer::send($email, "SOLOREEL Verification Code", "Your verification code is: $otp");
+
+        $this->respondJson([
+            'status' => true,
+            'message' => 'OTP sent to your email.'
+        ]);
     }
 
     public function googleLogin() {

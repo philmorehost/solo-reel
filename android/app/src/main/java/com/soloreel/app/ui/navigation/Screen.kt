@@ -13,6 +13,9 @@ sealed class Screen(val route: String) {
     }
     object Auth : Screen("auth")
     object Register : Screen("register")
+    object VerifyOtp : Screen("verify_otp/{userId}/{email}") {
+        fun createRoute(userId: Int, email: String) = "verify_otp/$userId/$email"
+    }
     object Notifications : Screen("notifications")
     object History : Screen("history")
     object Favorites : Screen("favorites")

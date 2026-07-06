@@ -6,6 +6,10 @@ struct AuthView: View {
     @State private var email = ""; @State private var password = ""; @State private var username = ""
     @State private var isLoading = false; @State private var error: String?
     @State private var isRegister = false
+    
+    @State private var showVerifyOTP = false
+    @State private var verifyUserId: Int = 0
+    @State private var verifyEmail: String = ""
 
     var body: some View {
         ZStack {
@@ -59,6 +63,17 @@ struct AuthView: View {
             }
             }
         }
+        .fullScreenCover(isPresented: $showVerifyOTP) {
+            VerifyOTPView(
+                userId: verifyUserId,
+                email: verifyEmail,
+                onVerifySuccess: {
+                    showVerifyOTP = false
+                    // The API client token will be set in the view model, just need to update TokenManager login state
+                    TokenManager.shared.isLoggedIn = true
+                }
+            )
+        }
     }
 
     func applyAuth(token: String?, email authEmail: String?, username authUsername: String?, coins: Double?) {
@@ -73,11 +88,16 @@ struct AuthView: View {
         Task {
             do {
                 if isRegister {
-                    // Registration now returns a token — take the user straight into their account.
                     let r = try await APIClient.shared.register(username: username, email: email, password: password)
                     await MainActor.run {
                         isLoading = false
-                        applyAuth(token: r.token, email: email, username: r.user?.username ?? username, coins: r.user?.coin_balance)
+                        if r.requires_verification == true {
+                            verifyUserId = r.user_id ?? 0
+                            verifyEmail = email
+                            showVerifyOTP = true
+                        } else {
+                            applyAuth(token: r.token, email: email, username: r.user?.username ?? username, coins: r.user?.coin_balance)
+                        }
                     }
                 } else {
                     let r = try await APIClient.shared.login(email: email, password: password)

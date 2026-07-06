@@ -114,6 +114,8 @@ $router->post('/admin/settings/payments', 'PaymentSettingsController@index');
 // API Routes
 $router->post('/api/v1/auth/login', 'Api\AuthController@login');
 $router->post('/api/v1/auth/register', 'Api\AuthController@register');
+$router->post('/api/v1/auth/verify-otp', 'Api\AuthController@verifyOtp');
+$router->post('/api/v1/auth/resend-otp', 'Api\AuthController@resendOtp');
 $router->post('/api/v1/auth/google', 'Api\AuthController@googleLogin');
 $router->get('/api/v1/auth/google-config', 'Api\AuthController@googleConfig');
 $router->get('/api/v1/ads-config', 'Api\AuthController@adsConfig');

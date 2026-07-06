@@ -21,7 +21,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: () -> Unit,
+    onRegisterSuccess: (requiresVerification: Boolean, userId: Int, email: String) -> Unit,
     onNavigateToLogin: () -> Unit,
     viewModel: RegisterViewModel = hiltViewModel()
 ) {
@@ -66,7 +66,7 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(20.dp))
             val context = androidx.compose.ui.platform.LocalContext.current
             OutlinedButton(
-                onClick = { viewModel.signInWithGoogle(context, onRegisterSuccess) },
+                onClick = { viewModel.signInWithGoogle(context) { onRegisterSuccess(false, 0, "") } },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)

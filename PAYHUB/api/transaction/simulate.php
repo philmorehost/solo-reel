@@ -15,15 +15,15 @@ if (!$auth || strpos($auth, 'Bearer ') !== 0) {
     exit;
 }
 
-$sk = str_replace('Bearer ', '', $auth);
+$pk = str_replace('Bearer ', '', $auth);
 $db = Database::connect();
-$stmt = $db->prepare("SELECT id FROM users WHERE test_secret_key = ?");
-$stmt->execute([$sk]);
+$stmt = $db->prepare("SELECT id FROM users WHERE test_public_key = ?");
+$stmt->execute([$pk]);
 $user = $stmt->fetch();
 
 if (!$user) {
     http_response_code(401);
-    echo json_encode(['status' => false, 'message' => 'Invalid or non-test Secret Key. Only sk_test_ keys may use simulate.']);
+    echo json_encode(['status' => false, 'message' => 'Invalid or non-test Public Key. Only pk_test_ keys may use simulate.']);
     exit;
 }
 

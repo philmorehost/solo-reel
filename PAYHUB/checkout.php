@@ -104,7 +104,7 @@ function simulateSuccess() {
     fetch('<?php echo BASE_URL; ?>api/transaction/simulate.php?reference=<?php echo urlencode($ref); ?>', {
         method: 'GET',
         headers: {
-            'Authorization': 'Bearer <?php echo getConfig('paystack_test_secret_key'); ?>'
+            'Authorization': 'Bearer <?php echo $pk; ?>'
         }
     })
     .then(function(r) { return r.json(); })

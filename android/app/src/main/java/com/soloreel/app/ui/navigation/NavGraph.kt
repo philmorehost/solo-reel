@@ -96,12 +96,36 @@ fun NavGraph(isLoggedIn: Boolean) {
             }
             composable(Screen.Register.route) {
                 RegisterScreen(
-                    onRegisterSuccess = {
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.Register.route) { inclusive = true }
+                    onRegisterSuccess = { requiresVerification, userId, email ->
+                        if (requiresVerification) {
+                            navController.navigate(Screen.VerifyOtp.createRoute(userId, email))
+                        } else {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Register.route) { inclusive = true }
+                            }
                         }
                     },
                     onNavigateToLogin = { navController.popBackStack() }
+                )
+            }
+            composable(
+                Screen.VerifyOtp.route,
+                arguments = listOf(
+                    navArgument("userId") { type = NavType.IntType },
+                    navArgument("email") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getInt("userId") ?: 0
+                val email = backStackEntry.arguments?.getString("email") ?: ""
+                com.soloreel.app.ui.auth.VerifyOtpScreen(
+                    userId = userId,
+                    email = email,
+                    onVerifySuccess = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Auth.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
             composable(Screen.Home.route) { HomeScreen(navController = navController) }
