@@ -149,7 +149,7 @@ class CoinController {
                 die();
             }
 
-            $reference = 'trx_' . uniqid() . '_' . time();
+            $reference = 'trx_' . time() . '_' . bin2hex(random_bytes(6));
             $amount = $package['price'];
 
             $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (?, ?, ?, ?, ?, 'pending', ?)");

@@ -106,7 +106,7 @@ class TransactionController extends BaseApiController {
             $user = $stmt->fetch();
             $email = $user['email'] ?? ('user_' . $userId . '@soloreel.tv');
 
-            $reference = 'trx_' . uniqid() . '_' . time();
+            $reference = 'trx_' . time() . '_' . bin2hex(random_bytes(6));
 
             $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (?, ?, ?, ?, ?, 'pending', ?)");
             $stmt->execute([$userId, $package['id'], $reference, $package['price'], $package['currency'], $package['coins']]);
@@ -143,7 +143,7 @@ class TransactionController extends BaseApiController {
                 $email = 'guest_' . substr(md5($guestId), 0, 10) . '@soloreel.tv';
             }
 
-            $reference = 'gtrx_' . uniqid() . '_' . time();
+            $reference = 'gtrx_' . time() . '_' . bin2hex(random_bytes(6));
 
             $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, guest_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (NULL, ?, ?, ?, ?, ?, 'pending', ?)");
             $stmt->execute([$guestId, $package['id'], $reference, $package['price'], $package['currency'], $package['coins']]);
