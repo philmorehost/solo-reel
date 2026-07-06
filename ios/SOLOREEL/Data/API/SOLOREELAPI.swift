@@ -24,7 +24,11 @@ class APIClient {
         if let t = token { req.setValue("Bearer \(t)", forHTTPHeaderField: "Authorization") }
         req.httpBody = body
         let (data, _) = try await URLSession.shared.data(for: req)
-        return try JSONDecoder().decode(ApiResponse<T>.self, from: data).data!
+        let response = try JSONDecoder().decode(ApiResponse<T>.self, from: data)
+        guard let responseData = response.data else {
+            throw NSError(domain: "APIError", code: 0, userInfo: [NSLocalizedDescriptionKey: response.message ?? "Unknown API error"])
+        }
+        return responseData
     }
 
     func login(email: String, password: String) async throws -> AuthResult {
