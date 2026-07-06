@@ -183,18 +183,6 @@ struct FavoritesView: View {
     }
 }
 
-struct EditProfileView: View {
-    var body: some View {
-        VStack {
-            Text("Edit Profile").font(.title).bold()
-            Text("Coming soon!").foregroundColor(.gray)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(red: 0.04, green: 0.04, blue: 0.04).ignoresSafeArea())
-        .foregroundColor(.white)
-    }
-}
-
 struct SettingsView: View {
     var body: some View {
         VStack {

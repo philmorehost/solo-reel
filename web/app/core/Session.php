@@ -9,6 +9,17 @@ class Session {
         }
     }
 
+    public static function getGuestId(): string {
+        self::start();
+        if (empty($_COOKIE['guest_id'])) {
+            $guestId = bin2hex(random_bytes(16));
+            // 1 year cookie
+            setcookie('guest_id', $guestId, time() + (86400 * 365), '/');
+            $_COOKIE['guest_id'] = $guestId;
+        }
+        return $_COOKIE['guest_id'];
+    }
+
     public static function set(string $key, $value) {
         self::start();
         $_SESSION[$key] = $value;

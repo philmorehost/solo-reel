@@ -68,7 +68,6 @@
                 <h2 class="text-2xl font-bold mb-2">Episode Locked</h2>
                 <p class="text-gray-400 mb-6">Unlock this episode for <span class="text-white font-bold"><?= (float)$episode['coin_cost'] ?> Coins</span></p>
 
-                <?php if(\App\Core\Session::isLoggedIn()): ?>
                     <form action="/unlock/<?= $episode['id'] ?>" method="POST" class="w-full max-w-xs">
                         <?= \App\Core\Security::csrfField() ?>
                         <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-full transition-colors flex items-center justify-center gap-2">
@@ -77,9 +76,9 @@
                     </form>
                     <p class="mt-4 text-sm text-gray-500">Your Balance: <?= \App\Core\Session::get('user_coin_balance', 0) ?> Coins</p>
                     <a href="/coin-shop" class="mt-2 text-sm text-red-500 hover:underline">Get more coins</a>
-                <?php else: ?>
-                    <a href="/login" class="bg-white text-black font-bold py-3 px-8 rounded-full">Login to Unlock</a>
-                <?php endif; ?>
+                    <?php if(!\App\Core\Session::isLoggedIn()): ?>
+                        <p class="mt-4 text-xs text-gray-400">Guest mode. <a href="/login" class="text-white hover:underline">Login or Register</a> to save your coins.</p>
+                    <?php endif; ?>
             </div>
         <?php endif; ?>
     </div>

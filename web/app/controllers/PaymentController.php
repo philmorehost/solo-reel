@@ -95,21 +95,33 @@ class PaymentController {
                         die();
                     }
 
-                    // Credit wallet balance (user can then use wallet to buy coins)
-                    $stmt = $db->prepare("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id = ?");
-                    $stmt->execute([$txn['amount'], $txn['user_id']]);
+                    // Credit coin balance directly for coin purchases
+                    $coins = (float)$txn['coins_awarded'];
+                    
+                    if (!empty($txn['user_id'])) {
+                        $stmt = $db->prepare("UPDATE users SET coin_balance = coin_balance + ? WHERE id = ?");
+                        $stmt->execute([$coins, $txn['user_id']]);
 
-                    $stmt = $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description, reference_id) VALUES (?, 'wallet_topup', ?, ?, ?)");
-                    $stmt->execute([$txn['user_id'], $txn['amount'], 'Card payment - Wallet topped up', $ref]);
+                        $stmt = $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description, reference_id) VALUES (?, 'purchase', ?, ?, ?)");
+                        $stmt->execute([$txn['user_id'], $coins, 'Coin purchase via card', $ref]);
+
+                        $stmt = $db->prepare("SELECT coin_balance, wallet_balance FROM users WHERE id = ?");
+                        $stmt->execute([$txn['user_id']]);
+                        $u = $stmt->fetch();
+                        Session::set('user_coin_balance', (float)$u['coin_balance']);
+                    } else if (!empty($txn['guest_id'])) {
+                        $stmt = $db->prepare("INSERT INTO guest_wallets (guest_id, coin_balance) VALUES (?, ?) ON DUPLICATE KEY UPDATE coin_balance = coin_balance + VALUES(coin_balance)");
+                        $stmt->execute([$txn['guest_id'], $coins]);
+                        
+                        $stmt = $db->prepare("SELECT coin_balance FROM guest_wallets WHERE guest_id = ?");
+                        $stmt->execute([$txn['guest_id']]);
+                        $g = $stmt->fetch();
+                        Session::set('user_coin_balance', (float)$g['coin_balance']);
+                    }
 
                     $db->commit();
 
-                    $stmt = $db->prepare("SELECT coin_balance, wallet_balance FROM users WHERE id = ?");
-                    $stmt->execute([$txn['user_id']]);
-                    $u = $stmt->fetch();
-                    Session::set('user_coin_balance', (float)$u['coin_balance']);
-
-                    Session::setFlash('success', 'Payment successful! &#8358;' . number_format((float)$txn['amount'], 2) . ' added to wallet. Use your wallet to buy coins.');
+                    Session::setFlash('success', 'Payment successful! ' . number_format($coins) . ' coins added to your account.');
                     header("Location: $returnUrl");
                     die();
                 }
@@ -172,6 +184,7 @@ class PaymentController {
         }
 
         $amount = (float)$txn['amount'];
+        $payhubBaseUrl = rtrim($settings['payhub_base_url'] ?: 'https://merchant.payhub.com.ng', '/');
         require __DIR__ . '/../../templates/pages/checkout-mobile.php';
         die();
     }

@@ -123,6 +123,32 @@ class AuthController {
             $stmt = $db->prepare("UPDATE users SET is_verified = 1, otp_code = NULL, otp_expires_at = NULL WHERE id = ?");
             $stmt->execute([$userId]);
             Session::remove('pending_verification');
+            
+            // Migrate Guest Data
+            if (!empty($_COOKIE['guest_id'])) {
+                $guestId = $_COOKIE['guest_id'];
+                
+                // Migrate coins
+                $stmt = $db->prepare("SELECT coin_balance FROM guest_wallets WHERE guest_id = ?");
+                $stmt->execute([$guestId]);
+                $guestWallet = $stmt->fetch();
+                if ($guestWallet && (float)$guestWallet['coin_balance'] > 0) {
+                    $guestCoins = (float)$guestWallet['coin_balance'];
+                    $db->prepare("UPDATE users SET coin_balance = coin_balance + ? WHERE id = ?")->execute([$guestCoins, $userId]);
+                    $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description) VALUES (?, 'wallet_topup', ?, 'Migrated from guest wallet')")->execute([$userId, $guestCoins]);
+                    $db->prepare("UPDATE guest_wallets SET coin_balance = 0 WHERE guest_id = ?")->execute([$guestId]);
+                }
+                
+                // Migrate episodes
+                $stmt = $db->prepare("INSERT IGNORE INTO user_unlocked_episodes (user_id, episode_id, unlocked_at) SELECT ?, episode_id, unlocked_at FROM guest_unlocked_episodes WHERE guest_id = ?");
+                $stmt->execute([$userId, $guestId]);
+                $db->prepare("DELETE FROM guest_unlocked_episodes WHERE guest_id = ?")->execute([$guestId]);
+                
+                // Optional: clear cookie
+                setcookie('guest_id', '', time() - 3600, '/');
+                unset($_COOKIE['guest_id']);
+            }
+
             Session::setFlash('success', 'Account verified successfully!');
             header("Location: /");
             die();

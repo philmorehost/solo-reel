@@ -6,16 +6,6 @@ require_once '../../includes/functions.php';
 
 header('Content-Type: application/json');
 
-$headers = getallheaders();
-$auth = $headers['Authorization'] ?? $headers['authorization'] ?? '';
-
-if (!$auth || strpos($auth, 'Bearer ') !== 0) {
-    http_response_code(401);
-    echo json_encode(['status' => false, 'message' => 'Unauthorized']);
-    exit;
-}
-
-$pk = str_replace('Bearer ', '', $auth);
 $db = Database::connect();
 
 $ref = $_GET['reference'] ?? '';

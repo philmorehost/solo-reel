@@ -14,12 +14,12 @@
                         return scripts[i];
                     }
                 }
-                return { src: 'https://merchant.payhub.com.ng/inline.js' };
+                return { src: '<?= htmlspecialchars($payhubBaseUrl) ?>/inline.js' };
             },
             configurable: true
         });
     </script>
-    <script src="https://merchant.payhub.com.ng/inline.js"></script>
+    <script src="<?= htmlspecialchars($payhubBaseUrl) ?>/inline.js"></script>
     <style>
         body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; text-align: center; }
         .spinner { width: 48px; height: 48px; border: 3px solid #333; border-bottom-color: #dc2626; border-radius: 50%; margin: 20px auto 0; animation: spin 1s linear infinite; }

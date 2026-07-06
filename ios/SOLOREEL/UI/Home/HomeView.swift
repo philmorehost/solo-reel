@@ -14,7 +14,7 @@ struct HomeView: View {
                     Image("logo_topbar")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(height: 28)
+                        .frame(height: 38)
                     Spacer()
                     NotificationBell()
                 }

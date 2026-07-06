@@ -24,13 +24,22 @@ class EpisodeController {
         }
 
         $userId = Session::get('user_id');
+        $guestId = Session::getGuestId();
         $hasAccess = (bool) $episode['is_free'];
 
-        if (!$hasAccess && $userId) {
-            $checkStmt = $db->prepare("SELECT id FROM user_unlocked_episodes WHERE user_id = ? AND episode_id = ?");
-            $checkStmt->execute([$userId, $episode['id']]);
-            if ($checkStmt->fetch()) {
-                $hasAccess = true;
+        if (!$hasAccess) {
+            if ($userId) {
+                $checkStmt = $db->prepare("SELECT id FROM user_unlocked_episodes WHERE user_id = ? AND episode_id = ?");
+                $checkStmt->execute([$userId, $episode['id']]);
+                if ($checkStmt->fetch()) {
+                    $hasAccess = true;
+                }
+            } else {
+                $checkStmt = $db->prepare("SELECT id FROM guest_unlocked_episodes WHERE guest_id = ? AND episode_id = ?");
+                $checkStmt->execute([$guestId, $episode['id']]);
+                if ($checkStmt->fetch()) {
+                    $hasAccess = true;
+                }
             }
         }
 

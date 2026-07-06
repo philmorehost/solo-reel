@@ -14,12 +14,12 @@
                         return scripts[i];
                     }
                 }
-                return { src: 'https://merchant.payhub.com.ng/inline.js' };
+                return { src: '<?= htmlspecialchars($payhubBaseUrl) ?>/inline.js' };
             },
             configurable: true
         });
     </script>
-    <script src="https://merchant.payhub.com.ng/inline.js"></script>
+    <script src="<?= htmlspecialchars($payhubBaseUrl) ?>/inline.js"></script>
     <style>
         /* Force responsiveness on the Payhub Checkout Iframe and Container */
         #payhub-checkout-overlay > div {

@@ -180,6 +180,11 @@ class AuthController extends BaseApiController {
                 
                 $user['coin_balance'] = (float)$user['coin_balance'] + $guestCoins;
             }
+            
+            // Migrate episodes regardless of wallet balance
+            $stmt = $db->prepare("INSERT IGNORE INTO user_unlocked_episodes (user_id, episode_id, unlocked_at) SELECT ?, episode_id, unlocked_at FROM guest_unlocked_episodes WHERE guest_id = ?");
+            $stmt->execute([$user['id'], $guestId]);
+            $db->prepare("DELETE FROM guest_unlocked_episodes WHERE guest_id = ?")->execute([$guestId]);
         }
 
         $token = $this->issueToken($user);

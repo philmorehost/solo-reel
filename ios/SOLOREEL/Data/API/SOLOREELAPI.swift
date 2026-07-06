@@ -142,6 +142,11 @@ class APIClient {
     func search(q: String) async throws -> [Series] { try await request("search?q=\(q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") }
     func getCoinPackages() async throws -> [CoinPackage] { try await request("coin-packages") }
     func getProfile() async throws -> User { try await request("user/profile") }
+    func updateProfile(username: String, displayName: String, password: String?) async throws {
+        struct UpdateProfileBody: Codable { let username: String; let display_name: String; let password: String? }
+        let body = try JSONEncoder().encode(UpdateProfileBody(username: username, display_name: displayName, password: password))
+        try await requestVoid("user/profile", method: "PUT", body: body)
+    }
     func getWatchHistory() async throws -> [WatchHistoryItem] { try await request("user/watch-history") }
     func getFavorites() async throws -> [Series] { try await request("user/favorites") }
     func getBonusStatus() async throws -> WeeklyBonusStatus { try await request("user/bonus-status") }
