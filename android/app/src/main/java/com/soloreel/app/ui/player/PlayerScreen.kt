@@ -15,6 +15,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavHostController
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -52,14 +53,14 @@ class PlayerViewModel @Inject constructor(private val api: SOLOREELApi) : ViewMo
 @UnstableApi
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayerScreen(slug: String, vm: PlayerViewModel = hiltViewModel()) {
+fun PlayerScreen(slug: String, navController: NavHostController, vm: PlayerViewModel = hiltViewModel()) {
     val state by vm.state.collectAsState()
     LaunchedEffect(slug) { vm.load(slug) }
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         TopAppBar(
             title = { Text(state.episode?.title ?: "Player", color = Color.White) },
-            navigationIcon = { IconButton(onClick = { /*navController.popBackStack()*/ }) { Icon(Icons.Default.ArrowBack, null, tint = Color.White) } },
+            navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.Default.ArrowBack, null, tint = Color.White) } },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
         )
 
@@ -69,7 +70,7 @@ fun PlayerScreen(slug: String, vm: PlayerViewModel = hiltViewModel()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(state.error!!, color = Color.Red) }
         } else if (state.episode?.video_hls_url != null) {
             val context = androidx.compose.ui.platform.LocalContext.current
-            var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
+            var exoPlayer by remember(slug) { mutableStateOf<ExoPlayer?>(null) }
 
             AndroidView(
                 modifier = Modifier.fillMaxWidth().aspectRatio(9f / 16f),

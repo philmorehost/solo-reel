@@ -57,7 +57,7 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun isBiometricAvailable(): Boolean {
+    fun isBiometricAvailable(context: Context): Boolean {
         if (tokenManager.userEmail == null || tokenManager.savedPassword == null) return false
         val bm = BiometricManager.from(context)
         return bm.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS

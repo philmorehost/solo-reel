@@ -70,9 +70,6 @@ interface SOLOREELApi {
     @GET("api/v1/user/watch-history")
     suspend fun getWatchHistory(): ApiResponse<List<WatchHistoryItem>>
 
-    @GET("api/v1/coin-packages")
-    suspend fun getCoinPackages2(): ApiResponse<List<CoinPackage>>
-
     @POST("api/v1/coins/purchase")
     suspend fun purchaseCoins(@Body body: Map<String, Int>): ApiResponse<PaymentInit>
 

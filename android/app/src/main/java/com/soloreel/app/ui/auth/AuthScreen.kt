@@ -145,7 +145,7 @@ fun AuthScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
             // Fingerprint login button
-            if (viewModel.isBiometricAvailable()) {
+            if (viewModel.isBiometricAvailable(context)) {
                 OutlinedButton(
                     onClick = {
                         val fragmentActivity = context as? androidx.fragment.app.FragmentActivity

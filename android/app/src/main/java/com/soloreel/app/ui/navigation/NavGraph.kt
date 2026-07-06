@@ -75,7 +75,7 @@ fun NavGraph(isLoggedIn: Boolean) {
     ) { padding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Home.route,
+            startDestination = if (isLoggedIn) Screen.Home.route else Screen.Auth.route,
             modifier = Modifier.padding(padding)
         ) {
             composable(Screen.Auth.route) {
@@ -125,7 +125,7 @@ fun NavGraph(isLoggedIn: Boolean) {
                 arguments = listOf(navArgument("slug") { type = NavType.StringType })
             ) { backStackEntry ->
                 val slug = backStackEntry.arguments?.getString("slug") ?: ""
-                PlayerScreen(slug = slug)
+                PlayerScreen(slug = slug, navController = navController)
             }
         }
     }

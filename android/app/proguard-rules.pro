@@ -1,19 +1,27 @@
 # Default ProGuard rules for SOLOREEL
--keepattributes Signature,InnerClasses,EnclosingMethod
+-keepattributes Signature,InnerClasses,EnclosingMethod,Exceptions
 -keepattributes *Annotation*
 -keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations
 -keep class * extends java.lang.annotation.Annotation
 
-# Gson — preserve generic type info for deserialization
+# Gson
 -keep class com.google.gson.** { *; }
+-keep class com.google.gson.reflect.TypeToken { *; }
 -keepclassmembers,allowobfuscation class * {
   @com.google.gson.annotations.SerializedName <fields>;
 }
--keep class com.soloreel.app.data.** { *; }
+
+# Keep our data models for Gson serialization/deserialization
+-keep class com.soloreel.app.data.model.** { *; }
+-keep class com.soloreel.app.data.api.** { *; }
+-keepclassmembers class com.soloreel.app.data.** { *; }
 
 # Retrofit
 -dontwarn retrofit2.**
 -keep class retrofit2.** { *; }
+-keepclasseswithmembers class * {
+    @retrofit2.http.* <methods>;
+}
 
 # Kotlin
 -dontwarn kotlinx.coroutines.**

@@ -37,6 +37,6 @@ class TokenManager @Inject constructor(@ApplicationContext context: Context) {
     val isLoggedIn: Boolean get() = accessToken != null
 
     fun clear() {
-        prefs.edit().remove("access_token").remove("refresh_token").apply()
+        prefs.edit().clear().apply()
     }
 }
