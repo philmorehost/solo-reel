@@ -126,4 +126,38 @@ class UserController extends BaseApiController {
         $stmt->execute([$userId, $seriesId]);
         $this->respondJson(['status' => true, 'message' => 'Removed from favorites']);
     }
+
+    /** POST /api/v1/user/claim-install-bonus */
+    public function claimInstallBonus() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->respondJson(['status' => false, 'error' => 'Method Not Allowed'], 405);
+        }
+
+        $userId = $this->requireUserId();
+        $db = Database::getInstance();
+        
+        $stmt = $db->prepare("SELECT app_bonus_claimed FROM users WHERE id = ? FOR UPDATE");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch();
+
+        if (!$user) {
+            $this->respondJson(['status' => false, 'error' => 'User not found'], 404);
+        }
+
+        if ($user['app_bonus_claimed']) {
+            $this->respondJson(['status' => false, 'message' => 'Bonus already claimed']);
+        }
+
+        $stmt = $db->query("SELECT setting_value FROM site_config WHERE setting_key = 'app_install_bonus'");
+        $config = $stmt->fetch();
+        $bonus = (float)($config['setting_value'] ?? 0);
+
+        if ($bonus > 0) {
+            $db->prepare("UPDATE users SET coin_balance = coin_balance + ?, app_bonus_claimed = 1 WHERE id = ?")->execute([$bonus, $userId]);
+            $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description) VALUES (?, 'bonus', ?, 'App Install Bonus')")->execute([$userId, $bonus]);
+            $this->respondJson(['status' => true, 'message' => 'App install bonus claimed!', 'bonus' => $bonus]);
+        } else {
+            $this->respondJson(['status' => false, 'message' => 'No bonus available']);
+        }
+    }
 }

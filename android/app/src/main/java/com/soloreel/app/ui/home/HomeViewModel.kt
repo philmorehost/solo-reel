@@ -11,12 +11,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.soloreel.app.data.api.TokenManager
 
 data class HomeState(val banners: List<Banner> = emptyList(), val series: List<Series> = emptyList(),
     val isLoading: Boolean = false, val error: String? = null)
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(private val api: SOLOREELApi) : ViewModel() {
+class HomeViewModel @Inject constructor(
+    private val api: SOLOREELApi,
+    private val tokenManager: TokenManager
+) : ViewModel() {
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state.asStateFlow()
 
@@ -30,6 +34,18 @@ class HomeViewModel @Inject constructor(private val api: SOLOREELApi) : ViewMode
                     banners = bannersRes.data ?: emptyList(),
                     series = seriesRes.data ?: emptyList()
                 )
+                
+                if (tokenManager.isLoggedIn && !tokenManager.installBonusClaimed) {
+                    try {
+                        val res = api.claimInstallBonus()
+                        // Regardless of whether we actually got coins or it was already claimed on another device, mark locally
+                        if (res.status == true) {
+                            tokenManager.installBonusClaimed = true
+                        }
+                    } catch (e: Exception) {
+                        // ignore error, will try again next time
+                    }
+                }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(isLoading = false, error = e.message)
             }

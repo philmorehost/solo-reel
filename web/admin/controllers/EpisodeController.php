@@ -38,6 +38,7 @@ class EpisodeController {
             $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $title))) . '-' . time();
             $isFree = isset($_POST['is_free']) ? 1 : 0;
             $coinCost = $_POST['coin_cost'] ?? 0.00;
+            $unlockMethod = $_POST['unlock_method'] ?? 'coins';
 
             // Handle file upload
             if (isset($_FILES['video_file']) && $_FILES['video_file']['error'] === UPLOAD_ERR_OK) {
@@ -69,8 +70,8 @@ class EpisodeController {
                 if (move_uploaded_file($tmpName, $fullDestPath)) {
                     $db->beginTransaction();
                     try {
-                        $stmt = $db->prepare("INSERT INTO episodes (series_id, episode_number, title, slug, is_free, coin_cost) VALUES (?, ?, ?, ?, ?, ?)");
-                        $stmt->execute([$seriesId, $episodeNumber, $title, $slug, $isFree, $coinCost]);
+                        $stmt = $db->prepare("INSERT INTO episodes (series_id, episode_number, title, slug, is_free, coin_cost, unlock_method) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                        $stmt->execute([$seriesId, $episodeNumber, $title, $slug, $isFree, $coinCost, $unlockMethod]);
                         $episodeId = $db->lastInsertId();
 
                         // Add to video_queue for HLS processing
@@ -112,10 +113,11 @@ class EpisodeController {
             $episodeNumber = $_POST['episode_number'] ?? 1;
             $isFree = isset($_POST['is_free']) ? 1 : 0;
             $coinCost = $_POST['coin_cost'] ?? 0.00;
+            $unlockMethod = $_POST['unlock_method'] ?? 'coins';
             $seriesId = $_POST['series_id'] ?? 0;
 
-            $stmt = $db->prepare("UPDATE episodes SET title = ?, episode_number = ?, is_free = ?, coin_cost = ?, series_id = ? WHERE id = ?");
-            $stmt->execute([$title, $episodeNumber, $isFree, $coinCost, $seriesId, $id]);
+            $stmt = $db->prepare("UPDATE episodes SET title = ?, episode_number = ?, is_free = ?, coin_cost = ?, unlock_method = ?, series_id = ? WHERE id = ?");
+            $stmt->execute([$title, $episodeNumber, $isFree, $coinCost, $unlockMethod, $seriesId, $id]);
 
             \App\Core\Session::setFlash('success', 'Episode updated successfully.');
             header("Location: /admin/episodes");

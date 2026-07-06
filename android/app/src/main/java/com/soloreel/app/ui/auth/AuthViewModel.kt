@@ -46,7 +46,21 @@ class AuthViewModel @Inject constructor(
                     tokenManager.accessToken = res.data.token
                     tokenManager.userEmail = s.email
                     tokenManager.savedPassword = s.password
-                    res.data.user?.let { tokenManager.userName = it.username; tokenManager.userCoins = it.coin_balance ?: 0.0 }
+                    res.data.user?.let { 
+                        tokenManager.userName = it.username
+                        tokenManager.userCoins = it.coin_balance ?: 0.0 
+                    }
+                    
+                    // Attempt to claim install bonus
+                    if (!tokenManager.installBonusClaimed) {
+                        try {
+                            val claimRes = api.claimInstallBonus()
+                            if (claimRes.status == true) {
+                                tokenManager.installBonusClaimed = true
+                            }
+                        } catch (e: Exception) { /* ignore */ }
+                    }
+                    
                     _state.value = _state.value.copy(isLoading = false, isLoggedIn = true, success = "Welcome!")
                 } else {
                     _state.value = _state.value.copy(isLoading = false, error = res.error ?: res.message ?: "Login failed")
@@ -71,16 +85,20 @@ class AuthViewModel @Inject constructor(
     }
 
     fun signInWithGoogle(context: Context) {
-        val webClientId = com.soloreel.app.BuildConfig.GOOGLE_WEB_CLIENT_ID
-        if (webClientId.isBlank() || webClientId == "YOUR_WEB_CLIENT_ID") {
-            _state.value = _state.value.copy(
-                error = "Google Sign-In is not configured yet. Add GOOGLE_WEB_CLIENT_ID (see GOOGLE_SIGNIN_SETUP.md)."
-            )
-            return
-        }
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
             try {
+                val configRes = api.getGoogleConfig()
+                val webClientId = configRes.data?.get("client_id")
+                
+                if (webClientId.isNullOrBlank() || webClientId == "YOUR_WEB_CLIENT_ID") {
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        error = "Google Sign-In is not configured on the server."
+                    )
+                    return@launch
+                }
+
                 val credentialManager = androidx.credentials.CredentialManager.create(context)
                 val googleIdOption = com.google.android.libraries.identity.googleid.GetGoogleIdOption.Builder()
                     .setFilterByAuthorizedAccounts(false)
@@ -100,7 +118,21 @@ class AuthViewModel @Inject constructor(
                     if (res.status == true && res.data?.token != null) {
                         tokenManager.accessToken = res.data.token
                         tokenManager.userEmail = email
-                        res.data.user?.let { tokenManager.userName = it.username; tokenManager.userCoins = it.coin_balance ?: 0.0 }
+                        res.data.user?.let { 
+                            tokenManager.userName = it.username
+                            tokenManager.userCoins = it.coin_balance ?: 0.0 
+                        }
+                        
+                        // Attempt to claim install bonus
+                        if (!tokenManager.installBonusClaimed) {
+                            try {
+                                val claimRes = api.claimInstallBonus()
+                                if (claimRes.status == true) {
+                                    tokenManager.installBonusClaimed = true
+                                }
+                            } catch (e: Exception) { /* ignore */ }
+                        }
+                        
                         _state.value = _state.value.copy(isLoading = false, isLoggedIn = true, success = "Welcome!")
                     } else {
                         _state.value = _state.value.copy(isLoading = false, error = res.error ?: res.message ?: "Google Login failed")
@@ -113,7 +145,7 @@ class AuthViewModel @Inject constructor(
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = e.apiMessage("Google Sign-In failed. Check that the Web Client ID and app signature are configured (GOOGLE_SIGNIN_SETUP.md).")
+                    error = e.apiMessage("Google Sign-In failed.")
                 )
             }
         }

@@ -36,28 +36,29 @@
 
         <div class="mt-16">
             <h2 class="text-2xl font-bold mb-6">Episodes</h2>
-            <div class="space-y-4">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 <?php foreach($episodes as $ep): ?>
-                    <a href="/episodes/<?= $ep['slug'] ?>" class="flex items-center p-4 bg-gray-900 rounded-lg hover:bg-gray-800 transition group cursor-pointer border border-gray-800 hover:border-gray-700">
-                        <div class="relative w-32 aspect-video bg-black rounded overflow-hidden mr-4 flex-shrink-0">
+                    <a href="/episodes/<?= $ep['slug'] ?>" class="block bg-gray-900 rounded-lg overflow-hidden hover:bg-gray-800 transition group cursor-pointer border border-gray-800 hover:border-gray-700 relative">
+                        <div class="relative w-full aspect-[2/3] bg-black">
                             <img src="<?= htmlspecialchars($ep['thumbnail_url'] ?? '/assets/img/default-thumb.jpg') ?>" class="w-full h-full object-cover">
                             <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"></path></svg>
+                                <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"></path></svg>
+                            </div>
+                            <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-xs text-white font-bold">
+                                EP <?= htmlspecialchars($ep['episode_number']) ?>
+                            </div>
+                            <div class="absolute top-2 right-2">
+                                <?php if($ep['is_free']): ?>
+                                    <span class="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold uppercase shadow">Free</span>
+                                <?php else: ?>
+                                    <span class="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold shadow flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+                                    </span>
+                                <?php endif; ?>
                             </div>
                         </div>
-                        <div class="flex-grow">
-                            <h3 class="font-bold text-lg group-hover:text-red-500 transition"><?= htmlspecialchars($ep['episode_number'] . '. ' . $ep['title']) ?></h3>
-                            <p class="text-sm text-gray-400 mt-1"><?= gmdate("i:s", $ep['duration_seconds']) ?></p>
-                        </div>
-                        <div>
-                            <?php if($ep['is_free']): ?>
-                                <span class="bg-green-600/20 text-green-500 px-3 py-1 rounded text-xs font-bold uppercase">Free</span>
-                            <?php else: ?>
-                                <span class="bg-red-600/20 text-red-500 px-3 py-1 rounded text-xs font-bold flex items-center gap-1">
-                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
-                                    <?= (float)$ep['coin_cost'] ?> Coins
-                                </span>
-                            <?php endif; ?>
+                        <div class="p-3">
+                            <h3 class="font-bold text-sm text-gray-200 group-hover:text-red-500 transition truncate" title="<?= htmlspecialchars($ep['title']) ?>"><?= htmlspecialchars($ep['title']) ?></h3>
                         </div>
                     </a>
                 <?php endforeach; ?>

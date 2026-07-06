@@ -114,4 +114,16 @@ interface SOLOREELApi {
 
     @POST("api/v1/notifications/{id}/read")
     suspend fun markNotificationRead(@Path("id") id: Int, @Body body: Map<String, String> = emptyMap()): ApiResponse<JsonElement>
+
+    @GET("api/v1/auth/google-config")
+    suspend fun getGoogleConfig(): ApiResponse<Map<String, String>>
+
+    @POST("api/v1/user/claim-install-bonus")
+    suspend fun claimInstallBonus(): ApiResponse<Map<String, Any>>
+
+    @POST("api/v1/episodes/unlock-with-ad/{id}")
+    suspend fun unlockWithAd(@Path("id") episodeId: Int): ApiResponse<JsonElement>
+
+    @POST("api/v1/transactions/unlock/{id}")
+    suspend fun unlockWithCoins(@Path("id") episodeId: Int): ApiResponse<JsonElement>
 }

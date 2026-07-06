@@ -44,6 +44,11 @@ fun NavGraph(isLoggedIn: Boolean) {
     )
 
     Scaffold(
+        topBar = {
+            if (currentRoute in items.map { it.route }) {
+                com.soloreel.app.ui.components.GlobalTopBar(navController = navController)
+            }
+        },
         bottomBar = {
             if (currentRoute in items.map { it.route }) {
                 NavigationBar(containerColor = androidx.compose.ui.graphics.Color(0xFF111111)) {
@@ -62,11 +67,11 @@ fun NavGraph(isLoggedIn: Boolean) {
                                 }
                             },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = androidx.compose.ui.graphics.Color(0xFFDC2626),
-                                selectedTextColor = androidx.compose.ui.graphics.Color(0xFFDC2626),
-                                unselectedIconColor = androidx.compose.ui.graphics.Color(0xFF6B7280),
-                                unselectedTextColor = androidx.compose.ui.graphics.Color(0xFF6B7280),
-                                indicatorColor = androidx.compose.ui.graphics.Color(0xFFDC2626).copy(alpha = 0.1f),
+                                selectedIconColor = androidx.compose.ui.graphics.Color(0xFFFF2A2A), // Brighter Red
+                                selectedTextColor = androidx.compose.ui.graphics.Color(0xFFFF2A2A),
+                                unselectedIconColor = androidx.compose.ui.graphics.Color(0xFFB0B0B0), // Brighter silver/gray
+                                unselectedTextColor = androidx.compose.ui.graphics.Color(0xFFB0B0B0),
+                                indicatorColor = androidx.compose.ui.graphics.Color(0xFFFF2A2A).copy(alpha = 0.15f),
                             )
                         )
                     }
@@ -112,9 +117,18 @@ fun NavGraph(isLoggedIn: Boolean) {
                     },
                     onNavigateToLogin = {
                         navController.navigate(Screen.Auth.route)
-                    }
+                    },
+                    onNavigateToHistory = { navController.navigate(Screen.History.route) },
+                    onNavigateToFavorites = { navController.navigate(Screen.Favorites.route) },
+                    onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) },
+                    onNavigateToCoinShop = { navController.navigate(Screen.Coins.route) },
+                    onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
                 )
             }
+            composable(Screen.History.route) { com.soloreel.app.ui.profile.HistoryScreen(navController) }
+            composable(Screen.Favorites.route) { com.soloreel.app.ui.profile.FavoritesScreen(navController) }
+            composable(Screen.EditProfile.route) { com.soloreel.app.ui.profile.EditProfileScreen(navController) }
+            composable(Screen.Settings.route) { com.soloreel.app.ui.profile.SettingsScreen(navController) }
             composable(
                 Screen.SeriesDetail.route,
                 arguments = listOf(navArgument("slug") { type = NavType.StringType })

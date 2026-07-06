@@ -161,4 +161,19 @@ class AuthController extends BaseApiController {
         $token = $this->issueToken($user);
         $this->respondAuthSuccess($user, $token, 'Login successful');
     }
+
+    public function googleConfig() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->respondError('Method Not Allowed', 405);
+        }
+        $db = Database::getInstance();
+        $stmt = $db->query("SELECT setting_value FROM site_config WHERE setting_key = 'google_client_id'");
+        $config = $stmt->fetch();
+        $clientId = $config['setting_value'] ?? '';
+
+        $this->respondJson([
+            'status' => true,
+            'client_id' => $clientId
+        ]);
+    }
 }

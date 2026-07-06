@@ -1,4 +1,4 @@
-﻿package com.soloreel.app.ui.profile
+package com.soloreel.app.ui.profile
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
@@ -83,6 +83,11 @@ class ProfileViewModel @Inject constructor(
 fun ProfileScreen(
     onLogout: () -> Unit,
     onNavigateToLogin: () -> Unit = {},
+    onNavigateToHistory: () -> Unit = {},
+    onNavigateToFavorites: () -> Unit = {},
+    onNavigateToEditProfile: () -> Unit = {},
+    onNavigateToCoinShop: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
     vm: ProfileViewModel = hiltViewModel()
 ) {
     val state by vm.state.collectAsState()
@@ -102,7 +107,12 @@ fun ProfileScreen(
         } else {
             RegisteredProfileScreen(
                 state = state,
-                onLogout = { vm.logout(); onLogout() }
+                onLogout = { vm.logout(); onLogout() },
+                onNavigateToHistory = onNavigateToHistory,
+                onNavigateToFavorites = onNavigateToFavorites,
+                onNavigateToEditProfile = onNavigateToEditProfile,
+                onNavigateToCoinShop = onNavigateToCoinShop,
+                onNavigateToSettings = onNavigateToSettings
             )
         }
     }
@@ -196,7 +206,15 @@ fun GuestProfileScreen(guestId: String, guestCoins: Double, onNavigateToLogin: (
 }
 
 @Composable
-fun RegisteredProfileScreen(state: ProfileState, onLogout: () -> Unit) {
+fun RegisteredProfileScreen(
+    state: ProfileState,
+    onLogout: () -> Unit,
+    onNavigateToHistory: () -> Unit = {},
+    onNavigateToFavorites: () -> Unit = {},
+    onNavigateToEditProfile: () -> Unit = {},
+    onNavigateToCoinShop: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {}
+) {
     Column(modifier = Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.height(32.dp))
 
@@ -258,11 +276,11 @@ fun RegisteredProfileScreen(state: ProfileState, onLogout: () -> Unit) {
         Spacer(Modifier.height(24.dp))
 
         // Menu items
-        ProfileMenuItem(Icons.Default.History, "Watch History") {}
-        ProfileMenuItem(Icons.Default.Favorite, "My Favorites") {}
-        ProfileMenuItem(Icons.Default.Edit, "Edit Profile") {}
-        ProfileMenuItem(Icons.Default.ShoppingCart, "Buy More Coins") {}
-        ProfileMenuItem(Icons.Default.Settings, "Settings") {}
+        ProfileMenuItem(Icons.Default.History, "Watch History", onClick = onNavigateToHistory)
+        ProfileMenuItem(Icons.Default.Favorite, "My Favorites", onClick = onNavigateToFavorites)
+        ProfileMenuItem(Icons.Default.Edit, "Edit Profile", onClick = onNavigateToEditProfile)
+        ProfileMenuItem(Icons.Default.ShoppingCart, "Buy More Coins", onClick = onNavigateToCoinShop)
+        ProfileMenuItem(Icons.Default.Settings, "Settings", onClick = onNavigateToSettings)
 
         Spacer(Modifier.height(24.dp))
         OutlinedButton(

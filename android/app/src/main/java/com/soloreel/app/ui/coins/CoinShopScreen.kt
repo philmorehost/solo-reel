@@ -1,4 +1,4 @@
-﻿package com.soloreel.app.ui.coins
+package com.soloreel.app.ui.coins
 
 import android.webkit.*
 import androidx.compose.foundation.*
@@ -234,12 +234,12 @@ fun PaymentWebView(url: String, onSuccess: (String) -> Unit, onDismiss: () -> Un
                             webViewClient = object : WebViewClient() {
                                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                                     val redirectUrl = request?.url?.toString() ?: return false
-                                    // Only react to top-level redirects — the Payhub iframe navigates internally too
                                     if (!request.isForMainFrame) return false
-                                    if (redirectUrl.contains("callback") || redirectUrl.contains("verify") || redirectUrl.contains("success")) {
-                                        val ref = request.url?.getQueryParameter("reference") ?: request.url?.getQueryParameter("trxref") ?: ""
-                                        if (ref.isNotEmpty()) onSuccess(ref)
-                                        else onDismiss()
+                                    
+                                    val ref = request.url?.getQueryParameter("reference") ?: request.url?.getQueryParameter("trxref")
+                                    // Ensure we actually have a reference before assuming it's our success redirect
+                                    if (!ref.isNullOrBlank() && (redirectUrl.contains("callback") || redirectUrl.contains("verify") || redirectUrl.contains("success"))) {
+                                        onSuccess(ref)
                                         return true
                                     }
                                     return false
@@ -248,7 +248,8 @@ fun PaymentWebView(url: String, onSuccess: (String) -> Unit, onDismiss: () -> Un
                             loadUrl(url)
                         }
                     },
-                    modifier = Modifier.fillMaxSize()
+                    update = { view -> view.loadUrl(url) },
+                    modifier = Modifier.weight(1f).fillMaxSize()
                 )
             }
         }

@@ -47,7 +47,7 @@
               key: '<?= htmlspecialchars($publicKey) ?>',
               email: '<?= htmlspecialchars($email) ?>',
               amount: <?= (float)$amount * 100 ?>, // Kobo
-              ref: '<?= htmlspecialchars($reference) ?>',
+              reference: '<?= htmlspecialchars($reference) ?>',
               onClose: function(){
                 alert('Payment cancelled.');
                 window.location.href = "/coin-shop";

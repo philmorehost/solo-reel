@@ -46,6 +46,21 @@
                                     <?php endif; ?>
                                 </div>
 
+                                <h2 class="text-xl font-bold mt-8 mb-4 border-b pb-2">App Settings</h2>
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-bold mb-2">App Install Bonus (Coins)</label>
+                                    <input type="number" name="app_install_bonus" value="<?= htmlspecialchars($settings['app_install_bonus'] ?? '50') ?>" class="w-full border rounded px-3 py-2">
+                                    <p class="text-sm text-gray-500 mt-1">Amount of coins to award users when they claim the app install bonus.</p>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-bold mb-2">Android App Download Link</label>
+                                    <input type="url" name="android_app_link" value="<?= htmlspecialchars($settings['android_app_link'] ?? '') ?>" class="w-full border rounded px-3 py-2" placeholder="https://play.google.com/store/apps/details?id=...">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-bold mb-2">iOS App Download Link</label>
+                                    <input type="url" name="ios_app_link" value="<?= htmlspecialchars($settings['ios_app_link'] ?? '') ?>" class="w-full border rounded px-3 py-2" placeholder="https://apps.apple.com/app/...">
+                                </div>
+
                                 <h2 class="text-xl font-bold mt-8 mb-4 border-b pb-2">General / SEO</h2>
 
                                 <div class="mb-4">

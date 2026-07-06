@@ -19,7 +19,9 @@ class SeriesController extends BaseApiController {
         ];
     }
 
-    private function mapEpisode(array $ep): array {
+    private function mapEpisode(array $ep, bool $isUnlocked = false): array {
+        $isFree = (bool)($ep['is_free'] ?? false);
+        $hasAccess = $isFree || $isUnlocked;
         return [
             'id'                     => (int)$ep['id'],
             'episode_number'         => (int)($ep['episode_number'] ?? 0),
@@ -28,8 +30,9 @@ class SeriesController extends BaseApiController {
             'series_id'              => isset($ep['series_id']) ? (int)$ep['series_id'] : null,
             'series_title'           => $ep['series_title'] ?? null,
             'thumbnail_url'          => $this->absoluteUrl($ep['thumbnail_url'] ?? null),
-            'video_hls_url'          => $this->absoluteUrl($ep['video_url'] ?? null),
-            'is_free'                => (bool)($ep['is_free'] ?? false),
+            'video_hls_url'          => $hasAccess ? $this->absoluteUrl($ep['video_url'] ?? null) : null,
+            'is_free'                => $isFree,
+            'is_unlocked'            => $hasAccess,
             'coin_cost'              => (float)($ep['coin_cost'] ?? 0),
             'video_duration_seconds' => (int)($ep['duration_seconds'] ?? $ep['video_duration_seconds'] ?? 0),
         ];
@@ -78,13 +81,33 @@ class SeriesController extends BaseApiController {
         $stmt = $db->prepare("SELECT id, series_id, episode_number, title, slug, thumbnail_url, video_url, is_free, coin_cost, duration_seconds FROM episodes WHERE series_id = ? ORDER BY episode_number ASC");
         $stmt->execute([$row['id']]);
         $episodes = $stmt->fetchAll();
-        $series['episodes'] = array_map([$this, 'mapEpisode'], $episodes);
+        $series['episodes'] = $this->mapEpisodesWithAccess($episodes);
 
         $this->respondJson(['status' => true, 'data' => $series]);
     }
 
     public function showBySlug(string $slug) {
         $this->show($slug);
+    }
+
+    /** Helper to map a list of episodes and check access. */
+    private function mapEpisodesWithAccess(array $episodes): array {
+        if (empty($episodes)) return [];
+        $userId = $this->optionalUserId();
+        $unlockedIds = [];
+        if ($userId) {
+            $epIds = array_map(function($e) { return (int)$e['id']; }, $episodes);
+            $in = str_repeat('?,', count($epIds) - 1) . '?';
+            $db = Database::getInstance();
+            $stmt = $db->prepare("SELECT episode_id FROM user_unlocked_episodes WHERE user_id = ? AND episode_id IN ($in)");
+            $stmt->execute(array_merge([$userId], $epIds));
+            $unlockedIds = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+        }
+
+        return array_map(function($ep) use ($unlockedIds) {
+            $isUnlocked = in_array((int)$ep['id'], $unlockedIds);
+            return $this->mapEpisode($ep, $isUnlocked);
+        }, $episodes);
     }
 
     /** GET /api/v1/series/{id}/episodes */
@@ -98,7 +121,7 @@ class SeriesController extends BaseApiController {
         $stmt->execute([$id]);
         $rows = $stmt->fetchAll();
 
-        $this->respondJson(['status' => true, 'data' => array_map([$this, 'mapEpisode'], $rows)]);
+        $this->respondJson(['status' => true, 'data' => $this->mapEpisodesWithAccess($rows)]);
     }
 
     /** GET /api/v1/episodes/{slug}/by-slug */
@@ -115,7 +138,8 @@ class SeriesController extends BaseApiController {
             $this->respondJson(['status' => false, 'error' => 'Not found'], 404);
         }
 
-        $this->respondJson(['status' => true, 'data' => $this->mapEpisode($row)]);
+        $mapped = $this->mapEpisodesWithAccess([$row]);
+        $this->respondJson(['status' => true, 'data' => $mapped[0]]);
     }
 
     /** GET /api/v1/shelves */

@@ -121,12 +121,7 @@ fun HomeScreen(
         }
     }
 
-    // Notification bell overlay (top-right)
-    Box(modifier = Modifier.align(Alignment.TopEnd).padding(top = 16.dp, end = 16.dp)) {
-        NotificationBell(unreadCount = notifState.unreadCount) {
-            navController.navigate(Screen.Notifications.route)
-        }
-    }
+
     }
 }
 

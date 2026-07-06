@@ -94,23 +94,27 @@ class TransactionController extends BaseApiController {
             $this->respondJson(['status' => false, 'error' => 'Method Not Allowed'], 405);
         }
 
-        $userId = $this->requireUserId();
-        $input = json_decode(file_get_contents('php://input'), true);
-        $package = $this->loadPackage((int)($input['package_id'] ?? 0));
-        $settings = $this->paymentSettings();
+        try {
+            $userId = $this->requireUserId();
+            $input = json_decode(file_get_contents('php://input'), true);
+            $package = $this->loadPackage((int)($input['package_id'] ?? 0));
+            $settings = $this->paymentSettings();
 
-        $db = Database::getInstance();
-        $stmt = $db->prepare("SELECT email FROM users WHERE id = ?");
-        $stmt->execute([$userId]);
-        $user = $stmt->fetch();
-        $email = $user['email'] ?? ('user_' . $userId . '@soloreel.tv');
+            $db = Database::getInstance();
+            $stmt = $db->prepare("SELECT email FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch();
+            $email = $user['email'] ?? ('user_' . $userId . '@soloreel.tv');
 
-        $reference = 'trx_' . uniqid() . '_' . time();
+            $reference = 'trx_' . uniqid() . '_' . time();
 
-        $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (?, ?, ?, ?, ?, 'pending', ?)");
-        $stmt->execute([$userId, $package['id'], $reference, $package['price'], $package['currency'], $package['coins']]);
+            $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (?, ?, ?, ?, ?, 'pending', ?)");
+            $stmt->execute([$userId, $package['id'], $reference, $package['price'], $package['currency'], $package['coins']]);
 
-        $this->respondPaymentInit($package, $reference, trim($settings['payhub_public_key']), $email);
+            $this->respondPaymentInit($package, $reference, trim($settings['payhub_public_key']), $email);
+        } catch (\Exception $e) {
+            $this->respondJson(['status' => false, 'error' => 'Could not initiate payment: ' . $e->getMessage()], 500);
+        }
     }
 
     /** POST /api/v1/coins/guest-purchase — guests identified by guest_id (no JWT). */
@@ -119,31 +123,66 @@ class TransactionController extends BaseApiController {
             $this->respondJson(['status' => false, 'error' => 'Method Not Allowed'], 405);
         }
 
-        $input = json_decode(file_get_contents('php://input'), true);
-        $guestId = trim((string)($input['guest_id'] ?? ''));
-        if ($guestId === '') {
-            $this->respondJson(['status' => false, 'error' => 'guest_id is required'], 400);
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+            $guestId = trim((string)($input['guest_id'] ?? ''));
+            if ($guestId === '') {
+                $this->respondJson(['status' => false, 'error' => 'guest_id is required'], 400);
+            }
+
+            $package = $this->loadPackage((int)($input['package_id'] ?? 0));
+            $settings = $this->paymentSettings();
+
+            $db = Database::getInstance();
+            // Make sure the guest has a wallet to credit after payment.
+            $stmt = $db->prepare("INSERT IGNORE INTO guest_wallets (guest_id, coin_balance) VALUES (?, 0)");
+            $stmt->execute([$guestId]);
+
+            $email = trim((string)($input['email'] ?? ''));
+            if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $email = 'guest_' . substr(md5($guestId), 0, 10) . '@soloreel.tv';
+            }
+
+            $reference = 'gtrx_' . uniqid() . '_' . time();
+
+            $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, guest_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (NULL, ?, ?, ?, ?, ?, 'pending', ?)");
+            $stmt->execute([$guestId, $package['id'], $reference, $package['price'], $package['currency'], $package['coins']]);
+
+            $this->respondPaymentInit($package, $reference, trim($settings['payhub_public_key']), $email);
+        } catch (\Exception $e) {
+            $this->respondJson(['status' => false, 'error' => 'Could not initiate payment: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function unlockWithAd(int $episodeId) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->respondJson(['status' => false, 'error' => 'Method Not Allowed'], 405);
         }
 
-        $package = $this->loadPackage((int)($input['package_id'] ?? 0));
-        $settings = $this->paymentSettings();
-
+        $userId = $this->requireUserId();
         $db = Database::getInstance();
-        // Make sure the guest has a wallet to credit after payment.
-        $stmt = $db->prepare("INSERT IGNORE INTO guest_wallets (guest_id, coin_balance) VALUES (?, 0)");
-        $stmt->execute([$guestId]);
+        
+        try {
+            $stmt = $db->prepare("SELECT unlock_method FROM episodes WHERE id = ?");
+            $stmt->execute([$episodeId]);
+            $episode = $stmt->fetch();
 
-        $email = trim((string)($input['email'] ?? ''));
-        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $email = 'guest_' . substr(md5($guestId), 0, 10) . '@soloreel.tv';
+            if (!$episode) {
+                $this->respondJson(['status' => false, 'error' => 'Episode not found'], 404);
+            }
+
+            $unlockMethod = $episode['unlock_method'] ?? 'coins';
+            if (!in_array($unlockMethod, ['ads', 'both'], true)) {
+                $this->respondJson(['status' => false, 'error' => 'This episode cannot be unlocked with ads'], 400);
+            }
+
+            $stmt = $db->prepare("INSERT IGNORE INTO user_unlocked_episodes (user_id, episode_id) VALUES (?, ?)");
+            $stmt->execute([$userId, $episodeId]);
+
+            $this->respondJson(['status' => true, 'message' => 'Episode unlocked successfully with ad']);
+        } catch (\Exception $e) {
+            $this->respondJson(['status' => false, 'error' => 'Failed to unlock episode: ' . $e->getMessage()], 500);
         }
-
-        $reference = 'gtrx_' . uniqid() . '_' . time();
-
-        $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, guest_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (NULL, ?, ?, ?, ?, ?, 'pending', ?)");
-        $stmt->execute([$guestId, $package['id'], $reference, $package['price'], $package['currency'], $package['coins']]);
-
-        $this->respondPaymentInit($package, $reference, trim($settings['payhub_public_key']), $email);
     }
 
     /** GET /api/v1/payment/verify?reference=X — verifies with Payhub and credits coins. */

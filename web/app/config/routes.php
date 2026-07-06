@@ -104,6 +104,7 @@ $router->post('/admin/settings/payments', 'PaymentSettingsController@index');
 $router->post('/api/v1/auth/login', 'Api\AuthController@login');
 $router->post('/api/v1/auth/register', 'Api\AuthController@register');
 $router->post('/api/v1/auth/google', 'Api\AuthController@googleLogin');
+$router->get('/api/v1/auth/google-config', 'Api\AuthController@googleConfig');
 $router->get('/api/v1/series', 'Api\SeriesController@index');
 $router->get('/api/v1/search', 'Api\SeriesController@search');
 $router->get('/api/v1/banners', 'Api\BannerController@index');
@@ -127,8 +128,10 @@ $router->put('/api/v1/series-requests/{id}/mark-available', 'Api\SeriesRequestCo
 $router->get('/api/v1/shelves', 'Api\SeriesController@shelves');
 $router->get('/api/v1/payment/verify', 'Api\TransactionController@verifyPayment');
 $router->post('/api/v1/episodes/unlock/{id}', 'Api\TransactionController@unlock');
+$router->post('/api/v1/episodes/unlock-with-ad/{id}', 'Api\TransactionController@unlockWithAd');
 $router->post('/api/v1/coins/purchase', 'Api\TransactionController@purchase');
 $router->post('/api/v1/coins/guest-purchase', 'Api\TransactionController@guestPurchase');
+$router->post('/api/v1/user/claim-install-bonus', 'Api\UserController@claimInstallBonus');
 $router->get('/api/v1/admin/series-requests', 'Api\SeriesRequestController@index');
 $router->get('/api/v1/notifications', 'Api\NotificationController@index');
 $router->post('/api/v1/notifications/{id}/read', 'Api\NotificationController@markRead');

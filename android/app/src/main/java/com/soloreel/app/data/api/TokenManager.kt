@@ -1,4 +1,4 @@
-﻿package com.soloreel.app.data.api
+package com.soloreel.app.data.api
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -34,6 +34,10 @@ class TokenManager @Inject constructor(@ApplicationContext context: Context) {
     var savedPassword: String?
         get() = prefs.getString("saved_password", null)
         set(value) { prefs.edit().putString("saved_password", value).apply() }
+
+    var installBonusClaimed: Boolean
+        get() = prefs.getBoolean("install_bonus_claimed", false)
+        set(value) { prefs.edit().putBoolean("install_bonus_claimed", value).apply() }
 
     // Guest identity — auto-generated, persists across app sessions
     val guestId: String

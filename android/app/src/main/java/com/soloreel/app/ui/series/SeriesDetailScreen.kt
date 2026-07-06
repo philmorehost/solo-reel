@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -77,60 +81,91 @@ fun SeriesDetailScreen(slug: String, navController: NavHostController, vm: Serie
         if (state.isLoading) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color(0xFFDC2626)) } }
         else if (state.error != null) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(state.error!!, color = Color.Red) } }
         else if (state.series != null) {
-            LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
-                item {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        state.series!!.cover_image_url?.let { url ->
-                            androidx.compose.foundation.Image(
-                                painter = rememberAsyncImagePainter(url),
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(16.dp)),
-                                contentScale = ContentScale.Crop
-                            )
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 100.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Column {
+                            state.series!!.cover_image_url?.let { url ->
+                                androidx.compose.foundation.Image(
+                                    painter = rememberAsyncImagePainter(url),
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(16.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Text(state.series!!.title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                            state.series!!.synopsis?.let { Text(it, color = Color.LightGray, fontSize = 14.sp, modifier = Modifier.padding(top = 8.dp)) }
                         }
-                        Spacer(Modifier.height(12.dp))
-                        Text(state.series!!.title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                        state.series!!.synopsis?.let { Text(it, color = Color.LightGray, fontSize = 14.sp, modifier = Modifier.padding(top = 8.dp)) }
                     }
-                }
 
-                item { Text("Episodes", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) }
-                if (state.episodes.isEmpty()) {
-                    item { Text("No episodes yet", color = Color.Gray, modifier = Modifier.padding(16.dp)) }
-                }
-                items(state.episodes) { episode ->
-                    EpisodeRow(episode) {
-                        navController.navigate(Screen.EpisodePlayer.createRoute(episode.slug))
+                    item(span = { GridItemSpan(maxLineSpan) }) { 
+                        Text("Episodes", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp)) 
+                    }
+                    if (state.episodes.isEmpty()) {
+                        item(span = { GridItemSpan(maxLineSpan) }) { Text("No episodes yet", color = Color.Gray, modifier = Modifier.padding(16.dp)) }
+                    }
+                    items(state.episodes) { episode ->
+                        EpisodeGridItem(episode) {
+                            navController.navigate(Screen.EpisodePlayer.createRoute(episode.slug))
+                        }
                     }
                 }
             }
         }
     }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EpisodeRow(episode: Episode, onClick: () -> Unit) {
+fun EpisodeGridItem(episode: Episode, onClick: () -> Unit) {
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))
+        modifier = Modifier.fillMaxWidth().aspectRatio(2f/3f),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A)),
+        shape = RoundedCornerShape(8.dp)
     ) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(modifier = Modifier.fillMaxSize()) {
             episode.thumbnail_url?.let {
                 androidx.compose.foundation.Image(
                     painter = rememberAsyncImagePainter(it),
                     contentDescription = null,
-                    modifier = Modifier.size(width = 80.dp, height = 56.dp).clip(RoundedCornerShape(8.dp)),
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
             }
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Ep ${episode.episode_number ?: ""}", color = Color(0xFFDC2626), fontSize = 12.sp)
-                Text(episode.title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+            // Overlay for readability
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)))
+            
+            // Episode number badge
+            Box(
+                modifier = Modifier.align(Alignment.TopStart).padding(6.dp)
+                    .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+                Text("EP ${episode.episode_number ?: ""}", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
-            if (episode.is_free == false) { Icon(Icons.Default.Lock, "Locked", tint = Color.Yellow, modifier = Modifier.size(20.dp)) }
+            
+            // Lock/Free icon
+            Box(modifier = Modifier.align(Alignment.TopEnd).padding(6.dp)) {
+                if (episode.is_free == false) {
+                    Icon(Icons.Default.Lock, "Locked", tint = Color(0xFFEAB308), modifier = Modifier.size(16.dp))
+                } else {
+                    Box(modifier = Modifier.background(Color(0xFF22C55E), RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 2.dp)) {
+                        Text("FREE", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            
+            // Title at bottom
+            Box(
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                    .background(Color.Black.copy(alpha = 0.7f)).padding(horizontal = 6.dp, vertical = 4.dp)
+            ) {
+                Text(episode.title, color = Color.White, fontSize = 11.sp, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            }
         }
     }
 }

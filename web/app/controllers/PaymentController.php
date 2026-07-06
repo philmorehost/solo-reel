@@ -152,7 +152,7 @@ class PaymentController {
             $stmt = $db->prepare("SELECT email FROM users WHERE id = ?");
             $stmt->execute([$txn['user_id']]);
             $u = $stmt->fetch();
-            $email = $u['email'] ?? ('user_' . $txn['user_id'] . '@soloreel.tv');
+            $email = ($u && !empty($u['email'])) ? $u['email'] : ('user_' . $txn['user_id'] . '@soloreel.tv');
         } else {
             $email = 'guest_' . substr(md5((string)($txn['guest_id'] ?? $reference)), 0, 10) . '@soloreel.tv';
         }

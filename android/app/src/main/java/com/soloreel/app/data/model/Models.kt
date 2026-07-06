@@ -1,4 +1,4 @@
-﻿package com.soloreel.app.data.model
+package com.soloreel.app.data.model
 
 import com.google.gson.annotations.SerializedName
 
@@ -32,7 +32,9 @@ data class Episode(
     val thumbnail_url: String?,
     val description: String?,
     val is_free: Boolean?,
+    val is_unlocked: Boolean?,
     val coin_cost: Double?,
+    val unlock_method: String?,
     val episode_number: Int?,
     val video_duration_seconds: Int?
 )

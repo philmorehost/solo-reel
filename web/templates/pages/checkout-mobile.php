@@ -52,7 +52,7 @@
               key: '<?= htmlspecialchars($publicKey) ?>',
               email: '<?= htmlspecialchars($email) ?>',
               amount: <?= (float)$amount * 100 ?>, // Kobo
-              ref: '<?= htmlspecialchars($reference) ?>',
+              reference: '<?= htmlspecialchars($reference) ?>',
               onClose: function(){
                 // Neutral URL — must NOT contain "verify"/"callback"/"success" so the
                 // app WebViews don't mistake a cancelled checkout for a payment.
