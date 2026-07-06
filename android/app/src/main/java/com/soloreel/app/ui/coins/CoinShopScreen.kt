@@ -219,6 +219,10 @@ fun CoinPackageCard(pkg: CoinPackage, onClick: () -> Unit) {
 
 @Composable
 fun PaymentWebView(url: String, onSuccess: (String) -> Unit, onDismiss: () -> Unit) {
+    var loadError by remember { mutableStateOf(false) }
+    var reloadKey by remember { mutableIntStateOf(0) }
+    val loadedUrl = remember { mutableStateOf<String?>(null) }
+
     Dialog(onDismissRequest = onDismiss) {
         Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxSize(0.95f)) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -226,31 +230,100 @@ fun PaymentWebView(url: String, onSuccess: (String) -> Unit, onDismiss: () -> Un
                     Text("Complete Payment", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.weight(1f))
                     IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, null, tint = Color.White) }
                 }
-                AndroidView(
-                    factory = { ctx ->
-                        WebView(ctx).apply {
-                            settings.javaScriptEnabled = true
-                            settings.domStorageEnabled = true
-                            webViewClient = object : WebViewClient() {
-                                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                                    val redirectUrl = request?.url?.toString() ?: return false
-                                    if (!request.isForMainFrame) return false
-                                    
-                                    val ref = request.url?.getQueryParameter("reference") ?: request.url?.getQueryParameter("trxref")
-                                    // Ensure we actually have a reference before assuming it's our success redirect
-                                    if (!ref.isNullOrBlank() && (redirectUrl.contains("callback") || redirectUrl.contains("verify") || redirectUrl.contains("success"))) {
-                                        onSuccess(ref)
+                Box(modifier = Modifier.weight(1f).fillMaxSize()) {
+                    AndroidView(
+                        factory = { ctx ->
+                            WebView(ctx).apply {
+                                settings.javaScriptEnabled = true
+                                settings.domStorageEnabled = true
+                                settings.setSupportMultipleWindows(true)
+                                settings.javaScriptCanOpenWindowsAutomatically = true
+                                settings.useWideViewPort = true
+                                settings.loadWithOverviewMode = true
+                                settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                                // Payment gateways commonly refuse to render for the default Android
+                                // WebView UA (fraud/PCI heuristics key off the "; wv)" marker) — present
+                                // as a normal mobile browser instead.
+                                settings.userAgentString = settings.userAgentString.replace("; wv", "")
+
+                                webViewClient = object : WebViewClient() {
+                                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                                        val redirectUrl = request?.url?.toString() ?: return false
+                                        if (!request.isForMainFrame) return false
+
+                                        val ref = request.url?.getQueryParameter("reference") ?: request.url?.getQueryParameter("trxref")
+                                        // Ensure we actually have a reference before assuming it's our success redirect
+                                        if (!ref.isNullOrBlank() && (redirectUrl.contains("callback") || redirectUrl.contains("verify") || redirectUrl.contains("success"))) {
+                                            onSuccess(ref)
+                                            return true
+                                        }
+                                        return false
+                                    }
+
+                                    override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                                        loadError = false
+                                    }
+
+                                    override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
+                                        if (request?.isForMainFrame == true) loadError = true
+                                    }
+
+                                    override fun onReceivedHttpError(view: WebView?, request: WebResourceRequest?, errorResponse: WebResourceResponse?) {
+                                        if (request?.isForMainFrame == true) loadError = true
+                                    }
+                                }
+
+                                // Payment popups (Payhub's inline.js / 3DS challenges) call window.open();
+                                // without this, Android's default WebView silently drops them, leaving a
+                                // blank screen. Reuse this same WebView instance as the popup's target.
+                                webChromeClient = object : WebChromeClient() {
+                                    override fun onCreateWindow(
+                                        view: WebView?,
+                                        isDialog: Boolean,
+                                        isUserGesture: Boolean,
+                                        resultMsg: android.os.Message?
+                                    ): Boolean {
+                                        val transport = resultMsg?.obj as? WebView.WebViewTransport ?: return false
+                                        transport.webView = view
+                                        resultMsg.sendToTarget()
                                         return true
                                     }
-                                    return false
                                 }
+
+                                loadUrl(url)
+                                loadedUrl.value = url
                             }
-                            loadUrl(url)
+                        },
+                        update = { view ->
+                            // Only reload when the target URL actually changes (or a manual retry was
+                            // requested) — reloading on every recomposition interrupted the gateway's
+                            // JS mid-init and was a root cause of the blank-page bug.
+                            if (loadedUrl.value != url || reloadKey > 0) {
+                                loadError = false
+                                view.loadUrl(url)
+                                loadedUrl.value = url
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+
+                    if (loadError) {
+                        Column(
+                            modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A0A)).padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(Icons.Default.ErrorOutline, null, tint = Color(0xFFDC2626), modifier = Modifier.size(40.dp))
+                            Spacer(Modifier.height(12.dp))
+                            Text("Couldn't load the payment page.", color = Color.White, textAlign = TextAlign.Center)
+                            Spacer(Modifier.height(16.dp))
+                            Button(
+                                onClick = { reloadKey++; loadedUrl.value = null },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
+                            ) { Text("Retry") }
                         }
-                    },
-                    update = { view -> view.loadUrl(url) },
-                    modifier = Modifier.weight(1f).fillMaxSize()
-                )
+                    }
+                }
             }
         }
     }

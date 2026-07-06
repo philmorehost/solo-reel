@@ -10,7 +10,21 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView(.vertical) {
+            VStack(spacing: 0) {
+                HStack {
+                    Image("logo_topbar")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 28)
+                    Spacer()
+                    NotificationBell()
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 8)
+                .background(Color.black)
+
+                ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 0) {
                     // Banners
                     if !banners.isEmpty {
@@ -59,10 +73,9 @@ struct HomeView: View {
                         }
                     }
                 }
-            }.background(Color.black).preferredColorScheme(.dark)
-            .overlay(alignment: .topTrailing) {
-                NotificationBell().padding(.trailing, 16).padding(.top, 8)
+                }.background(Color.black)
             }
+            .background(Color.black).preferredColorScheme(.dark)
         }
         .task {
             isLoading = true

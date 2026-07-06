@@ -42,12 +42,24 @@ class TransactionController extends BaseApiController {
         ] + $data);
     }
 
+    /** Registered user id from the JWT, or null. Used by unlock endpoints that also accept guests. */
+    private function guestIdFromRequest(): ?string {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $guestId = trim((string)($input['guest_id'] ?? ($_GET['guest_id'] ?? '')));
+        return $guestId !== '' ? $guestId : null;
+    }
+
     public function unlock(int $episodeId) {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->respondJson(['status' => false, 'error' => 'Method Not Allowed'], 405);
         }
 
-        $userId = $this->requireUserId();
+        $userId = $this->optionalUserId();
+        $guestId = $userId ? null : $this->guestIdFromRequest();
+        if (!$userId && !$guestId) {
+            $this->respondJson(['status' => false, 'error' => 'Unauthorized or invalid token'], 401);
+        }
+
         $db = Database::getInstance();
         $db->beginTransaction();
 
@@ -61,34 +73,55 @@ class TransactionController extends BaseApiController {
                 $this->respondJson(['status' => false, 'error' => 'Episode not found'], 404);
             }
 
-            $stmt = $db->prepare("SELECT coin_balance FROM users WHERE id = ? FOR UPDATE");
-            $stmt->execute([$userId]);
-            $user = $stmt->fetch();
+            if ($userId) {
+                $stmt = $db->prepare("SELECT coin_balance FROM users WHERE id = ? FOR UPDATE");
+                $stmt->execute([$userId]);
+                $user = $stmt->fetch();
 
-            if ((float)$user['coin_balance'] < (float)$episode['coin_cost']) {
-                $db->rollBack();
-                $this->respondJson(['status' => false, 'error' => 'Insufficient coins'], 400);
+                if ((float)$user['coin_balance'] < (float)$episode['coin_cost']) {
+                    $db->rollBack();
+                    $this->respondJson(['status' => false, 'error' => 'Insufficient coins'], 400);
+                }
+
+                $newBalance = (float)$user['coin_balance'] - (float)$episode['coin_cost'];
+                $stmt = $db->prepare("UPDATE users SET coin_balance = ? WHERE id = ?");
+                $stmt->execute([$newBalance, $userId]);
+
+                $stmt = $db->prepare("INSERT IGNORE INTO user_unlocked_episodes (user_id, episode_id) VALUES (?, ?)");
+                $stmt->execute([$userId, $episodeId]);
+
+                $stmt = $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description) VALUES (?, 'unlock', ?, ?)");
+                $stmt->execute([$userId, -$episode['coin_cost'], 'Unlocked episode ' . $episodeId]);
+            } else {
+                $stmt = $db->prepare("INSERT IGNORE INTO guest_wallets (guest_id, coin_balance) VALUES (?, 0)");
+                $stmt->execute([$guestId]);
+
+                $stmt = $db->prepare("SELECT coin_balance FROM guest_wallets WHERE guest_id = ? FOR UPDATE");
+                $stmt->execute([$guestId]);
+                $wallet = $stmt->fetch();
+
+                if ((float)$wallet['coin_balance'] < (float)$episode['coin_cost']) {
+                    $db->rollBack();
+                    $this->respondJson(['status' => false, 'error' => 'Insufficient coins'], 400);
+                }
+
+                $newBalance = (float)$wallet['coin_balance'] - (float)$episode['coin_cost'];
+                $stmt = $db->prepare("UPDATE guest_wallets SET coin_balance = ? WHERE guest_id = ?");
+                $stmt->execute([$newBalance, $guestId]);
+
+                $stmt = $db->prepare("INSERT IGNORE INTO guest_unlocked_episodes (guest_id, episode_id) VALUES (?, ?)");
+                $stmt->execute([$guestId, $episodeId]);
             }
-
-            $newBalance = (float)$user['coin_balance'] - (float)$episode['coin_cost'];
-            $stmt = $db->prepare("UPDATE users SET coin_balance = ? WHERE id = ?");
-            $stmt->execute([$newBalance, $userId]);
-
-            $stmt = $db->prepare("INSERT IGNORE INTO user_unlocked_episodes (user_id, episode_id) VALUES (?, ?)");
-            $stmt->execute([$userId, $episodeId]);
-
-            $stmt = $db->prepare("INSERT INTO coin_transactions (user_id, type, amount, description) VALUES (?, 'unlock', ?, ?)");
-            $stmt->execute([$userId, -$episode['coin_cost'], 'Unlocked episode ' . $episodeId]);
 
             $db->commit();
             $this->respondJson(['status' => true, 'message' => 'Episode unlocked successfully', 'coin_balance' => $newBalance, 'data' => ['coin_balance' => $newBalance]]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $db->rollBack();
             $this->respondJson(['status' => false, 'error' => 'Transaction failed: ' . $e->getMessage()], 500);
         }
     }
 
-    /** POST /api/v1/coins/purchase — registered users (JWT). */
+    /** POST /api/v1/coins/purchase â€” registered users (JWT). */
     public function purchase() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->respondJson(['status' => false, 'error' => 'Method Not Allowed'], 405);
@@ -112,12 +145,12 @@ class TransactionController extends BaseApiController {
             $stmt->execute([$userId, $package['id'], $reference, $package['price'], $package['currency'], $package['coins']]);
 
             $this->respondPaymentInit($package, $reference, trim($settings['payhub_public_key']), $email);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->respondJson(['status' => false, 'error' => 'Could not initiate payment: ' . $e->getMessage()], 500);
         }
     }
 
-    /** POST /api/v1/coins/guest-purchase — guests identified by guest_id (no JWT). */
+    /** POST /api/v1/coins/guest-purchase â€” guests identified by guest_id (no JWT). */
     public function guestPurchase() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->respondJson(['status' => false, 'error' => 'Method Not Allowed'], 405);
@@ -149,7 +182,7 @@ class TransactionController extends BaseApiController {
             $stmt->execute([$guestId, $package['id'], $reference, $package['price'], $package['currency'], $package['coins']]);
 
             $this->respondPaymentInit($package, $reference, trim($settings['payhub_public_key']), $email);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->respondJson(['status' => false, 'error' => 'Could not initiate payment: ' . $e->getMessage()], 500);
         }
     }
@@ -159,9 +192,14 @@ class TransactionController extends BaseApiController {
             $this->respondJson(['status' => false, 'error' => 'Method Not Allowed'], 405);
         }
 
-        $userId = $this->requireUserId();
+        $userId = $this->optionalUserId();
+        $guestId = $userId ? null : $this->guestIdFromRequest();
+        if (!$userId && !$guestId) {
+            $this->respondJson(['status' => false, 'error' => 'Unauthorized or invalid token'], 401);
+        }
+
         $db = Database::getInstance();
-        
+
         try {
             $stmt = $db->prepare("SELECT unlock_method FROM episodes WHERE id = ?");
             $stmt->execute([$episodeId]);
@@ -176,16 +214,21 @@ class TransactionController extends BaseApiController {
                 $this->respondJson(['status' => false, 'error' => 'This episode cannot be unlocked with ads'], 400);
             }
 
-            $stmt = $db->prepare("INSERT IGNORE INTO user_unlocked_episodes (user_id, episode_id) VALUES (?, ?)");
-            $stmt->execute([$userId, $episodeId]);
+            if ($userId) {
+                $stmt = $db->prepare("INSERT IGNORE INTO user_unlocked_episodes (user_id, episode_id) VALUES (?, ?)");
+                $stmt->execute([$userId, $episodeId]);
+            } else {
+                $stmt = $db->prepare("INSERT IGNORE INTO guest_unlocked_episodes (guest_id, episode_id) VALUES (?, ?)");
+                $stmt->execute([$guestId, $episodeId]);
+            }
 
             $this->respondJson(['status' => true, 'message' => 'Episode unlocked successfully with ad']);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->respondJson(['status' => false, 'error' => 'Failed to unlock episode: ' . $e->getMessage()], 500);
         }
     }
 
-    /** GET /api/v1/payment/verify?reference=X — verifies with Payhub and credits coins. */
+    /** GET /api/v1/payment/verify?reference=X â€” verifies with Payhub and credits coins. */
     public function verifyPayment() {
         $ref = trim((string)($_GET['reference'] ?? ''));
         if ($ref === '') {
@@ -262,7 +305,7 @@ class TransactionController extends BaseApiController {
 
             $db->commit();
             $this->respondJson(['status' => true, 'message' => 'Payment verified. Coins added!', 'data' => $this->balanceFor($txn)]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $db->rollBack();
             $this->respondJson(['status' => false, 'error' => 'Verification failed: ' . $e->getMessage()], 500);
         }

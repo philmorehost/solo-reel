@@ -20,11 +20,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import com.soloreel.app.ads.RewardedAdManager
 import com.soloreel.app.data.api.SOLOREELApi
+import com.soloreel.app.data.api.TokenManager
 import com.soloreel.app.data.api.apiMessage
 import com.soloreel.app.data.model.Episode
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,18 +40,22 @@ import javax.inject.Inject
 data class PlayerState(val episode: Episode? = null, val isLoading: Boolean = true, val error: String? = null)
 
 @HiltViewModel
-class PlayerViewModel @Inject constructor(private val api: SOLOREELApi) : ViewModel() {
+class PlayerViewModel @Inject constructor(
+    private val api: SOLOREELApi,
+    private val tokenManager: TokenManager
+) : ViewModel() {
     private val _state = MutableStateFlow(PlayerState())
     val state: StateFlow<PlayerState> = _state.asStateFlow()
-    
+
     private var currentSlug: String? = null
+    private val guestIdOrNull: String? get() = if (tokenManager.isLoggedIn) null else tokenManager.guestId
 
     fun load(slug: String) {
         currentSlug = slug
         viewModelScope.launch {
             _state.value = PlayerState(isLoading = true)
             try {
-                val r = api.getEpisode(slug)
+                val r = api.getEpisode(slug, guestIdOrNull)
                 _state.value = PlayerState(episode = r.data, isLoading = false)
             } catch (e: Exception) {
                 _state.value = PlayerState(error = e.message, isLoading = false)
@@ -56,11 +63,29 @@ class PlayerViewModel @Inject constructor(private val api: SOLOREELApi) : ViewMo
         }
     }
 
+    /** Loads the next episode in the series, if any; invokes [onNoNextEpisode] when the current one was last. */
+    fun loadNextEpisode(onNoNextEpisode: () -> Unit) {
+        viewModelScope.launch {
+            val ep = _state.value.episode ?: return@launch
+            val seriesId = ep.series_id ?: return@launch
+            try {
+                val r = api.getEpisodes(seriesId, guestIdOrNull)
+                val next = r.data?.firstOrNull { (it.episode_number ?: -1) == (ep.episode_number ?: 0) + 1 }
+                if (next != null) load(next.slug) else onNoNextEpisode()
+            } catch (_: Exception) {
+                onNoNextEpisode()
+            }
+        }
+    }
+
+    private fun unlockBody(): Map<String, String> =
+        guestIdOrNull?.let { mapOf("guest_id" to it) } ?: emptyMap()
+
     fun unlockWithCoins(episodeId: Int, onSuccess: () -> Unit, onInsufficientCoins: () -> Unit) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
             try {
-                val r = api.unlockWithCoins(episodeId)
+                val r = api.unlockWithCoins(episodeId, unlockBody())
                 if (r.status == true) {
                     currentSlug?.let { load(it) }
                     onSuccess()
@@ -83,7 +108,7 @@ class PlayerViewModel @Inject constructor(private val api: SOLOREELApi) : ViewMo
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
             try {
-                val r = api.unlockWithAd(episodeId)
+                val r = api.unlockWithAd(episodeId, unlockBody())
                 if (r.status == true) {
                     currentSlug?.let { load(it) }
                     onSuccess()
@@ -102,7 +127,10 @@ class PlayerViewModel @Inject constructor(private val api: SOLOREELApi) : ViewMo
 @Composable
 fun PlayerScreen(slug: String, navController: NavHostController, vm: PlayerViewModel = hiltViewModel()) {
     val state by vm.state.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var showNextEpisodeOverlay by remember(state.episode?.id) { mutableStateOf(false) }
     LaunchedEffect(slug) { vm.load(slug) }
+    LaunchedEffect(Unit) { RewardedAdManager.preload(context) }
 
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         TopAppBar(
@@ -117,29 +145,60 @@ fun PlayerScreen(slug: String, navController: NavHostController, vm: PlayerViewM
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(state.error!!, color = Color.Red) }
         } else if (state.episode != null) {
             if (state.episode?.is_unlocked == true && state.episode?.video_hls_url != null) {
-                val context = androidx.compose.ui.platform.LocalContext.current
                 var exoPlayer by remember(slug) { mutableStateOf<ExoPlayer?>(null) }
-    
-                AndroidView(
-                    modifier = Modifier.fillMaxWidth().aspectRatio(9f / 16f),
-                    factory = { ctx ->
-                        ExoPlayer.Builder(ctx).build().apply {
-                            exoPlayer = this
-                            setMediaItem(MediaItem.fromUri(Uri.parse(state.episode!!.video_hls_url)))
-                            prepare()
-                            playWhenReady = true
+
+                Box(modifier = Modifier.fillMaxWidth().aspectRatio(9f / 16f)) {
+                    AndroidView(
+                        modifier = Modifier.fillMaxSize(),
+                        factory = { ctx ->
+                            ExoPlayer.Builder(ctx).build().apply {
+                                exoPlayer = this
+                                setMediaItem(MediaItem.fromUri(Uri.parse(state.episode!!.video_hls_url)))
+                                prepare()
+                                playWhenReady = true
+                                addListener(object : Player.Listener {
+                                    override fun onPlaybackStateChanged(playbackState: Int) {
+                                        if (playbackState == Player.STATE_ENDED) {
+                                            showNextEpisodeOverlay = true
+                                        }
+                                    }
+                                })
+                            }
+                            PlayerView(ctx).apply {
+                                player = exoPlayer
+                                useController = true
+                                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                            }
+                        },
+                        update = { view ->
+                            view.player = exoPlayer
                         }
-                        PlayerView(ctx).apply {
-                            player = exoPlayer
-                            useController = true
-                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    )
+
+                    if (showNextEpisodeOverlay) {
+                        Box(
+                            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("Episode finished", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Spacer(Modifier.height(16.dp))
+                                Button(
+                                    onClick = {
+                                        showNextEpisodeOverlay = false
+                                        vm.loadNextEpisode(onNoNextEpisode = { navController.popBackStack() })
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
+                                ) { Text("Next Episode ▶") }
+                                Spacer(Modifier.height(8.dp))
+                                TextButton(onClick = { navController.popBackStack() }) {
+                                    Text("Done", color = Color.White)
+                                }
+                            }
                         }
-                    },
-                    update = { view ->
-                        view.player = exoPlayer
                     }
-                )
-    
+                }
+
                 DisposableEffect(Unit) {
                     onDispose { exoPlayer?.release() }
                 }
@@ -176,7 +235,20 @@ fun PlayerScreen(slug: String, navController: NavHostController, vm: PlayerViewM
                         
                         if (unlockMethod == "ads" || unlockMethod == "both") {
                             OutlinedButton(
-                                onClick = { vm.unlockWithAd(state.episode!!.id) {} },
+                                onClick = {
+                                    val activity = context as? android.app.Activity
+                                    if (activity == null) {
+                                        // Should not happen in this single-activity app.
+                                        return@OutlinedButton
+                                    }
+                                    RewardedAdManager.showAd(
+                                        activity = activity,
+                                        onRewarded = { vm.unlockWithAd(state.episode!!.id) {} },
+                                        onFailed = { reason ->
+                                            android.widget.Toast.makeText(context, reason, android.widget.Toast.LENGTH_SHORT).show()
+                                        }
+                                    )
+                                },
                                 modifier = Modifier.fillMaxWidth(0.8f).height(48.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color.White)

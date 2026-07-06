@@ -31,5 +31,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- AdMob App ID — this is Google's public TEST App ID. Swap for the real
+             one from your AdMob console before release (see ADMOB_SETUP.md). -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
     </application>
 </manifest>

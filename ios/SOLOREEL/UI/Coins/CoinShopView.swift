@@ -122,36 +122,74 @@ struct PaymentWebView: View {
     let url: String
     let onSuccess: (String) -> Void
     let onDismiss: () -> Void
+    @State private var loadFailed = false
+    @State private var reloadToken = UUID()
 
     var body: some View {
         NavigationStack {
-            WebViewRepresentable(url: url, onSuccess: onSuccess, onDismiss: onDismiss)
-                .ignoresSafeArea()
-                .navigationTitle("Complete Payment").navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: onDismiss) } }
+            ZStack {
+                WebViewRepresentable(url: url, reloadToken: reloadToken, onSuccess: onSuccess, onDismiss: onDismiss, onFailure: { loadFailed = true })
+                    .ignoresSafeArea()
+
+                if loadFailed {
+                    VStack(spacing: 16) {
+                        Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 36)).foregroundColor(.red)
+                        Text("Couldn't load the payment page.").foregroundColor(.white).multilineTextAlignment(.center)
+                        Button("Retry") { loadFailed = false; reloadToken = UUID() }
+                            .buttonStyle(.borderedProminent).tint(.red)
+                    }
+                    .padding(24)
+                    .background(Color.black.opacity(0.95))
+                }
+            }
+            .navigationTitle("Complete Payment").navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: onDismiss) } }
         }
     }
 }
 
 struct WebViewRepresentable: UIViewRepresentable {
     let url: String
+    let reloadToken: UUID
     let onSuccess: (String) -> Void
     let onDismiss: () -> Void
+    let onFailure: () -> Void
 
     func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
+        let config = WKWebViewConfiguration()
+        // Some payment gateways' popup/3DS challenge flows call window.open();
+        // without this, WKWebView silently drops them, leaving a blank screen.
+        config.preferences.javaScriptCanOpenWindowsAutomatically = true
+        let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
-        if let u = URL(string: url) { webView.load(URLRequest(url: u)) }
+        webView.uiDelegate = context.coordinator
+        context.coordinator.load(webView, url: url)
         return webView
     }
-    func updateUIView(_ uiView: WKWebView, context: Context) {}
-    func makeCoordinator() -> Coordinator { Coordinator(onSuccess: onSuccess, onDismiss: onDismiss) }
 
-    class Coordinator: NSObject, WKNavigationDelegate {
-        let onSuccess: (String) -> Void; let onDismiss: () -> Void
-        init(onSuccess: @escaping (String) -> Void, onDismiss: @escaping () -> Void) {
-            self.onSuccess = onSuccess; self.onDismiss = onDismiss
+    func updateUIView(_ uiView: WKWebView, context: Context) {
+        if context.coordinator.loadedToken != reloadToken {
+            context.coordinator.loadedToken = reloadToken
+            context.coordinator.load(uiView, url: url)
         }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(onSuccess: onSuccess, onDismiss: onDismiss, onFailure: onFailure) }
+
+    class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+        let onSuccess: (String) -> Void
+        let onDismiss: () -> Void
+        let onFailure: () -> Void
+        var loadedToken: UUID?
+
+        init(onSuccess: @escaping (String) -> Void, onDismiss: @escaping () -> Void, onFailure: @escaping () -> Void) {
+            self.onSuccess = onSuccess; self.onDismiss = onDismiss; self.onFailure = onFailure
+        }
+
+        func load(_ webView: WKWebView, url: String) {
+            if let u = URL(string: url) { webView.load(URLRequest(url: u)) }
+        }
+
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             // Only react to top-level redirects — the Payhub iframe navigates internally too
             if action.targetFrame?.isMainFrame == true, let url = action.request.url?.absoluteString {
@@ -163,6 +201,25 @@ struct WebViewRepresentable: UIViewRepresentable {
                 }
             }
             decisionHandler(.allow)
+        }
+
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            onFailure()
+        }
+
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            onFailure()
+        }
+
+        /// Loads window.open()-style popups (payment popups, 3DS challenges) in the
+        /// same web view instead of silently dropping them (the default WKWebView
+        /// behavior when no WKUIDelegate is set) — a root cause of the blank
+        /// checkout page.
+        func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+            if navigationAction.targetFrame == nil {
+                webView.load(navigationAction.request)
+            }
+            return nil
         }
     }
 }

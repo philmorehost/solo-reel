@@ -34,6 +34,7 @@ class SeriesController extends BaseApiController {
             'is_free'                => $isFree,
             'is_unlocked'            => $hasAccess,
             'coin_cost'              => (float)($ep['coin_cost'] ?? 0),
+            'unlock_method'          => $ep['unlock_method'] ?? 'coins',
             'video_duration_seconds' => (int)($ep['duration_seconds'] ?? $ep['video_duration_seconds'] ?? 0),
         ];
     }
@@ -87,7 +88,7 @@ class SeriesController extends BaseApiController {
 
         $series = $this->mapSeries($row);
 
-        $stmt = $db->prepare("SELECT id, series_id, episode_number, title, slug, thumbnail_url, video_url, is_free, coin_cost, duration_seconds FROM episodes WHERE series_id = ? ORDER BY episode_number ASC");
+        $stmt = $db->prepare("SELECT id, series_id, episode_number, title, slug, thumbnail_url, video_url, is_free, coin_cost, unlock_method, duration_seconds FROM episodes WHERE series_id = ? ORDER BY episode_number ASC");
         $stmt->execute([$row['id']]);
         $episodes = $stmt->fetchAll();
         $series['episodes'] = $this->mapEpisodesWithAccess($episodes);
@@ -99,18 +100,28 @@ class SeriesController extends BaseApiController {
         $this->show($slug);
     }
 
-    /** Helper to map a list of episodes and check access. */
+    /** Helper to map a list of episodes and check access for the current registered user and/or guest. */
     private function mapEpisodesWithAccess(array $episodes): array {
         if (empty($episodes)) return [];
         $userId = $this->optionalUserId();
+        $guestId = trim((string)($_GET['guest_id'] ?? ''));
         $unlockedIds = [];
-        if ($userId) {
+
+        if ($userId || $guestId !== '') {
             $epIds = array_map(function($e) { return (int)$e['id']; }, $episodes);
             $in = str_repeat('?,', count($epIds) - 1) . '?';
             $db = Database::getInstance();
-            $stmt = $db->prepare("SELECT episode_id FROM user_unlocked_episodes WHERE user_id = ? AND episode_id IN ($in)");
-            $stmt->execute(array_merge([$userId], $epIds));
-            $unlockedIds = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+
+            if ($userId) {
+                $stmt = $db->prepare("SELECT episode_id FROM user_unlocked_episodes WHERE user_id = ? AND episode_id IN ($in)");
+                $stmt->execute(array_merge([$userId], $epIds));
+                $unlockedIds = array_merge($unlockedIds, $stmt->fetchAll(\PDO::FETCH_COLUMN));
+            }
+            if ($guestId !== '') {
+                $stmt = $db->prepare("SELECT episode_id FROM guest_unlocked_episodes WHERE guest_id = ? AND episode_id IN ($in)");
+                $stmt->execute(array_merge([$guestId], $epIds));
+                $unlockedIds = array_merge($unlockedIds, $stmt->fetchAll(\PDO::FETCH_COLUMN));
+            }
         }
 
         return array_map(function($ep) use ($unlockedIds) {
@@ -119,10 +130,10 @@ class SeriesController extends BaseApiController {
         }, $episodes);
     }
 
-    /** GET /api/v1/series/{id}/episodes */
+    /** GET /api/v1/series/{id}/episodes?guest_id=... */
     public function episodes(int $id) {
         $db = Database::getInstance();
-        $stmt = $db->prepare("SELECT e.id, e.series_id, e.episode_number, e.title, e.slug, e.thumbnail_url, e.video_url, e.is_free, e.coin_cost, e.duration_seconds, s.title as series_title
+        $stmt = $db->prepare("SELECT e.id, e.series_id, e.episode_number, e.title, e.slug, e.thumbnail_url, e.video_url, e.is_free, e.coin_cost, e.unlock_method, e.duration_seconds, s.title as series_title
                               FROM episodes e
                               JOIN series s ON e.series_id = s.id
                               WHERE e.series_id = ?
@@ -133,10 +144,10 @@ class SeriesController extends BaseApiController {
         $this->respondJson(['status' => true, 'data' => $this->mapEpisodesWithAccess($rows)]);
     }
 
-    /** GET /api/v1/episodes/{slug}/by-slug */
+    /** GET /api/v1/episodes/{slug}/by-slug?guest_id=... */
     public function episodeBySlug(string $slug) {
         $db = Database::getInstance();
-        $stmt = $db->prepare("SELECT e.id, e.series_id, e.episode_number, e.title, e.slug, e.thumbnail_url, e.video_url, e.is_free, e.coin_cost, e.duration_seconds, s.title as series_title
+        $stmt = $db->prepare("SELECT e.id, e.series_id, e.episode_number, e.title, e.slug, e.thumbnail_url, e.video_url, e.is_free, e.coin_cost, e.unlock_method, e.duration_seconds, s.title as series_title
                               FROM episodes e
                               JOIN series s ON e.series_id = s.id
                               WHERE e.slug = ?");

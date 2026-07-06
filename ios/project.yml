@@ -10,6 +10,11 @@ settings:
     TARGETED_DEVICE_FAMILY: "1,2"
     ENABLE_BITCODE: NO
 
+packages:
+  GoogleMobileAds:
+    url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
+    from: 11.13.0
+
 targets:
   SOLOREEL:
     type: application
@@ -22,4 +27,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.soloreel.app
         PRODUCT_NAME: SOLOREEL
         ASSETCATALOG_COMPILER_APPICON_NAME: ""
-    dependencies: []
+    dependencies:
+      - package: GoogleMobileAds
+        product: GoogleMobileAds

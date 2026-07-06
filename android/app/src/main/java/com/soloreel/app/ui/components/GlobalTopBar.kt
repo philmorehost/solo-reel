@@ -37,9 +37,12 @@ fun GlobalTopBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            painter = androidx.compose.ui.res.painterResource(id = com.soloreel.app.R.drawable.logo_splash),
+            // logo_topbar is a tight crop of the wordmark (logo_splash is a square canvas
+            // that's mostly black padding — at any given height, most of that box was
+            // invisible filler, making the visible logo look small/blurry).
+            painter = androidx.compose.ui.res.painterResource(id = com.soloreel.app.R.drawable.logo_topbar),
             contentDescription = "Logo",
-            modifier = Modifier.height(72.dp), // Increased logo size
+            modifier = Modifier.height(40.dp),
             contentScale = ContentScale.Fit
         )
         NotificationBell(unreadCount = notifState.unreadCount) {

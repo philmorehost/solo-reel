@@ -44,10 +44,10 @@ interface SOLOREELApi {
     suspend fun getSeriesDetail(@Path("slug") slug: String): ApiResponse<Series>
 
     @GET("api/v1/episodes/{slug}/by-slug")
-    suspend fun getEpisode(@Path("slug") slug: String): ApiResponse<Episode>
+    suspend fun getEpisode(@Path("slug") slug: String, @Query("guest_id") guestId: String? = null): ApiResponse<Episode>
 
     @GET("api/v1/series/{id}/episodes")
-    suspend fun getEpisodes(@Path("id") seriesId: Int): ApiResponse<List<Episode>>
+    suspend fun getEpisodes(@Path("id") seriesId: Int, @Query("guest_id") guestId: String? = null): ApiResponse<List<Episode>>
 
     @GET("api/v1/search")
     suspend fun search(@Query("q") query: String, @Query("size") size: Int = 20): ApiResponse<List<Series>>
@@ -122,8 +122,8 @@ interface SOLOREELApi {
     suspend fun claimInstallBonus(): ApiResponse<Map<String, Any>>
 
     @POST("api/v1/episodes/unlock-with-ad/{id}")
-    suspend fun unlockWithAd(@Path("id") episodeId: Int): ApiResponse<JsonElement>
+    suspend fun unlockWithAd(@Path("id") episodeId: Int, @Body body: Map<String, String> = emptyMap()): ApiResponse<JsonElement>
 
-    @POST("api/v1/transactions/unlock/{id}")
-    suspend fun unlockWithCoins(@Path("id") episodeId: Int): ApiResponse<JsonElement>
+    @POST("api/v1/episodes/unlock/{id}")
+    suspend fun unlockWithCoins(@Path("id") episodeId: Int, @Body body: Map<String, String> = emptyMap()): ApiResponse<JsonElement>
 }

@@ -24,6 +24,7 @@ struct Episode: Codable, Identifiable {
     let id: Int; let title: String; let slug: String; let series_id: Int?; let series_title: String?
     let video_hls_url: String?; let thumbnail_url: String?; let is_free: Bool?; let coin_cost: Double?
     let episode_number: Int?; let description: String?; let video_duration_seconds: Int?
+    let is_unlocked: Bool?; let unlock_method: String?
 }
 struct CoinPackage: Codable, Identifiable { let id: Int; let name: String; let coins: Int; let price: Double; let currency: String }
 struct User: Codable {
@@ -95,8 +96,24 @@ class APIClient {
         return try await request("series?\(q)size=20")
     }
     func getSeriesDetail(slug: String) async throws -> Series { try await request("series/\(slug)/by-slug") }
-    func getEpisodes(seriesId: Int) async throws -> [Episode] { try await request("series/\(seriesId)/episodes") }
-    func getEpisode(slug: String) async throws -> Episode { try await request("episodes/\(slug)/by-slug") }
+    func getEpisodes(seriesId: Int, guestId: String? = nil) async throws -> [Episode] {
+        let q = guestId.map { "?guest_id=\($0)" } ?? ""
+        return try await request("series/\(seriesId)/episodes\(q)")
+    }
+    func getEpisode(slug: String, guestId: String? = nil) async throws -> Episode {
+        let q = guestId.map { "?guest_id=\($0)" } ?? ""
+        return try await request("episodes/\(slug)/by-slug\(q)")
+    }
+    /** Unlocks a locked episode by spending coins (registered user or guest wallet). */
+    func unlockWithCoins(episodeId: Int, guestId: String? = nil) async throws {
+        let body = try JSONEncoder().encode(guestId.map { ["guest_id": $0] } ?? [:])
+        try await requestVoid("episodes/unlock/\(episodeId)", method: "POST", body: body)
+    }
+    /** Unlocks a locked episode after the user watches a rewarded ad to completion. */
+    func unlockWithAd(episodeId: Int, guestId: String? = nil) async throws {
+        let body = try JSONEncoder().encode(guestId.map { ["guest_id": $0] } ?? [:])
+        try await requestVoid("episodes/unlock-with-ad/\(episodeId)", method: "POST", body: body)
+    }
     func search(q: String) async throws -> [Series] { try await request("search?q=\(q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") }
     func getCoinPackages() async throws -> [CoinPackage] { try await request("coin-packages") }
     func getProfile() async throws -> User { try await request("user/profile") }

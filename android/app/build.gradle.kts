@@ -107,4 +107,7 @@ dependencies {
     implementation("androidx.credentials:credentials:1.2.2")
     implementation("androidx.credentials:credentials-play-services-auth:1.2.2")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.0")
+
+    // Google AdMob (rewarded ads to unlock locked episodes)
+    implementation("com.google.android.gms:play-services-ads:23.6.0")
 }
