@@ -44,19 +44,28 @@ class SeriesController extends BaseApiController {
         $size = isset($_GET['size']) ? (int) $_GET['size'] : 20;
         if ($size < 1 || $size > 200) $size = 20;
 
-        $query = "SELECT s.id, s.title, s.slug, s.synopsis, s.cover_image, s.genre, s.status,
-                         sh.name as shelf_name,
-                         (SELECT COUNT(*) FROM episodes WHERE series_id = s.id) as episode_count
-                  FROM series s
-                  LEFT JOIN shelves sh ON s.shelf_id = sh.id";
+        if ($shelf === 'top') {
+            $query = "SELECT s.id, s.title, s.slug, s.synopsis, s.cover_image, s.genre, s.status,
+                             'Top Series' as shelf_name,
+                             (SELECT COUNT(*) FROM episodes WHERE series_id = s.id) as episode_count
+                      FROM series s
+                      ORDER BY s.id DESC LIMIT $size";
+            $params = [];
+        } else {
+            $query = "SELECT s.id, s.title, s.slug, s.synopsis, s.cover_image, s.genre, s.status,
+                             sh.name as shelf_name,
+                             (SELECT COUNT(*) FROM episodes WHERE series_id = s.id) as episode_count
+                      FROM series s
+                      LEFT JOIN shelves sh ON s.shelf_id = sh.id";
 
-        $params = [];
-        if ($shelf) {
-            $query .= " WHERE sh.slug = ?";
-            $params[] = $shelf;
+            $params = [];
+            if ($shelf) {
+                $query .= " WHERE sh.slug = ?";
+                $params[] = $shelf;
+            }
+
+            $query .= " ORDER BY s.created_at DESC LIMIT $size";
         }
-
-        $query .= " ORDER BY s.created_at DESC LIMIT $size";
 
         $stmt = $db->prepare($query);
         $stmt->execute($params);
