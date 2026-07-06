@@ -314,6 +314,15 @@ class TransactionController extends BaseApiController {
             $stmt = $db->prepare("UPDATE payment_transactions SET status = 'successful' WHERE id = ?");
             $stmt->execute([$txn['id']]);
 
+            if (($txn['type'] ?? 'coin_purchase') === 'ad_placement') {
+                $campaignDays = (int)\App\Helpers\Site::getConfig('ad_campaign_days', 30);
+                $stmt = $db->prepare("UPDATE custom_ads SET is_active = 1, payment_status = 'paid', expires_at = DATE_ADD(NOW(), INTERVAL ? DAY) WHERE id = ?");
+                $stmt->execute([$campaignDays, $txn['ad_id']]);
+
+                $db->commit();
+                $this->respondJson(['status' => true, 'message' => 'Payment verified. Your ad is now live!', 'data' => ['ad_id' => (int)$txn['ad_id'], 'campaign_days' => $campaignDays]]);
+            }
+
             $coins = (float)$txn['coins_awarded'];
             if (!empty($txn['user_id'])) {
                 $stmt = $db->prepare("UPDATE users SET coin_balance = coin_balance + ? WHERE id = ?");

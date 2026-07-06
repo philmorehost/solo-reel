@@ -50,6 +50,26 @@
 
                         <div class="grid grid-cols-2 gap-4 mb-4">
                             <div>
+                                <label class="block text-gray-700 font-bold mb-2">On-Screen Duration</label>
+                                <select name="duration_seconds" class="w-full border rounded px-3 py-2">
+                                    <option value="5">5 seconds</option>
+                                    <option value="10">10 seconds</option>
+                                    <option value="15">15 seconds</option>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">How long this slide shows in the banner rotation.</p>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-bold mb-2">Platform</label>
+                                <select name="platform_placement" class="w-full border rounded px-3 py-2">
+                                    <option value="both">Website + App</option>
+                                    <option value="website">Website Only</option>
+                                    <option value="app">App Only</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
                                 <label class="block text-gray-700 font-bold mb-2">Starts At (optional)</label>
                                 <input type="datetime-local" name="starts_at" class="w-full border rounded px-3 py-2">
                             </div>

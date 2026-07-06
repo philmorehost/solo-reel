@@ -122,13 +122,17 @@ fun NavGraph(isLoggedIn: Boolean) {
                     onNavigateToFavorites = { navController.navigate(Screen.Favorites.route) },
                     onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) },
                     onNavigateToCoinShop = { navController.navigate(Screen.Coins.route) },
-                    onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
+                    onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                    onNavigateToAdvertise = { navController.navigate(Screen.Advertise.route) },
+                    onNavigateToMyAds = { navController.navigate(Screen.MyAds.route) }
                 )
             }
             composable(Screen.History.route) { com.soloreel.app.ui.profile.HistoryScreen(navController) }
             composable(Screen.Favorites.route) { com.soloreel.app.ui.profile.FavoritesScreen(navController) }
             composable(Screen.EditProfile.route) { com.soloreel.app.ui.profile.EditProfileScreen(navController) }
             composable(Screen.Settings.route) { com.soloreel.app.ui.profile.SettingsScreen(navController) }
+            composable(Screen.Advertise.route) { com.soloreel.app.ui.advertise.AdvertiseScreen(navController) }
+            composable(Screen.MyAds.route) { com.soloreel.app.ui.advertise.MyAdsScreen(navController) }
             composable(
                 Screen.SeriesDetail.route,
                 arguments = listOf(navArgument("slug") { type = NavType.StringType })

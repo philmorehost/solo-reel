@@ -9,7 +9,8 @@ data class Banner(
     val image_url: String?,
     val link_url: String?,
     val is_ad: Boolean? = false,
-    val media_type: String? = "image"
+    val media_type: String? = "image",
+    val duration_seconds: Int? = 5
 )
 
 data class InterstitialAd(
@@ -18,6 +19,27 @@ data class InterstitialAd(
     val media_url: String?,
     val media_type: String?,
     val target_url: String?
+)
+
+data class AdPricing(
+    val duration_seconds: Int,
+    val platform_placement: String,
+    val price: Double,
+    val currency: String?
+)
+
+data class MyAd(
+    val id: Int,
+    val title: String?,
+    val media_url: String?,
+    val media_type: String?,
+    val target_url: String?,
+    val duration_seconds: Int,
+    val platform_placement: String,
+    val payment_status: String,
+    val is_active: Boolean,
+    val is_expired: Boolean,
+    val expires_at: String?
 )
 
 data class Series(

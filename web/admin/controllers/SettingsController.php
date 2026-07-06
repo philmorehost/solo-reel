@@ -28,7 +28,7 @@ class SettingsController {
                 'android_app_link', 'ios_app_link',
                 'admob_android_app_id', 'admob_android_rewarded_unit_id',
                 'admob_ios_app_id', 'admob_ios_rewarded_unit_id',
-                'google_adsense_client_id', 'ads_txt_content'
+                'google_adsense_client_id', 'ads_txt_content', 'ad_campaign_days'
             ];
 
             // Handle Branding Uploads (Logo & Favicon)

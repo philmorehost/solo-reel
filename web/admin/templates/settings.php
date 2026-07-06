@@ -159,6 +159,10 @@
                                 <label class="block text-gray-700 font-bold mb-1 text-sm">ads.txt Content</label>
                                 <textarea name="ads_txt_content" rows="4" class="w-full border rounded px-3 py-2 font-mono text-sm" placeholder="google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0"><?= htmlspecialchars($settings['ads_txt_content'] ?? '') ?></textarea>
                                 <p class="text-xs text-gray-500 mt-1">Served at <code><?= (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]/ads.txt" ?></code>.</p>
+
+                                <label class="block text-gray-700 font-bold mb-1 text-sm mt-4">Self-Serve Ad Campaign Length (days)</label>
+                                <input type="number" name="ad_campaign_days" min="1" value="<?= htmlspecialchars($settings['ad_campaign_days'] ?? '30') ?>" class="w-full border rounded px-3 py-2">
+                                <p class="text-xs text-gray-500 mt-1">How many days a paid self-serve banner ad (from <a href="/admin/ad-pricing" class="text-indigo-600 underline">Ad Pricing</a>) runs before it expires and needs renewal.</p>
                             </div>
                         </div>
 

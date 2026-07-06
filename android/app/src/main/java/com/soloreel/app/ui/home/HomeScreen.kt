@@ -56,8 +56,12 @@ fun HomeScreen(
         item {
             if (state.banners.isNotEmpty()) {
                 var currentBanner by remember { mutableStateOf(0) }
-                LaunchedEffect(Unit) {
-                    while (true) { kotlinx.coroutines.delay(4000); currentBanner = (currentBanner + 1) % state.banners.size }
+                LaunchedEffect(state.banners) {
+                    while (true) {
+                        val waitMs = ((state.banners[currentBanner].duration_seconds ?: 5).coerceIn(1, 60)) * 1000L
+                        kotlinx.coroutines.delay(waitMs)
+                        currentBanner = (currentBanner + 1) % state.banners.size
+                    }
                 }
                 val banner = state.banners[currentBanner]
                 val isAd = banner.is_ad == true

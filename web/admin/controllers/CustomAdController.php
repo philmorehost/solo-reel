@@ -31,6 +31,10 @@ class CustomAdController {
             $targetUrl = trim($_POST['target_url'] ?? '');
             $placement = $_POST['placement'] ?? 'both';
             if (!in_array($placement, ['banner', 'interstitial', 'both'], true)) $placement = 'both';
+            $durationSeconds = (int)($_POST['duration_seconds'] ?? 5);
+            if (!in_array($durationSeconds, [5, 10, 15], true)) $durationSeconds = 5;
+            $platformPlacement = $_POST['platform_placement'] ?? 'both';
+            if (!in_array($platformPlacement, ['website', 'app', 'both'], true)) $platformPlacement = 'both';
             $sortOrder = (int)($_POST['sort_order'] ?? 0);
             $isActive = isset($_POST['is_active']) ? 1 : 0;
             $startsAt = trim($_POST['starts_at'] ?? '') ?: null;
@@ -69,8 +73,8 @@ class CustomAdController {
             }
 
             $db = Database::getInstance();
-            $stmt = $db->prepare("INSERT INTO custom_ads (title, media_type, media_url, target_url, placement, starts_at, expires_at, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$title, $mediaType, $mediaUrl, $targetUrl, $placement, $startsAt, $expiresAt, $isActive, $sortOrder]);
+            $stmt = $db->prepare("INSERT INTO custom_ads (title, media_type, media_url, target_url, placement, duration_seconds, platform_placement, starts_at, expires_at, is_active, sort_order, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid')");
+            $stmt->execute([$title, $mediaType, $mediaUrl, $targetUrl, $placement, $durationSeconds, $platformPlacement, $startsAt, $expiresAt, $isActive, $sortOrder]);
 
             \App\Core\Session::setFlash('success', 'Ad created successfully.');
             header("Location: /admin/custom-ads");

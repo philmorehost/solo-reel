@@ -117,6 +117,12 @@ struct RegisteredProfileSection: View {
                 ProfileRow(icon: "heart", text: "My Favorites")
                 ProfileRow(icon: "pencil", text: "Edit Profile")
                 ProfileRow(icon: "cart", text: "Buy More Coins")
+                NavigationLink(destination: AdvertiseView()) {
+                    ProfileRow(icon: "megaphone", text: "Advertise With Us")
+                }
+                NavigationLink(destination: MyAdsView()) {
+                    ProfileRow(icon: "rectangle.stack", text: "My Ads")
+                }
                 ProfileRow(icon: "gearshape", text: "Settings")
             }.padding(.top, 8)
 

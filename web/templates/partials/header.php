@@ -59,6 +59,7 @@ $coinBalance = \App\Core\Session::get('user_coin_balance');
                 <a href="/coin-shop" @click="mobileOpen = false" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 transition">Coin Shop</a>
                 <a href="/favorites" @click="mobileOpen = false" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 transition">Favorites</a>
                 <a href="/watch-history" @click="mobileOpen = false" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 transition">Watch History</a>
+                <a href="/advertise" @click="mobileOpen = false" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 transition">Advertise With Us</a>
                 <a href="/logout" @click="mobileOpen = false" class="block px-4 py-3 rounded-lg text-red-400 hover:bg-red-500/10 transition">Logout</a>
             <?php else: ?>
                 <a href="/login" @click="mobileOpen = false" class="block px-4 py-3 rounded-lg text-red-400 font-semibold hover:bg-red-500/10 transition">Sign In</a>

@@ -30,17 +30,20 @@ class PaymentController {
             $stmt->execute([$ref]);
             $txn = $stmt->fetch();
 
+            $isAd = $txn && ($txn['type'] ?? 'coin_purchase') === 'ad_placement';
+            $returnUrl = $isAd ? '/my-ads' : '/coin-shop';
+
             if (!$txn) {
                 $db->rollBack();
                 Session::setFlash('error', 'Transaction not found.');
-                header("Location: /coin-shop");
+                header("Location: $returnUrl");
                 die();
             }
 
             if ($txn['status'] === 'successful') {
                 $db->rollBack();
                 Session::setFlash('success', 'Payment already verified.');
-                header("Location: /coin-shop");
+                header("Location: $returnUrl");
                 die();
             }
 
@@ -50,7 +53,7 @@ class PaymentController {
             if (!$settings || $secretKey === '') {
                  $db->rollBack();
                  Session::setFlash('error', 'Payment gateway not configured.');
-                 header("Location: /coin-shop");
+                 header("Location: $returnUrl");
                  die();
             }
             $baseUrl = rtrim($settings['payhub_base_url'] ?: 'https://merchant.payhub.com.ng', '/');
@@ -69,7 +72,7 @@ class PaymentController {
             if ($err) {
                 $db->rollBack();
                 Session::setFlash('error', 'Curl Error checking transaction: ' . $err);
-                header("Location: /coin-shop");
+                header("Location: $returnUrl");
                 die();
             }
 
@@ -80,6 +83,17 @@ class PaymentController {
                 if ($dataStatus === 'success' || $dataStatus === 'successful') {
                     $stmt = $db->prepare("UPDATE payment_transactions SET status = 'successful' WHERE id = ?");
                     $stmt->execute([$txn['id']]);
+
+                    if ($isAd) {
+                        $campaignDays = (int)\App\Helpers\Site::getConfig('ad_campaign_days', 30);
+                        $stmt = $db->prepare("UPDATE custom_ads SET is_active = 1, payment_status = 'paid', expires_at = DATE_ADD(NOW(), INTERVAL ? DAY) WHERE id = ?");
+                        $stmt->execute([$campaignDays, $txn['ad_id']]);
+
+                        $db->commit();
+                        Session::setFlash('success', 'Payment successful! Your ad is now live for ' . $campaignDays . ' days.');
+                        header("Location: $returnUrl");
+                        die();
+                    }
 
                     // Credit wallet balance (user can then use wallet to buy coins)
                     $stmt = $db->prepare("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id = ?");
@@ -96,7 +110,7 @@ class PaymentController {
                     Session::set('user_coin_balance', (float)$u['coin_balance']);
 
                     Session::setFlash('success', 'Payment successful! &#8358;' . number_format((float)$txn['amount'], 2) . ' added to wallet. Use your wallet to buy coins.');
-                    header("Location: /coin-shop");
+                    header("Location: $returnUrl");
                     die();
                 }
             }
@@ -104,12 +118,12 @@ class PaymentController {
             $db->rollBack();
             $debugResponse = is_string($response) ? substr($response, 0, 300) : 'Invalid Response';
             Session::setFlash('error', 'Transaction was not successful. Status: ' . ($result['data']['status'] ?? 'unknown') . ' | Debug: ' . htmlspecialchars($debugResponse));
-            header("Location: /coin-shop");
+            header("Location: $returnUrl");
             die();
         } catch (\Exception $e) {
             $db->rollBack();
             Session::setFlash('error', 'Database error during verification.');
-            header("Location: /coin-shop");
+            header("Location: " . (isset($returnUrl) ? $returnUrl : '/coin-shop'));
             die();
         }
     }

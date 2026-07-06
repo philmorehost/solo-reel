@@ -51,7 +51,7 @@
               ref: '<?= htmlspecialchars($reference) ?>',
               onClose: function(){
                 alert('Payment cancelled.');
-                window.location.href = "/coin-shop";
+                window.location.href = "<?= htmlspecialchars($cancelUrl ?? '/coin-shop') ?>";
               },
               callback: function(response){
                 window.location.href = "/payment/verify?reference=<?= htmlspecialchars($reference) ?>";

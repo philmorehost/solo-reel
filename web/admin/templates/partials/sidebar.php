@@ -26,6 +26,7 @@ function toggleAdminSidebar() {
                 '/admin/shelves' => ['label' => 'Shelves', 'icon' => '📚'],
                 '/admin/banners' => ['label' => 'Banners', 'icon' => '🖼️'],
                 '/admin/custom-ads' => ['label' => 'Custom Ads', 'icon' => '📢'],
+                '/admin/ad-pricing' => ['label' => 'Ad Pricing', 'icon' => '💰'],
                 '/admin/blog' => ['label' => 'Blog Posts', 'icon' => '📝'],
                 '/admin/blog-categories' => ['label' => 'Blog Categories', 'icon' => '🏷️'],
                 '/admin/users' => ['label' => 'Users', 'icon' => '👥'],

@@ -112,10 +112,17 @@
 
         <?php if(count($featuredSeries) > 1): ?>
         <script>
-            setInterval(() => {
+            // Each slide (ad or regular banner) can set its own on-screen duration
+            // (ads: 5/10/15s per what the advertiser picked; regular banners: 5s).
+            const bannerDurationsMs = <?= json_encode(array_map(function ($b) { return (int)($b['duration_seconds'] ?? 5) * 1000; }, $featuredSeries)) ?>;
+            (function advance() {
                 let alpineData = document.querySelector('[x-data]').__x.$data;
-                alpineData.activeSlide = (alpineData.activeSlide + 1) % alpineData.slides;
-            }, 6000);
+                const wait = bannerDurationsMs[alpineData.activeSlide] || 5000;
+                setTimeout(() => {
+                    alpineData.activeSlide = (alpineData.activeSlide + 1) % alpineData.slides;
+                    advance();
+                }, wait);
+            })();
         </script>
         <?php endif; ?>
     </div>

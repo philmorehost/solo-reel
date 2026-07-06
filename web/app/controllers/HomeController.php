@@ -23,24 +23,28 @@ class HomeController {
                 }
             }
         }
-        foreach ($featuredSeries as &$fs) { $fs['is_ad'] = false; $fs['media_type'] = 'image'; }
+        foreach ($featuredSeries as &$fs) { $fs['is_ad'] = false; $fs['media_type'] = 'image'; $fs['duration_seconds'] = 5; }
         unset($fs);
 
-        // Merge in admin-uploaded custom ads (image or video) currently within
-        // their start/expiry window, into the same hero rotation.
+        // Merge in custom ads (admin-uploaded or user-purchased via /advertise)
+        // currently within their start/expiry window and targeted at the
+        // website (platform_placement 'website' or 'both'), into the hero rotation.
         $stmt = $db->query("SELECT * FROM custom_ads
                              WHERE is_active = 1 AND placement IN ('banner', 'both')
+                               AND platform_placement IN ('website', 'both')
+                               AND payment_status = 'paid'
                                AND (starts_at IS NULL OR starts_at <= NOW())
                                AND (expires_at IS NULL OR expires_at > NOW())
                              ORDER BY sort_order ASC");
         foreach ($stmt->fetchAll() as $ad) {
             $featuredSeries[] = [
-                'title'      => $ad['title'],
-                'synopsis'   => '',
-                'hero_image' => $ad['media_url'],
-                'slug'       => $ad['target_url'] ?: '#',
-                'is_ad'      => true,
-                'media_type' => $ad['media_type'],
+                'title'            => $ad['title'],
+                'synopsis'         => '',
+                'hero_image'       => $ad['media_url'],
+                'slug'             => $ad['target_url'] ?: '#',
+                'is_ad'            => true,
+                'media_type'       => $ad['media_type'],
+                'duration_seconds' => (int)($ad['duration_seconds'] ?? 5),
             ];
         }
 

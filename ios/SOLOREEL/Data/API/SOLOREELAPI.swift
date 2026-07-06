@@ -11,10 +11,18 @@ struct SeriesRequestBody: Codable { let title: String; let description: String?;
 
 struct Banner: Codable, Identifiable {
     let id: Int; let title: String?; let subtitle: String?; let image_url: String?; let link_url: String?
-    let is_ad: Bool?; let media_type: String?
+    let is_ad: Bool?; let media_type: String?; let duration_seconds: Int?
 }
 struct InterstitialAd: Codable {
     let id: Int; let title: String?; let media_url: String?; let media_type: String?; let target_url: String?
+}
+struct AdPricing: Codable {
+    let duration_seconds: Int; let platform_placement: String; let price: Double; let currency: String?
+}
+struct MyAd: Codable, Identifiable {
+    let id: Int; let title: String?; let media_url: String?; let media_type: String?; let target_url: String?
+    let duration_seconds: Int; let platform_placement: String; let payment_status: String
+    let is_active: Bool; let is_expired: Bool; let expires_at: String?
 }
 struct Series: Codable, Identifiable {
     let id: Int; let title: String; let slug: String
@@ -126,6 +134,44 @@ class APIClient {
     func getBonusStatus() async throws -> WeeklyBonusStatus { try await request("user/bonus-status") }
     func getAdsConfig() async throws -> [String: String] { try await request("ads-config") }
     func getInterstitialAd() async throws -> InterstitialAd { try await request("ads/interstitial") }
+    func getAdsPricing() async throws -> [AdPricing] { try await request("ads/pricing") }
+    func getMyAds() async throws -> [MyAd] { try await request("ads/my-ads") }
+    func renewAd(id: Int) async throws -> PaymentInit { try await request("ads/renew/\(id)", method: "POST") }
+
+    /// Submits a new self-serve ad as multipart/form-data (image or video upload).
+    func subscribeAd(title: String, targetUrl: String, durationSeconds: Int, platformPlacement: String, mediaData: Data, mediaFilename: String, mediaMimeType: String) async throws -> PaymentInit {
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var body = Data()
+        func addField(_ name: String, _ value: String) {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(value)\r\n".data(using: .utf8)!)
+        }
+        addField("title", title)
+        addField("target_url", targetUrl)
+        addField("duration_seconds", String(durationSeconds))
+        addField("platform_placement", platformPlacement)
+
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"media_file\"; filename=\"\(mediaFilename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: \(mediaMimeType)\r\n\r\n".data(using: .utf8)!)
+        body.append(mediaData)
+        body.append("\r\n".data(using: .utf8)!)
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+
+        var req = URLRequest(url: URL(string: base + "ads/subscribe")!)
+        req.httpMethod = "POST"
+        req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        if let t = token { req.setValue("Bearer \(t)", forHTTPHeaderField: "Authorization") }
+        req.httpBody = body
+
+        let (data, _) = try await URLSession.shared.data(for: req)
+        let decoded = try JSONDecoder().decode(ApiResponse<PaymentInit>.self, from: data)
+        guard let responseData = decoded.data else {
+            throw NSError(domain: "APIError", code: 0, userInfo: [NSLocalizedDescriptionKey: decoded.error ?? decoded.message ?? "Unknown API error"])
+        }
+        return responseData
+    }
     func initGuest(guestId: String) async throws -> GuestWallet {
         let body = try JSONEncoder().encode(GuestInitBody(guest_id: guestId))
         return try await request("guest/init", method: "POST", body: body)

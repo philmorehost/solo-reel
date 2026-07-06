@@ -3,6 +3,8 @@ package com.soloreel.app.data.api
 import com.soloreel.app.data.model.*
 import retrofit2.http.*
 import com.google.gson.JsonElement
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 
 data class ApiResponse<T>(val status: Boolean?, val data: T?, val message: String?, val error: String?)
 
@@ -132,4 +134,24 @@ interface SOLOREELApi {
 
     @POST("api/v1/episodes/unlock/{id}")
     suspend fun unlockWithCoins(@Path("id") episodeId: Int, @Body body: Map<String, String> = emptyMap()): ApiResponse<JsonElement>
+
+    // Self-serve ad marketplace
+    @GET("api/v1/ads/pricing")
+    suspend fun getAdsPricing(): ApiResponse<List<AdPricing>>
+
+    @GET("api/v1/ads/my-ads")
+    suspend fun getMyAds(): ApiResponse<List<MyAd>>
+
+    @Multipart
+    @POST("api/v1/ads/subscribe")
+    suspend fun subscribeAd(
+        @Part("title") title: RequestBody,
+        @Part("target_url") targetUrl: RequestBody,
+        @Part("duration_seconds") durationSeconds: RequestBody,
+        @Part("platform_placement") platformPlacement: RequestBody,
+        @Part mediaFile: MultipartBody.Part
+    ): ApiResponse<PaymentInit>
+
+    @POST("api/v1/ads/renew/{id}")
+    suspend fun renewAd(@Path("id") id: Int): ApiResponse<PaymentInit>
 }

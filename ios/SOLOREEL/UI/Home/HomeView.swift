@@ -7,8 +7,6 @@ struct HomeView: View {
     @State private var isLoading = true
     @State private var currentBanner = 0
 
-    let timer = Timer.publish(every: 4, on: .main, in: .common).autoconnect()
-
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -102,6 +100,21 @@ struct HomeView: View {
             await NotificationCenterStore.shared.load(postSystemNotifications: true)
             if let adsConfig = try? await APIClient.shared.getAdsConfig(), let unitId = adsConfig["admob_ios_rewarded_unit_id"] {
                 RewardedAdManager.shared.configure(adUnitID: unitId)
+            }
+        }
+        .task {
+            // Each slide (ad or regular banner) can set its own on-screen
+            // duration (ads: 5/10/15s per what the advertiser picked; regular
+            // banners default to 5s). Cancelled automatically when the view
+            // disappears since this is a SwiftUI `.task`.
+            while !Task.isCancelled {
+                guard !banners.isEmpty else {
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    continue
+                }
+                let seconds = banners[currentBanner].duration_seconds ?? 5
+                try? await Task.sleep(nanoseconds: UInt64(max(1, seconds)) * 1_000_000_000)
+                withAnimation { currentBanner = (currentBanner + 1) % banners.count }
             }
         }
     }

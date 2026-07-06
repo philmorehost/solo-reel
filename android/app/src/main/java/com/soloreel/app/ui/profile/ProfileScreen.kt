@@ -88,6 +88,8 @@ fun ProfileScreen(
     onNavigateToEditProfile: () -> Unit = {},
     onNavigateToCoinShop: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onNavigateToAdvertise: () -> Unit = {},
+    onNavigateToMyAds: () -> Unit = {},
     vm: ProfileViewModel = hiltViewModel()
 ) {
     val state by vm.state.collectAsState()
@@ -112,7 +114,9 @@ fun ProfileScreen(
                 onNavigateToFavorites = onNavigateToFavorites,
                 onNavigateToEditProfile = onNavigateToEditProfile,
                 onNavigateToCoinShop = onNavigateToCoinShop,
-                onNavigateToSettings = onNavigateToSettings
+                onNavigateToSettings = onNavigateToSettings,
+                onNavigateToAdvertise = onNavigateToAdvertise,
+                onNavigateToMyAds = onNavigateToMyAds
             )
         }
     }
@@ -213,7 +217,9 @@ fun RegisteredProfileScreen(
     onNavigateToFavorites: () -> Unit = {},
     onNavigateToEditProfile: () -> Unit = {},
     onNavigateToCoinShop: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {}
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToAdvertise: () -> Unit = {},
+    onNavigateToMyAds: () -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.height(32.dp))
@@ -280,6 +286,8 @@ fun RegisteredProfileScreen(
         ProfileMenuItem(Icons.Default.Favorite, "My Favorites", onClick = onNavigateToFavorites)
         ProfileMenuItem(Icons.Default.Edit, "Edit Profile", onClick = onNavigateToEditProfile)
         ProfileMenuItem(Icons.Default.ShoppingCart, "Buy More Coins", onClick = onNavigateToCoinShop)
+        ProfileMenuItem(Icons.Default.Campaign, "Advertise With Us", onClick = onNavigateToAdvertise)
+        ProfileMenuItem(Icons.Default.Storefront, "My Ads", onClick = onNavigateToMyAds)
         ProfileMenuItem(Icons.Default.Settings, "Settings", onClick = onNavigateToSettings)
 
         Spacer(Modifier.height(24.dp))
