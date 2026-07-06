@@ -1,4 +1,4 @@
-﻿package com.soloreel.app.data.api
+package com.soloreel.app.data.api
 
 import com.soloreel.app.data.model.*
 import retrofit2.http.*
@@ -20,6 +20,9 @@ interface SOLOREELApi {
 
     @GET("api/v1/series/{slug}/by-slug")
     suspend fun getSeriesDetail(@Path("slug") slug: String): ApiResponse<Series>
+
+    @GET("api/v1/episodes/{slug}/by-slug")
+    suspend fun getEpisode(@Path("slug") slug: String): ApiResponse<Episode>
 
     @GET("api/v1/series/{id}/episodes")
     suspend fun getEpisodes(@Path("id") seriesId: Int): ApiResponse<List<Episode>>
