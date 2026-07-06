@@ -6,7 +6,7 @@
     <!-- Dynamic SEO and Header Code -->
     <?php
         $db = \App\Core\Database::getInstance();
-        $stmt = $db->query("SELECT setting_key, setting_value FROM site_config WHERE setting_key IN ('meta_title', 'meta_description', 'meta_keywords', 'custom_header', 'ga_id')");
+        $stmt = $db->query("SELECT setting_key, setting_value FROM site_config WHERE setting_key IN ('meta_title', 'meta_description', 'meta_keywords', 'custom_header', 'ga_id', 'google_adsense_client_id')");
         $config = [];
         while ($row = $stmt->fetch()) { $config[$row['setting_key']] = $row['setting_value']; }
     ?>
@@ -21,6 +21,9 @@
       gtag('js', new Date());
       gtag('config', '<?= $config['ga_id'] ?>');
     </script>
+    <?php endif; ?>
+    <?php if(!empty($config['google_adsense_client_id'])): ?>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=<?= htmlspecialchars($config['google_adsense_client_id']) ?>" crossorigin="anonymous"></script>
     <?php endif; ?>
     <?= $config['custom_header'] ?? '' ?>
     <link rel="icon" type="image/png" href="/favicon.ico">
@@ -77,19 +80,31 @@
                  x-transition:leave-start="opacity-100 scale-100"
                  x-transition:leave-end="opacity-0 scale-105"
                  class="absolute inset-0 z-0">
+                <?php if (($banner['media_type'] ?? 'image') === 'video'): ?>
+                <video src="<?= htmlspecialchars($banner['hero_image']) ?>" class="w-full h-full object-cover opacity-80" autoplay muted loop playsinline></video>
+                <?php else: ?>
                 <img src="<?= htmlspecialchars($banner['hero_image']) ?>" alt="<?= htmlspecialchars($banner['title']) ?>" class="w-full h-full object-cover opacity-80">
+                <?php endif; ?>
                 <div class="absolute inset-0 hero-gradient"></div>
                 <div class="absolute inset-0 bg-gradient-to-r from-[#0f0f11] via-[#0f0f11]/60 to-transparent w-2/3"></div>
 
                 <div class="absolute bottom-[15%] left-[5%] md:left-[8%] z-10 max-w-3xl pr-4">
-                    <span class="inline-block px-3 py-1 bg-red-600 text-white text-xs font-bold tracking-widest uppercase rounded-full mb-4 shadow-lg">New Episode</span>
+                    <span class="inline-block px-3 py-1 <?= !empty($banner['is_ad']) ? 'bg-gray-700' : 'bg-red-600' ?> text-white text-xs font-bold tracking-widest uppercase rounded-full mb-4 shadow-lg"><?= !empty($banner['is_ad']) ? 'Sponsored' : 'New Episode' ?></span>
                     <h2 class="text-5xl md:text-7xl font-anton tracking-wider mb-4 leading-tight drop-shadow-2xl uppercase"><?= htmlspecialchars($banner['title']) ?></h2>
+                    <?php if (!empty($banner['synopsis'])): ?>
                     <p class="text-lg md:text-xl text-white/90 mb-8 line-clamp-3 font-light leading-relaxed max-w-2xl text-shadow"><?= htmlspecialchars($banner['synopsis']) ?></p>
+                    <?php endif; ?>
                     <div class="flex gap-4">
+                        <?php if (!empty($banner['is_ad'])): ?>
+                        <a href="<?= htmlspecialchars($banner['slug']) ?>" target="_blank" rel="noopener sponsored" class="inline-flex items-center justify-center bg-white text-black font-bold px-8 py-3.5 rounded-md hover:bg-gray-200 transition-colors text-lg">
+                            Learn More
+                        </a>
+                        <?php else: ?>
                         <a href="/movie/<?= htmlspecialchars($banner['slug']) ?>" class="inline-flex items-center justify-center bg-white text-black font-bold px-8 py-3.5 rounded-md hover:bg-gray-200 transition-colors text-lg">
                             <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"></path></svg>
                             Play
                         </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

@@ -23,6 +23,26 @@ class HomeController {
                 }
             }
         }
+        foreach ($featuredSeries as &$fs) { $fs['is_ad'] = false; $fs['media_type'] = 'image'; }
+        unset($fs);
+
+        // Merge in admin-uploaded custom ads (image or video) currently within
+        // their start/expiry window, into the same hero rotation.
+        $stmt = $db->query("SELECT * FROM custom_ads
+                             WHERE is_active = 1 AND placement IN ('banner', 'both')
+                               AND (starts_at IS NULL OR starts_at <= NOW())
+                               AND (expires_at IS NULL OR expires_at > NOW())
+                             ORDER BY sort_order ASC");
+        foreach ($stmt->fetchAll() as $ad) {
+            $featuredSeries[] = [
+                'title'      => $ad['title'],
+                'synopsis'   => '',
+                'hero_image' => $ad['media_url'],
+                'slug'       => $ad['target_url'] ?: '#',
+                'is_ad'      => true,
+                'media_type' => $ad['media_type'],
+            ];
+        }
 
         $stmt = $db->query("SELECT * FROM shelves WHERE is_active = 1 ORDER BY sort_order ASC");
         $shelves = $stmt->fetchAll();

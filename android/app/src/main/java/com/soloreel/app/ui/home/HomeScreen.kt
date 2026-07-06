@@ -60,18 +60,30 @@ fun HomeScreen(
                     while (true) { kotlinx.coroutines.delay(4000); currentBanner = (currentBanner + 1) % state.banners.size }
                 }
                 val banner = state.banners[currentBanner]
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(500.dp).clickable {
+                val isAd = banner.is_ad == true
+                val onBannerClick = {
+                    if (isAd) {
+                        banner.link_url?.let { url ->
+                            try { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) } catch (_: Exception) {}
+                        }
+                    } else {
                         banner.link_url?.substringAfterLast("/")?.let { navController.navigate(Screen.SeriesDetail.createRoute(it)) }
-                    },
+                    }
+                }
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(500.dp).clickable { onBannerClick() },
                     contentAlignment = Alignment.BottomStart
                 ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(banner.image_url),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
+                    if (banner.media_type == "video" && !banner.image_url.isNullOrBlank()) {
+                        MutedLoopingVideo(url = banner.image_url, modifier = Modifier.fillMaxSize())
+                    } else {
+                        Image(
+                            painter = rememberAsyncImagePainter(banner.image_url),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                     Box(
                         modifier = Modifier.fillMaxSize()
                             .background(Brush.verticalGradient(
@@ -80,19 +92,25 @@ fun HomeScreen(
                             ))
                     )
                     Column(modifier = Modifier.padding(24.dp).padding(bottom = 16.dp)) {
+                        if (isAd) {
+                            Text("SPONSORED", color = Color(0xFFEAB308), fontSize = 12.sp, fontWeight = FontWeight.Bold, style = androidx.compose.ui.text.TextStyle(letterSpacing = 2.sp))
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
                         banner.title?.let { Text(it, color = Color.White, fontSize = 36.sp, fontWeight = FontWeight.Black, style = androidx.compose.ui.text.TextStyle(letterSpacing = 1.sp)) }
                         Spacer(modifier = Modifier.height(8.dp))
                         banner.subtitle?.let { Text(it, color = Color(0xEEFFFFFF), fontSize = 16.sp, maxLines = 2) }
                         Spacer(modifier = Modifier.height(20.dp))
                         Button(
-                            onClick = { banner.link_url?.substringAfterLast("/")?.let { navController.navigate(Screen.SeriesDetail.createRoute(it)) } },
+                            onClick = { onBannerClick() },
                             modifier = Modifier.width(160.dp).height(48.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
                         ) {
-                            Icon(androidx.compose.material.icons.Icons.Default.PlayArrow, contentDescription = "Play", modifier = Modifier.size(24.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Play", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            if (!isAd) {
+                                Icon(androidx.compose.material.icons.Icons.Default.PlayArrow, contentDescription = "Play", modifier = Modifier.size(24.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Text(if (isAd) "Learn More" else "Play", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                         }
                     }
                 }
@@ -153,5 +171,37 @@ fun SeriesCard(series: Series, onClick: () -> Unit) {
         }
         Spacer(Modifier.height(8.dp))
         Text(series.title, color = Color.White, fontSize = 14.sp, maxLines = 2, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+/** Muted, looping, no-controls video for banner/ad placements — not a full player. */
+@androidx.media3.common.util.UnstableApi
+@Composable
+fun MutedLoopingVideo(url: String, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    var exoPlayer by remember(url) { mutableStateOf<androidx.media3.exoplayer.ExoPlayer?>(null) }
+
+    androidx.compose.ui.viewinterop.AndroidView(
+        modifier = modifier,
+        factory = { ctx ->
+            androidx.media3.exoplayer.ExoPlayer.Builder(ctx).build().apply {
+                exoPlayer = this
+                setMediaItem(androidx.media3.common.MediaItem.fromUri(android.net.Uri.parse(url)))
+                volume = 0f
+                repeatMode = androidx.media3.common.Player.REPEAT_MODE_ONE
+                prepare()
+                playWhenReady = true
+            }
+            androidx.media3.ui.PlayerView(ctx).apply {
+                player = exoPlayer
+                useController = false
+                resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            }
+        },
+        update = { view -> view.player = exoPlayer }
+    )
+
+    DisposableEffect(url) {
+        onDispose { exoPlayer?.release() }
     }
 }

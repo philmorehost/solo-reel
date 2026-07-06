@@ -2,6 +2,7 @@ package com.soloreel.app.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.soloreel.app.ads.RewardedAdManager
 import com.soloreel.app.data.api.SOLOREELApi
 import com.soloreel.app.data.model.Banner
 import com.soloreel.app.data.model.Series
@@ -45,6 +46,13 @@ class HomeViewModel @Inject constructor(
                     } catch (e: Exception) {
                         // ignore error, will try again next time
                     }
+                }
+
+                try {
+                    val adsConfig = api.getAdsConfig().data
+                    adsConfig?.get("admob_android_rewarded_unit_id")?.let { RewardedAdManager.adUnitId = it }
+                } catch (e: Exception) {
+                    // Keep the built-in test ad unit ID on failure.
                 }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(isLoading = false, error = e.message)

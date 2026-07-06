@@ -20,11 +20,41 @@ class BannerController extends BaseApiController {
         $stmt->execute();
         $banners = $stmt->fetchAll();
 
-        foreach ($banners as &$banner) {
-            $banner['image_url'] = $this->absoluteUrl($banner['image_url'] ?? null);
-        }
-        unset($banner);
+        $items = array_map(function ($banner) {
+            return [
+                'id'         => (int)$banner['id'],
+                'title'      => $banner['title'],
+                'subtitle'   => $banner['subtitle'],
+                'image_url'  => $this->absoluteUrl($banner['image_url'] ?? null),
+                'link_url'   => $banner['link_url'],
+                'is_ad'      => false,
+                'media_type' => 'image',
+            ];
+        }, $banners);
 
-        $this->respondJson(['status' => true, 'data' => $banners]);
+        // Merge in admin-uploaded custom ads (image or video) currently within
+        // their start/expiry window, so the home carousel shows both content
+        // banners and paid placements without the apps needing a separate call.
+        $stmt = $db->prepare("SELECT * FROM custom_ads
+                               WHERE is_active = 1 AND placement IN ('banner', 'both')
+                                 AND (starts_at IS NULL OR starts_at <= NOW())
+                                 AND (expires_at IS NULL OR expires_at > NOW())
+                               ORDER BY sort_order ASC");
+        $stmt->execute();
+        $ads = $stmt->fetchAll();
+
+        foreach ($ads as $ad) {
+            $items[] = [
+                'id'         => (int)$ad['id'],
+                'title'      => $ad['title'],
+                'subtitle'   => null,
+                'image_url'  => $this->absoluteUrl($ad['media_url'] ?? null),
+                'link_url'   => $ad['target_url'],
+                'is_ad'      => true,
+                'media_type' => $ad['media_type'],
+            ];
+        }
+
+        $this->respondJson(['status' => true, 'data' => $items]);
     }
 }

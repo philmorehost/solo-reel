@@ -1,6 +1,7 @@
 import SwiftUI
 import AVKit
 import AVFoundation
+import UIKit
 
 struct PlayerView: View {
     let slug: String
@@ -10,6 +11,7 @@ struct PlayerView: View {
     @State private var player: AVPlayer?
     @State private var showNextEpisodeOverlay = false
     @State private var endObserver: NSObjectProtocol?
+    @State private var interstitialAd: InterstitialAd?
     @ObservedObject private var tokenManager = TokenManager.shared
     @Environment(\.dismiss) private var dismiss
 
@@ -52,11 +54,53 @@ struct PlayerView: View {
                 }
                 Spacer()
             }
+
+            if let ad = interstitialAd {
+                interstitialView(for: ad)
+            }
         }
-        .task { await load() }
+        .task {
+            await load()
+            if InterstitialAdGate.shouldShowForNewEpisode() {
+                interstitialAd = try? await APIClient.shared.getInterstitialAd()
+            }
+        }
         .onDisappear {
             player?.pause()
             if let observer = endObserver { NotificationCenter.default.removeObserver(observer) }
+        }
+    }
+
+    @ViewBuilder
+    private func interstitialView(for ad: InterstitialAd) -> some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            if ad.media_type == "video", let urlStr = ad.media_url {
+                MutedLoopingVideoView(url: urlStr).ignoresSafeArea()
+            } else if let urlStr = ad.media_url, let url = URL(string: urlStr) {
+                AsyncImage(url: url) { phase in
+                    if let image = phase.image { image.resizable().aspectRatio(contentMode: .fill) }
+                    else { Color.black }
+                }.ignoresSafeArea()
+            }
+            VStack {
+                HStack {
+                    Text("Sponsored").font(.caption).bold().foregroundColor(.white)
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(Color.black.opacity(0.6)).cornerRadius(4)
+                    Spacer()
+                    Button { interstitialAd = nil } label: {
+                        Image(systemName: "xmark").foregroundColor(.white)
+                            .padding(8).background(Color.black.opacity(0.6)).clipShape(Circle())
+                    }
+                }.padding()
+                Spacer()
+                if let urlStr = ad.target_url, let url = URL(string: urlStr) {
+                    Button(ad.title ?? "Learn More") { UIApplication.shared.open(url) }
+                        .buttonStyle(.borderedProminent).tint(.white).foregroundColor(.black)
+                        .padding()
+                }
+            }
         }
     }
 

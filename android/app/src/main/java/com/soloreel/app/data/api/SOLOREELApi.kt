@@ -118,6 +118,12 @@ interface SOLOREELApi {
     @GET("api/v1/auth/google-config")
     suspend fun getGoogleConfig(): ApiResponse<Map<String, String>>
 
+    @GET("api/v1/ads-config")
+    suspend fun getAdsConfig(): ApiResponse<Map<String, String>>
+
+    @GET("api/v1/ads/interstitial")
+    suspend fun getInterstitialAd(): ApiResponse<InterstitialAd?>
+
     @POST("api/v1/user/claim-install-bonus")
     suspend fun claimInstallBonus(): ApiResponse<Map<String, Any>>
 

@@ -142,20 +142,26 @@ class CoinController {
             // Process card payment through Payhub
             $stmt = $db->query("SELECT * FROM payment_settings LIMIT 1");
             $settings = $stmt->fetch();
+            $keys = $settings ? \App\Core\PayhubKeys::active($settings) : ['public' => '', 'secret' => ''];
 
-            if (!$settings || empty($settings['payhub_public_key'])) {
-                Session::setFlash('error', 'Card payment is not configured. Use Bank Transfer instead or contact support.');
+            if (!$settings || $keys['public'] === '' || $keys['secret'] === '') {
+                $mode = $settings['mode'] ?? 'sandbox';
+                Session::setFlash('error', "Card payment is not configured for {$mode} mode. Use Bank Transfer instead or contact support.");
                 header("Location: /coin-shop");
                 die();
             }
 
-            $reference = 'trx_' . time() . '_' . bin2hex(random_bytes(6));
             $amount = $package['price'];
+
+            // Register with Payhub itself so it recognizes the reference and
+            // applies the correct sandbox/live mode at checkout (see PayhubKeys::initialize doc).
+            $payhubTxn = \App\Core\PayhubKeys::initialize($settings, $keys['secret'], (float)$amount, $email);
+            $reference = $payhubTxn['reference'];
 
             $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (?, ?, ?, ?, ?, 'pending', ?)");
             $stmt->execute([$userId, $package['id'], $reference, $amount, $package['currency'], $package['coins']]);
 
-            $publicKey = trim($settings['payhub_public_key'] ?? '');
+            $publicKey = $keys['public'];
             require __DIR__ . '/../../templates/pages/checkout.php';
             die();
 

@@ -82,4 +82,15 @@ class SeoController {
 
         die();
     }
+
+    /** GET /ads.txt — admin-configurable, required for AdSense/programmatic ad verification. */
+    public function adstxt() {
+        $db = Database::getInstance();
+        $stmt = $db->query("SELECT setting_value FROM site_config WHERE setting_key = 'ads_txt_content'");
+        $content = $stmt->fetchColumn();
+
+        header("Content-Type: text/plain; charset=utf-8");
+        echo $content ?: '';
+        die();
+    }
 }

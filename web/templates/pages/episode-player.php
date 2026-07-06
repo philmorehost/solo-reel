@@ -15,6 +15,9 @@
         }
         video { width: 100%; height: 100%; object-fit: cover; }
     </style>
+    <?php $adsenseId = \App\Helpers\Site::getConfig('google_adsense_client_id'); if (!empty($adsenseId)): ?>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=<?= htmlspecialchars($adsenseId) ?>" crossorigin="anonymous"></script>
+    <?php endif; ?>
 </head>
 <body class="bg-black text-white antialiased font-sans overflow-hidden">
 

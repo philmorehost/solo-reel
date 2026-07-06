@@ -25,7 +25,10 @@ class SettingsController {
                 'custom_header', 'custom_footer', 'social_facebook', 'social_twitter',
                 'social_instagram', 'social_tiktok', 'seo_llms_enabled', 'seo_sitemap_enabled',
                 'google_client_id', 'google_client_secret', 'google_auth_enabled', 'app_install_bonus',
-                'android_app_link', 'ios_app_link'
+                'android_app_link', 'ios_app_link',
+                'admob_android_app_id', 'admob_android_rewarded_unit_id',
+                'admob_ios_app_id', 'admob_ios_rewarded_unit_id',
+                'google_adsense_client_id', 'ads_txt_content'
             ];
 
             // Handle Branding Uploads (Logo & Favicon)

@@ -7,7 +7,17 @@ data class Banner(
     val title: String?,
     val subtitle: String?,
     val image_url: String?,
-    val link_url: String?
+    val link_url: String?,
+    val is_ad: Boolean? = false,
+    val media_type: String? = "image"
+)
+
+data class InterstitialAd(
+    val id: Int,
+    val title: String?,
+    val media_url: String?,
+    val media_type: String?,
+    val target_url: String?
 )
 
 data class Series(

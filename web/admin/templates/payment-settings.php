@@ -27,22 +27,37 @@
                     <form method="POST">
                         <?= \App\Core\Security::csrfField() ?>
 
-                        <div class="mb-4">
-                            <label class="block text-gray-700 font-bold mb-2">Payhub Public Key</label>
-                            <input type="text" name="payhub_public_key" value="<?= htmlspecialchars($settings['payhub_public_key'] ?? '') ?>" class="w-full border rounded px-3 py-2">
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="block text-gray-700 font-bold mb-2">Payhub Secret Key</label>
-                            <input type="password" name="payhub_secret_key" value="<?= htmlspecialchars($settings['payhub_secret_key'] ?? '') ?>" class="w-full border rounded px-3 py-2">
-                        </div>
-
                         <div class="mb-6">
                             <label class="block text-gray-700 font-bold mb-2">Mode</label>
                             <select name="mode" class="w-full border rounded px-3 py-2">
-                                <option value="sandbox" <?= (isset($settings['mode']) && $settings['mode'] === 'sandbox') ? 'selected' : '' ?>>Sandbox</option>
-                                <option value="live" <?= (isset($settings['mode']) && $settings['mode'] === 'live') ? 'selected' : '' ?>>Live</option>
+                                <option value="sandbox" <?= (isset($settings['mode']) && $settings['mode'] === 'sandbox') ? 'selected' : '' ?>>Sandbox (test payments)</option>
+                                <option value="live" <?= (isset($settings['mode']) && $settings['mode'] === 'live') ? 'selected' : '' ?>>Live (real payments)</option>
                             </select>
+                            <p class="text-xs text-gray-500 mt-1">This picks which key pair below is actually used for checkout.</p>
+                        </div>
+
+                        <div class="mb-6 border border-amber-300 bg-amber-50 rounded p-4">
+                            <h3 class="font-bold text-amber-800 mb-3">Sandbox Keys</h3>
+                            <div class="mb-4">
+                                <label class="block text-gray-700 font-bold mb-2">Sandbox Public Key</label>
+                                <input type="text" name="payhub_public_key_sandbox" value="<?= htmlspecialchars($settings['payhub_public_key_sandbox'] ?? '') ?>" placeholder="pk_test_..." class="w-full border rounded px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-bold mb-2">Sandbox Secret Key</label>
+                                <input type="password" name="payhub_secret_key_sandbox" value="<?= htmlspecialchars($settings['payhub_secret_key_sandbox'] ?? '') ?>" placeholder="sk_test_..." class="w-full border rounded px-3 py-2">
+                            </div>
+                        </div>
+
+                        <div class="mb-6 border border-indigo-300 bg-indigo-50 rounded p-4">
+                            <h3 class="font-bold text-indigo-800 mb-3">Live Keys</h3>
+                            <div class="mb-4">
+                                <label class="block text-gray-700 font-bold mb-2">Live Public Key</label>
+                                <input type="text" name="payhub_public_key_live" value="<?= htmlspecialchars($settings['payhub_public_key_live'] ?? '') ?>" placeholder="pk_live_..." class="w-full border rounded px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-bold mb-2">Live Secret Key</label>
+                                <input type="password" name="payhub_secret_key_live" value="<?= htmlspecialchars($settings['payhub_secret_key_live'] ?? '') ?>" placeholder="sk_live_..." class="w-full border rounded px-3 py-2">
+                            </div>
                         </div>
 
                         <div class="mb-6 bg-blue-50 border border-blue-200 p-4 rounded text-sm text-blue-800">

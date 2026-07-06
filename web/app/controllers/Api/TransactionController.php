@@ -10,10 +10,28 @@ class TransactionController extends BaseApiController {
         $db = Database::getInstance();
         $stmt = $db->query("SELECT * FROM payment_settings LIMIT 1");
         $settings = $stmt->fetch();
-        if (!$settings || empty(trim($settings['payhub_public_key'] ?? ''))) {
+        if (!$settings) {
             $this->respondJson(['status' => false, 'error' => 'Payment gateway is not configured.'], 500);
         }
+        $keys = $this->activeKeys($settings);
+        if ($keys['public'] === '' || $keys['secret'] === '') {
+            $mode = $settings['mode'] ?? 'sandbox';
+            $this->respondJson(['status' => false, 'error' => "Payment gateway is not configured for {$mode} mode."], 500);
+        }
         return $settings;
+    }
+
+    private function activeKeys(array $settings): array {
+        return \App\Core\PayhubKeys::active($settings);
+    }
+
+    /** Wraps PayhubKeys::initialize(), converting failures into the API's JSON error format. */
+    private function initializeWithPayhub(array $settings, string $secretKey, float $amount, string $email): array {
+        try {
+            return \App\Core\PayhubKeys::initialize($settings, $secretKey, $amount, $email);
+        } catch (\RuntimeException $e) {
+            $this->respondJson(['status' => false, 'error' => $e->getMessage()], 502);
+        }
     }
 
     private function loadPackage(int $packageId): array {
@@ -139,12 +157,14 @@ class TransactionController extends BaseApiController {
             $user = $stmt->fetch();
             $email = $user['email'] ?? ('user_' . $userId . '@soloreel.tv');
 
-            $reference = 'trx_' . time() . '_' . bin2hex(random_bytes(6));
+            $keys = $this->activeKeys($settings);
+            $payhubTxn = $this->initializeWithPayhub($settings, $keys['secret'], (float)$package['price'], $email);
+            $reference = $payhubTxn['reference']; // Payhub's own reference — required so its checkout page recognizes the transaction and applies the correct sandbox/live mode.
 
             $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (?, ?, ?, ?, ?, 'pending', ?)");
             $stmt->execute([$userId, $package['id'], $reference, $package['price'], $package['currency'], $package['coins']]);
 
-            $this->respondPaymentInit($package, $reference, trim($settings['payhub_public_key']), $email);
+            $this->respondPaymentInit($package, $reference, $keys['public'], $email);
         } catch (\Throwable $e) {
             $this->respondJson(['status' => false, 'error' => 'Could not initiate payment: ' . $e->getMessage()], 500);
         }
@@ -176,12 +196,14 @@ class TransactionController extends BaseApiController {
                 $email = 'guest_' . substr(md5($guestId), 0, 10) . '@soloreel.tv';
             }
 
-            $reference = 'gtrx_' . time() . '_' . bin2hex(random_bytes(6));
+            $keys = $this->activeKeys($settings);
+            $payhubTxn = $this->initializeWithPayhub($settings, $keys['secret'], (float)$package['price'], $email);
+            $reference = $payhubTxn['reference']; // Payhub's own reference — required so its checkout page recognizes the transaction and applies the correct sandbox/live mode.
 
             $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, guest_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (NULL, ?, ?, ?, ?, ?, 'pending', ?)");
             $stmt->execute([$guestId, $package['id'], $reference, $package['price'], $package['currency'], $package['coins']]);
 
-            $this->respondPaymentInit($package, $reference, trim($settings['payhub_public_key']), $email);
+            $this->respondPaymentInit($package, $reference, $keys['public'], $email);
         } catch (\Throwable $e) {
             $this->respondJson(['status' => false, 'error' => 'Could not initiate payment: ' . $e->getMessage()], 500);
         }
@@ -255,7 +277,7 @@ class TransactionController extends BaseApiController {
 
             $stmt = $db->query("SELECT * FROM payment_settings LIMIT 1");
             $settings = $stmt->fetch();
-            $secretKey = trim($settings['payhub_secret_key'] ?? '');
+            $secretKey = $settings ? $this->activeKeys($settings)['secret'] : '';
             if (!$settings || $secretKey === '') {
                 $db->rollBack();
                 $this->respondJson(['status' => false, 'error' => 'Payment gateway not configured'], 500);

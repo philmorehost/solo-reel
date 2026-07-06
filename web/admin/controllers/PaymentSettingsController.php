@@ -16,17 +16,19 @@ class PaymentSettingsController {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             \App\Core\Security::validateCsrfPost();
-            $publicKey = trim($_POST['payhub_public_key'] ?? '');
-            $secretKey = trim($_POST['payhub_secret_key'] ?? '');
+            $publicKeySandbox = trim($_POST['payhub_public_key_sandbox'] ?? '');
+            $secretKeySandbox = trim($_POST['payhub_secret_key_sandbox'] ?? '');
+            $publicKeyLive = trim($_POST['payhub_public_key_live'] ?? '');
+            $secretKeyLive = trim($_POST['payhub_secret_key_live'] ?? '');
             $mode = $_POST['mode'] ?? 'sandbox';
 
             $stmt = $db->query("SELECT id FROM payment_settings LIMIT 1");
             if ($stmt->fetch()) {
-                $stmt = $db->prepare("UPDATE payment_settings SET payhub_public_key = ?, payhub_secret_key = ?, mode = ?");
-                $stmt->execute([$publicKey, $secretKey, $mode]);
+                $stmt = $db->prepare("UPDATE payment_settings SET payhub_public_key_sandbox = ?, payhub_secret_key_sandbox = ?, payhub_public_key_live = ?, payhub_secret_key_live = ?, mode = ?");
+                $stmt->execute([$publicKeySandbox, $secretKeySandbox, $publicKeyLive, $secretKeyLive, $mode]);
             } else {
-                $stmt = $db->prepare("INSERT INTO payment_settings (payhub_public_key, payhub_secret_key, mode) VALUES (?, ?, ?)");
-                $stmt->execute([$publicKey, $secretKey, $mode]);
+                $stmt = $db->prepare("INSERT INTO payment_settings (payhub_public_key_sandbox, payhub_secret_key_sandbox, payhub_public_key_live, payhub_secret_key_live, mode) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$publicKeySandbox, $secretKeySandbox, $publicKeyLive, $secretKeyLive, $mode]);
             }
 
             \App\Core\Session::setFlash('success', 'Payment Settings updated successfully.');
@@ -35,7 +37,11 @@ class PaymentSettingsController {
         }
 
         $stmt = $db->query("SELECT * FROM payment_settings LIMIT 1");
-        $settings = $stmt->fetch() ?: ['payhub_public_key' => '', 'payhub_secret_key' => '', 'mode' => 'sandbox'];
+        $settings = $stmt->fetch() ?: [
+            'payhub_public_key_sandbox' => '', 'payhub_secret_key_sandbox' => '',
+            'payhub_public_key_live' => '', 'payhub_secret_key_live' => '',
+            'mode' => 'sandbox'
+        ];
 
         require __DIR__ . '/../templates/payment-settings.php';
     }

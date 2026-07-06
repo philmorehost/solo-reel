@@ -9,7 +9,7 @@ import GoogleMobileAds
 final class RewardedAdManager: NSObject {
     static let shared = RewardedAdManager()
 
-    private let adUnitID = "ca-app-pub-3940256099942544/1712485313" // Google TEST rewarded ad unit
+    private var adUnitID = "ca-app-pub-3940256099942544/1712485313" // Google TEST rewarded ad unit
     private var rewardedAd: GADRewardedAd?
     private var isLoading = false
     private var onRewarded: (() -> Void)?
@@ -17,6 +17,15 @@ final class RewardedAdManager: NSObject {
 
     private override init() {
         super.init()
+        preload()
+    }
+
+    /// Overrides the built-in test ad unit ID once fetched from /api/v1/ads-config
+    /// (see HomeView.task). Discards any in-flight/loaded ad for the old ID.
+    func configure(adUnitID: String) {
+        guard adUnitID != self.adUnitID else { return }
+        self.adUnitID = adUnitID
+        rewardedAd = nil
         preload()
     }
 

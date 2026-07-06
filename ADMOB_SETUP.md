@@ -13,24 +13,23 @@ Follow these steps once you're ready to earn real revenue.
    "Episode Unlock", and copy the **Ad unit ID**.
 4. Copy each platform's **App ID** too (Apps → your app → App settings).
 
-## 2. Android — swap in your real IDs
+## 2. Enter your IDs in Admin → Settings → Ads
 
-- `android/app/src/main/AndroidManifest.xml`: replace the test value of
-  `com.google.android.gms.ads.APPLICATION_ID` with your real Android App ID
-  (`ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY`).
-- `android/app/src/main/java/com/soloreel/app/ads/RewardedAdManager.kt`:
-  replace `AD_UNIT_ID` with your real rewarded ad unit ID
-  (`ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ`).
-
-## 3. iOS — swap in your real IDs
-
-- `ios/SOLOREEL/Info.plist`: replace the test value of `GADApplicationIdentifier`
-  with your real iOS App ID.
-- `ios/SOLOREEL/Ads/RewardedAdManager.swift`: replace `adUnitID` with your real
-  rewarded ad unit ID.
-- Double-check the `SKAdNetworkItems` list in `Info.plist` against Google's
-  current published list (https://developers.google.com/admob/ios/sk-ad-network)
-  before release — ad networks are occasionally added/retired.
+- **Ad unit IDs** (`admob_android_rewarded_unit_id` / `admob_ios_rewarded_unit_id`)
+  are fetched by both apps at startup from `/api/v1/ads-config` — paste them into
+  the admin Ads card and both apps pick them up automatically on next launch,
+  **no app rebuild needed**.
+- **App IDs** (`admob_android_app_id` / `admob_ios_app_id`) are also saved in the
+  same admin card for reference, but **cannot** be changed at runtime — Google
+  requires the App ID to be baked into the app at build time (Android manifest
+  meta-data, iOS `Info.plist`). To apply a real App ID you must still update the
+  files below and rebuild/resubmit the app once:
+  - `android/app/src/main/AndroidManifest.xml`: replace the test value of
+    `com.google.android.gms.ads.APPLICATION_ID`.
+  - `ios/SOLOREEL/Info.plist`: replace the test value of `GADApplicationIdentifier`.
+  - Double-check the `SKAdNetworkItems` list in `Info.plist` against Google's
+    current published list (https://developers.google.com/admob/ios/sk-ad-network)
+    before release — ad networks are occasionally added/retired.
 
 ## 4. Testing
 

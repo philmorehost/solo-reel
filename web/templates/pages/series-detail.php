@@ -6,6 +6,9 @@
     <title><?= htmlspecialchars($series['title']) ?> - SOLOREEL</title>
     <script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="/assets/css/responsive.css">
     <link rel="icon" type="image/png" href="/favicon.ico">
+    <?php $adsenseId = \App\Helpers\Site::getConfig('google_adsense_client_id'); if (!empty($adsenseId)): ?>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=<?= htmlspecialchars($adsenseId) ?>" crossorigin="anonymous"></script>
+    <?php endif; ?>
 </head>
 <body class="bg-black text-white antialiased font-sans">
 

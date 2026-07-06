@@ -10,6 +10,9 @@
         .movie-card:hover { transform: scale(1.05); transition: 0.3s; }
     </style>
     <link rel="icon" type="image/png" href="/favicon.ico">
+    <?php $adsenseId = \App\Helpers\Site::getConfig('google_adsense_client_id'); if (!empty($adsenseId)): ?>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=<?= htmlspecialchars($adsenseId) ?>" crossorigin="anonymous"></script>
+    <?php endif; ?>
 </head>
 <body class="antialiased font-sans">
 

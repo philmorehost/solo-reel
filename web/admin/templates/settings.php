@@ -137,6 +137,28 @@
                                 </div>
                                 <div class="mb-2"><input type="text" name="google_client_id" value="<?= htmlspecialchars($settings['google_client_id'] ?? '') ?>" placeholder="Google Client ID" class="w-full border rounded px-3 py-2"></div>
                                 <div class="mb-4"><input type="password" name="google_client_secret" value="<?= htmlspecialchars($settings['google_client_secret'] ?? '') ?>" placeholder="Google Client Secret" class="w-full border rounded px-3 py-2"></div>
+
+                                <h2 class="text-xl font-bold mt-8 mb-4 border-b pb-2">Ads</h2>
+                                <p class="text-sm text-gray-500 mb-3">Leave any AdMob field blank to use Google's public test IDs (ads still work, but show "Test Ad").</p>
+
+                                <label class="block text-gray-700 font-bold mb-1 text-sm">AdMob Android App ID</label>
+                                <div class="mb-3"><input type="text" name="admob_android_app_id" value="<?= htmlspecialchars($settings['admob_android_app_id'] ?? '') ?>" placeholder="ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY" class="w-full border rounded px-3 py-2 font-mono text-sm"></div>
+
+                                <label class="block text-gray-700 font-bold mb-1 text-sm">AdMob Android Rewarded Ad Unit ID</label>
+                                <div class="mb-3"><input type="text" name="admob_android_rewarded_unit_id" value="<?= htmlspecialchars($settings['admob_android_rewarded_unit_id'] ?? '') ?>" placeholder="ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ" class="w-full border rounded px-3 py-2 font-mono text-sm"></div>
+
+                                <label class="block text-gray-700 font-bold mb-1 text-sm">AdMob iOS App ID</label>
+                                <div class="mb-3"><input type="text" name="admob_ios_app_id" value="<?= htmlspecialchars($settings['admob_ios_app_id'] ?? '') ?>" placeholder="ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY" class="w-full border rounded px-3 py-2 font-mono text-sm"></div>
+
+                                <label class="block text-gray-700 font-bold mb-1 text-sm">AdMob iOS Rewarded Ad Unit ID</label>
+                                <div class="mb-4"><input type="text" name="admob_ios_rewarded_unit_id" value="<?= htmlspecialchars($settings['admob_ios_rewarded_unit_id'] ?? '') ?>" placeholder="ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ" class="w-full border rounded px-3 py-2 font-mono text-sm"></div>
+
+                                <label class="block text-gray-700 font-bold mb-1 text-sm">Google AdSense Publisher ID</label>
+                                <div class="mb-4"><input type="text" name="google_adsense_client_id" value="<?= htmlspecialchars($settings['google_adsense_client_id'] ?? '') ?>" placeholder="ca-pub-XXXXXXXXXXXXXXXX" class="w-full border rounded px-3 py-2 font-mono text-sm"></div>
+
+                                <label class="block text-gray-700 font-bold mb-1 text-sm">ads.txt Content</label>
+                                <textarea name="ads_txt_content" rows="4" class="w-full border rounded px-3 py-2 font-mono text-sm" placeholder="google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0"><?= htmlspecialchars($settings['ads_txt_content'] ?? '') ?></textarea>
+                                <p class="text-xs text-gray-500 mt-1">Served at <code><?= (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]/ads.txt" ?></code>.</p>
                             </div>
                         </div>
 

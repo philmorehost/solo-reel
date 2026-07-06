@@ -1,10 +1,12 @@
 package com.soloreel.app.ui.player
 
 import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,11 +27,14 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import com.soloreel.app.ads.InterstitialAdGate
 import com.soloreel.app.ads.RewardedAdManager
 import com.soloreel.app.data.api.SOLOREELApi
 import com.soloreel.app.data.api.TokenManager
 import com.soloreel.app.data.api.apiMessage
 import com.soloreel.app.data.model.Episode
+import com.soloreel.app.data.model.InterstitialAd
+import com.soloreel.app.ui.home.MutedLoopingVideo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,7 +42,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class PlayerState(val episode: Episode? = null, val isLoading: Boolean = true, val error: String? = null)
+data class PlayerState(
+    val episode: Episode? = null,
+    val isLoading: Boolean = true,
+    val error: String? = null,
+    val interstitialAd: InterstitialAd? = null
+)
 
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
@@ -49,6 +59,19 @@ class PlayerViewModel @Inject constructor(
 
     private var currentSlug: String? = null
     private val guestIdOrNull: String? get() = if (tokenManager.isLoggedIn) null else tokenManager.guestId
+
+    /** Shows an admin-uploaded interstitial ad every few episodes (see InterstitialAdGate). */
+    fun maybeLoadInterstitial() {
+        if (!InterstitialAdGate.shouldShowForNewEpisode()) return
+        viewModelScope.launch {
+            try {
+                val ad = api.getInterstitialAd().data
+                if (ad != null) _state.value = _state.value.copy(interstitialAd = ad)
+            } catch (_: Exception) { /* skip silently — ads are non-critical */ }
+        }
+    }
+
+    fun dismissInterstitial() { _state.value = _state.value.copy(interstitialAd = null) }
 
     fun load(slug: String) {
         currentSlug = slug
@@ -129,9 +152,10 @@ fun PlayerScreen(slug: String, navController: NavHostController, vm: PlayerViewM
     val state by vm.state.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
     var showNextEpisodeOverlay by remember(state.episode?.id) { mutableStateOf(false) }
-    LaunchedEffect(slug) { vm.load(slug) }
+    LaunchedEffect(slug) { vm.load(slug); vm.maybeLoadInterstitial() }
     LaunchedEffect(Unit) { RewardedAdManager.preload(context) }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         TopAppBar(
             title = { Text(state.episode?.title ?: "Player", color = Color.White) },
@@ -269,6 +293,39 @@ fun PlayerScreen(slug: String, navController: NavHostController, vm: PlayerViewM
                 Text(state.episode!!.title, color = Color.White, style = MaterialTheme.typography.titleLarge)
                 Text(state.episode!!.series_title ?: "", color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
                 state.episode!!.description?.let { Text(it, color = Color.LightGray, modifier = Modifier.padding(top = 8.dp)) }
+            }
+        }
+    }
+
+    state.interstitialAd?.let { ad ->
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+            if (ad.media_type == "video" && !ad.media_url.isNullOrBlank()) {
+                MutedLoopingVideo(url = ad.media_url, modifier = Modifier.fillMaxSize())
+            } else if (!ad.media_url.isNullOrBlank()) {
+                Image(
+                    painter = coil.compose.rememberAsyncImagePainter(ad.media_url),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            }
+            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Sponsored", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.background(Color(0x99000000), androidx.compose.foundation.shape.RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 4.dp))
+                    IconButton(onClick = { vm.dismissInterstitial() }, modifier = Modifier.background(Color(0x99000000), androidx.compose.foundation.shape.CircleShape)) {
+                        Icon(Icons.Default.Close, "Dismiss", tint = Color.White)
+                    }
+                }
+                Spacer(Modifier.weight(1f))
+                ad.target_url?.let { url ->
+                    Button(
+                        onClick = {
+                            try { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) } catch (_: Exception) {}
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                    ) { Text(ad.title ?: "Learn More", fontWeight = FontWeight.Bold) }
+                }
             }
         }
     }

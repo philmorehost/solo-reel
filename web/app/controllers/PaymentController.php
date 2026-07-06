@@ -46,14 +46,14 @@ class PaymentController {
 
             // Actual Payhub Verification call
             $settings = $this->getPayhubKeys();
-            $secretKey = trim($settings['payhub_secret_key'] ?? '');
-            if (!$settings || empty($secretKey)) {
+            $secretKey = $settings ? \App\Core\PayhubKeys::active($settings)['secret'] : '';
+            if (!$settings || $secretKey === '') {
                  $db->rollBack();
                  Session::setFlash('error', 'Payment gateway not configured.');
                  header("Location: /coin-shop");
                  die();
             }
-            $baseUrl = 'https://merchant.payhub.com.ng';
+            $baseUrl = rtrim($settings['payhub_base_url'] ?: 'https://merchant.payhub.com.ng', '/');
 
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $baseUrl . "/api/transaction/verify/" . urlencode($ref));
@@ -141,7 +141,7 @@ class PaymentController {
         }
 
         $settings = $this->getPayhubKeys();
-        $publicKey = trim($settings['payhub_public_key'] ?? '');
+        $publicKey = $settings ? \App\Core\PayhubKeys::active($settings)['public'] : '';
         if (!$settings || $publicKey === '') {
             http_response_code(500);
             die('Payment gateway is not configured.');

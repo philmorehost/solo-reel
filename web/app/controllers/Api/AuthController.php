@@ -228,4 +228,33 @@ class AuthController extends BaseApiController {
             'client_id' => $clientId
         ]);
     }
+
+    /**
+     * GET /api/v1/ads-config — AdMob IDs for the mobile apps. Any field left
+     * blank in Admin -> Settings -> Ads falls back to Google's public test ID
+     * so ads keep working (labeled "Test Ad") until the admin configures real ones.
+     */
+    public function adsConfig() {
+        $db = Database::getInstance();
+        $stmt = $db->query("SELECT setting_key, setting_value FROM site_config WHERE setting_key IN (
+            'admob_android_app_id', 'admob_android_rewarded_unit_id',
+            'admob_ios_app_id', 'admob_ios_rewarded_unit_id'
+        )");
+        $config = [];
+        while ($row = $stmt->fetch()) { $config[$row['setting_key']] = $row['setting_value']; }
+
+        $testIds = [
+            'admob_android_app_id'           => 'ca-app-pub-3940256099942544~3347511713',
+            'admob_android_rewarded_unit_id' => 'ca-app-pub-3940256099942544/5224354917',
+            'admob_ios_app_id'                => 'ca-app-pub-3940256099942544~1458002511',
+            'admob_ios_rewarded_unit_id'      => 'ca-app-pub-3940256099942544/1712485313',
+        ];
+
+        $data = [];
+        foreach ($testIds as $key => $testId) {
+            $data[$key] = !empty($config[$key]) ? $config[$key] : $testId;
+        }
+
+        $this->respondJson(['status' => true, 'data' => $data] + $data);
+    }
 }

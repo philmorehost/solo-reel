@@ -11,6 +11,10 @@ struct SeriesRequestBody: Codable { let title: String; let description: String?;
 
 struct Banner: Codable, Identifiable {
     let id: Int; let title: String?; let subtitle: String?; let image_url: String?; let link_url: String?
+    let is_ad: Bool?; let media_type: String?
+}
+struct InterstitialAd: Codable {
+    let id: Int; let title: String?; let media_url: String?; let media_type: String?; let target_url: String?
 }
 struct Series: Codable, Identifiable {
     let id: Int; let title: String; let slug: String
@@ -120,6 +124,8 @@ class APIClient {
     func getWatchHistory() async throws -> [WatchHistoryItem] { try await request("user/watch-history") }
     func getFavorites() async throws -> [Series] { try await request("user/favorites") }
     func getBonusStatus() async throws -> WeeklyBonusStatus { try await request("user/bonus-status") }
+    func getAdsConfig() async throws -> [String: String] { try await request("ads-config") }
+    func getInterstitialAd() async throws -> InterstitialAd { try await request("ads/interstitial") }
     func initGuest(guestId: String) async throws -> GuestWallet {
         let body = try JSONEncoder().encode(GuestInitBody(guest_id: guestId))
         return try await request("guest/init", method: "POST", body: body)

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct HomeView: View {
     @State private var banners: [Banner] = []
@@ -30,16 +31,33 @@ struct HomeView: View {
                     if !banners.isEmpty {
                         TabView(selection: $currentBanner) {
                             ForEach(Array(banners.enumerated()), id: \.offset) { i, b in
-                                AsyncImage(url: URL(string: b.image_url ?? "")) { phase in
-                                    if let image = phase.image { image.resizable().aspectRatio(contentMode: .fill) }
-                                    else { Color.gray }
+                                ZStack {
+                                    if b.media_type == "video", let urlStr = b.image_url {
+                                        MutedLoopingVideoView(url: urlStr)
+                                    } else {
+                                        AsyncImage(url: URL(string: b.image_url ?? "")) { phase in
+                                            if let image = phase.image { image.resizable().aspectRatio(contentMode: .fill) }
+                                            else { Color.gray }
+                                        }
+                                    }
                                 }
                                     .frame(height: 350).clipped()
                                     .overlay(LinearGradient(gradient: Gradient(colors: [.clear, .black]), startPoint: .top, endPoint: .bottom))
                                     .overlay(alignment: .bottomLeading) {
-                                        VStack(alignment: .leading) { Text(b.title ?? "").font(.title).bold(); Text(b.subtitle ?? "").font(.subheadline).foregroundColor(.gray) }.padding()
+                                        VStack(alignment: .leading) {
+                                            if b.is_ad == true {
+                                                Text("SPONSORED").font(.caption2).bold().foregroundColor(.yellow)
+                                            }
+                                            Text(b.title ?? "").font(.title).bold()
+                                            Text(b.subtitle ?? "").font(.subheadline).foregroundColor(.gray)
+                                        }.padding()
                                     }
                                     .tag(i)
+                                    .onTapGesture {
+                                        if b.is_ad == true, let urlStr = b.link_url, let url = URL(string: urlStr) {
+                                            UIApplication.shared.open(url)
+                                        }
+                                    }
                             }
                         }.frame(height: 350).tabViewStyle(.page)
                     }
@@ -82,6 +100,9 @@ struct HomeView: View {
             do { banners = try await APIClient.shared.getBanners(); series = try await APIClient.shared.getSeries(); isLoading = false }
             catch { isLoading = false }
             await NotificationCenterStore.shared.load(postSystemNotifications: true)
+            if let adsConfig = try? await APIClient.shared.getAdsConfig(), let unitId = adsConfig["admob_ios_rewarded_unit_id"] {
+                RewardedAdManager.shared.configure(adUnitID: unitId)
+            }
         }
     }
 }

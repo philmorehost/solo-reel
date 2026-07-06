@@ -16,7 +16,10 @@ import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
  * (see ADMOB_SETUP.md at the project root).
  */
 object RewardedAdManager {
-    private const val AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917" // Google TEST rewarded ad unit
+    private const val DEFAULT_AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917" // Google TEST rewarded ad unit
+
+    /** Overridden once at startup from /api/v1/ads-config (see HomeViewModel.load()). */
+    var adUnitId: String = DEFAULT_AD_UNIT_ID
 
     private var rewardedAd: RewardedAd? = null
     private var isLoading = false
@@ -24,7 +27,7 @@ object RewardedAdManager {
     fun preload(context: Context) {
         if (rewardedAd != null || isLoading) return
         isLoading = true
-        RewardedAd.load(context, AD_UNIT_ID, AdRequest.Builder().build(), object : RewardedAdLoadCallback() {
+        RewardedAd.load(context, adUnitId, AdRequest.Builder().build(), object : RewardedAdLoadCallback() {
             override fun onAdLoaded(ad: RewardedAd) {
                 rewardedAd = ad
                 isLoading = false
