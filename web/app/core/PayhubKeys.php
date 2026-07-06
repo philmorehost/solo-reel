@@ -41,6 +41,8 @@ class PayhubKeys {
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Some cPanel hosts block peer verification
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: Bearer ' . $secretKey,
             'Content-Type: application/json',
@@ -48,6 +50,7 @@ class PayhubKeys {
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['email' => $email, 'amount' => $amount]));
         $response = curl_exec($ch);
         $err = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         if ($err) {
@@ -55,7 +58,9 @@ class PayhubKeys {
         }
         $result = json_decode($response, true);
         if (!$result || ($result['status'] ?? false) !== true || empty($result['data']['reference'])) {
-            throw new \RuntimeException('Payment gateway rejected the transaction.');
+            $msg = $result['message'] ?? 'No response';
+            error_log("[PayhubKeys] HTTP $httpCode — raw: " . substr($response, 0, 400));
+            throw new \RuntimeException("Checkout error: " . $msg . " (HTTP $httpCode)");
         }
         return $result['data'];
     }

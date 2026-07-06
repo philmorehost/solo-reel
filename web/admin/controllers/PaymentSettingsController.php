@@ -21,14 +21,16 @@ class PaymentSettingsController {
             $publicKeyLive = trim($_POST['payhub_public_key_live'] ?? '');
             $secretKeyLive = trim($_POST['payhub_secret_key_live'] ?? '');
             $mode = $_POST['mode'] ?? 'sandbox';
+            $payhubBaseUrl = rtrim(trim($_POST['payhub_base_url'] ?? ''), '/');
+            if (!$payhubBaseUrl) $payhubBaseUrl = 'https://merchant.payhub.com.ng';
 
             $stmt = $db->query("SELECT id FROM payment_settings LIMIT 1");
             if ($stmt->fetch()) {
-                $stmt = $db->prepare("UPDATE payment_settings SET payhub_public_key_sandbox = ?, payhub_secret_key_sandbox = ?, payhub_public_key_live = ?, payhub_secret_key_live = ?, mode = ?");
-                $stmt->execute([$publicKeySandbox, $secretKeySandbox, $publicKeyLive, $secretKeyLive, $mode]);
+                $stmt = $db->prepare("UPDATE payment_settings SET payhub_public_key_sandbox = ?, payhub_secret_key_sandbox = ?, payhub_public_key_live = ?, payhub_secret_key_live = ?, mode = ?, payhub_base_url = ?");
+                $stmt->execute([$publicKeySandbox, $secretKeySandbox, $publicKeyLive, $secretKeyLive, $mode, $payhubBaseUrl]);
             } else {
-                $stmt = $db->prepare("INSERT INTO payment_settings (payhub_public_key_sandbox, payhub_secret_key_sandbox, payhub_public_key_live, payhub_secret_key_live, mode) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$publicKeySandbox, $secretKeySandbox, $publicKeyLive, $secretKeyLive, $mode]);
+                $stmt = $db->prepare("INSERT INTO payment_settings (payhub_public_key_sandbox, payhub_secret_key_sandbox, payhub_public_key_live, payhub_secret_key_live, mode, payhub_base_url) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$publicKeySandbox, $secretKeySandbox, $publicKeyLive, $secretKeyLive, $mode, $payhubBaseUrl]);
             }
 
             \App\Core\Session::setFlash('success', 'Payment Settings updated successfully.');

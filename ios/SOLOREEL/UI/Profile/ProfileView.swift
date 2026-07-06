@@ -1,4 +1,4 @@
-﻿import SwiftUI
+import SwiftUI
 
 struct ProfileView: View {
     @ObservedObject var tokenManager = TokenManager.shared
@@ -113,9 +113,15 @@ struct RegisteredProfileSection: View {
             }
 
             VStack(spacing: 8) {
-                ProfileRow(icon: "clock", text: "Watch History")
-                ProfileRow(icon: "heart", text: "My Favorites")
-                ProfileRow(icon: "pencil", text: "Edit Profile")
+                NavigationLink(destination: WatchHistoryView()) {
+                    ProfileRow(icon: "clock", text: "Watch History")
+                }
+                NavigationLink(destination: FavoritesView()) {
+                    ProfileRow(icon: "heart", text: "My Favorites")
+                }
+                NavigationLink(destination: EditProfileView()) {
+                    ProfileRow(icon: "pencil", text: "Edit Profile")
+                }
                 ProfileRow(icon: "cart", text: "Buy More Coins")
                 NavigationLink(destination: AdvertiseView()) {
                     ProfileRow(icon: "megaphone", text: "Advertise With Us")
@@ -123,7 +129,9 @@ struct RegisteredProfileSection: View {
                 NavigationLink(destination: MyAdsView()) {
                     ProfileRow(icon: "rectangle.stack", text: "My Ads")
                 }
-                ProfileRow(icon: "gearshape", text: "Settings")
+                NavigationLink(destination: SettingsView()) {
+                    ProfileRow(icon: "gearshape", text: "Settings")
+                }
             }.padding(.top, 8)
 
             Spacer().frame(height: 16)
@@ -147,5 +155,54 @@ struct ProfileRow: View {
             Spacer()
             Image(systemName: "chevron.right").foregroundColor(Color(white: 0.27)).font(.caption)
         }.padding(.horizontal, 16).padding(.vertical, 12).background(Color(white: 0.09)).cornerRadius(12).padding(.horizontal)
+    }
+}
+
+// MARK: - Placeholder Views
+struct WatchHistoryView: View {
+    var body: some View {
+        VStack {
+            Text("Watch History").font(.title).bold()
+            Text("Coming soon!").foregroundColor(.gray)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(red: 0.04, green: 0.04, blue: 0.04).ignoresSafeArea())
+        .foregroundColor(.white)
+    }
+}
+
+struct FavoritesView: View {
+    var body: some View {
+        VStack {
+            Text("My Favorites").font(.title).bold()
+            Text("Coming soon!").foregroundColor(.gray)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(red: 0.04, green: 0.04, blue: 0.04).ignoresSafeArea())
+        .foregroundColor(.white)
+    }
+}
+
+struct EditProfileView: View {
+    var body: some View {
+        VStack {
+            Text("Edit Profile").font(.title).bold()
+            Text("Coming soon!").foregroundColor(.gray)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(red: 0.04, green: 0.04, blue: 0.04).ignoresSafeArea())
+        .foregroundColor(.white)
+    }
+}
+
+struct SettingsView: View {
+    var body: some View {
+        VStack {
+            Text("Settings").font(.title).bold()
+            Text("Coming soon!").foregroundColor(.gray)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(red: 0.04, green: 0.04, blue: 0.04).ignoresSafeArea())
+        .foregroundColor(.white)
     }
 }

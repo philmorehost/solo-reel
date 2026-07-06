@@ -330,3 +330,4 @@ fun PlayerScreen(slug: String, navController: NavHostController, vm: PlayerViewM
         }
     }
 }
+}

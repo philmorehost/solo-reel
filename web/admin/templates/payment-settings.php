@@ -60,6 +60,13 @@
                             </div>
                         </div>
 
+                        <div class="mb-6 border border-gray-200 bg-gray-50 rounded p-4">
+                            <h3 class="font-bold text-gray-800 mb-3">Payhub Gateway URL</h3>
+                            <label class="block text-gray-700 font-bold mb-2">Base URL</label>
+                            <input type="text" name="payhub_base_url" value="<?= htmlspecialchars($settings['payhub_base_url'] ?? 'https://merchant.payhub.com.ng') ?>" placeholder="https://merchant.payhub.com.ng" class="w-full border rounded px-3 py-2 font-mono text-sm">
+                            <p class="text-xs text-gray-500 mt-1">The root URL of your Payhub installation. Default: <code>https://merchant.payhub.com.ng</code></p>
+                        </div>
+
                         <div class="mb-6 bg-blue-50 border border-blue-200 p-4 rounded text-sm text-blue-800">
                             <strong>Webhook URL:</strong> Set your webhook URL in the Payhub dashboard to: <br>
                             <code><?= (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]/payment/webhook" ?></code>
