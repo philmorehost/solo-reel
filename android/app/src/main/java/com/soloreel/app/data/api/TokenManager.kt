@@ -1,8 +1,9 @@
-package com.soloreel.app.data.api
+﻿package com.soloreel.app.data.api
 
 import android.content.Context
 import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,9 +35,29 @@ class TokenManager @Inject constructor(@ApplicationContext context: Context) {
         get() = prefs.getString("saved_password", null)
         set(value) { prefs.edit().putString("saved_password", value).apply() }
 
+    // Guest identity — auto-generated, persists across app sessions
+    val guestId: String
+        get() {
+            val stored = prefs.getString("guest_id", null)
+            if (stored != null) return stored
+            val newId = UUID.randomUUID().toString()
+            prefs.edit().putString("guest_id", newId).apply()
+            return newId
+        }
+
+    var guestCoins: Double
+        get() = prefs.getFloat("guest_coins", 0f).toDouble()
+        set(value) { prefs.edit().putFloat("guest_coins", value.toFloat()).apply() }
+
     val isLoggedIn: Boolean get() = accessToken != null
 
+    val isGuest: Boolean get() = !isLoggedIn
+
     fun clear() {
+        // Keep guestId and guestCoins on logout so guest state is preserved
+        val gid = guestId
+        val gc = guestCoins
         prefs.edit().clear().apply()
+        prefs.edit().putString("guest_id", gid).putFloat("guest_coins", gc.toFloat()).apply()
     }
 }

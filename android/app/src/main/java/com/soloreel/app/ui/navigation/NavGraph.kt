@@ -75,7 +75,7 @@ fun NavGraph(isLoggedIn: Boolean) {
     ) { padding ->
         NavHost(
             navController = navController,
-            startDestination = if (isLoggedIn) Screen.Home.route else Screen.Auth.route,
+            startDestination = Screen.Home.route,
             modifier = Modifier.padding(padding)
         ) {
             composable(Screen.Auth.route) {

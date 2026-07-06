@@ -1,22 +1,15 @@
-package com.soloreel.app.data.api
+﻿package com.soloreel.app.data.api
 
-import com.soloreel.app.data.model.Banner
-import com.soloreel.app.data.model.Series
-import com.soloreel.app.data.model.Episode
-import com.soloreel.app.data.model.User
-import com.soloreel.app.data.model.Shelf
-import com.soloreel.app.data.model.CoinPackage
-import com.soloreel.app.data.model.PaymentInit
-import com.soloreel.app.data.model.WatchHistoryItem
-import retrofit2.Response
+import com.soloreel.app.data.model.*
 import retrofit2.http.*
 import com.google.gson.JsonElement
 
-data class ApiResponse<T>(val status: Boolean?, val data: T?, val message: String?)
+data class ApiResponse<T>(val status: Boolean?, val data: T?, val message: String?, val error: String?)
 data class LoginBody(val email: String, val password: String)
 data class RegisterBody(val username: String, val email: String, val password: String, val display_name: String)
 data class GoogleLoginBody(val email: String, val displayName: String)
 data class AuthResult(val user: User?, val token: String?)
+data class GuestInitBody(val guest_id: String)
 
 interface SOLOREELApi {
     @GET("api/v1/banners")
@@ -27,9 +20,6 @@ interface SOLOREELApi {
 
     @GET("api/v1/series/{slug}/by-slug")
     suspend fun getSeriesDetail(@Path("slug") slug: String): ApiResponse<Series>
-
-    @GET("api/v1/episodes/{slug}/by-slug")
-    suspend fun getEpisode(@Path("slug") slug: String): ApiResponse<Episode>
 
     @GET("api/v1/series/{id}/episodes")
     suspend fun getEpisodes(@Path("id") seriesId: Int): ApiResponse<List<Episode>>
@@ -70,9 +60,23 @@ interface SOLOREELApi {
     @GET("api/v1/user/watch-history")
     suspend fun getWatchHistory(): ApiResponse<List<WatchHistoryItem>>
 
+    @GET("api/v1/user/bonus-status")
+    suspend fun getBonusStatus(): ApiResponse<WeeklyBonusStatus>
+
     @POST("api/v1/coins/purchase")
     suspend fun purchaseCoins(@Body body: Map<String, Int>): ApiResponse<PaymentInit>
 
     @GET("api/v1/payment/verify")
     suspend fun verifyPayment(@Query("reference") reference: String): ApiResponse<JsonElement>
+
+    // Guest endpoints
+    @POST("api/v1/guest/init")
+    suspend fun initGuest(@Body body: GuestInitBody): ApiResponse<GuestWallet>
+
+    @GET("api/v1/guest/balance")
+    suspend fun getGuestBalance(@Query("guest_id") guestId: String): ApiResponse<GuestWallet>
+
+    // Series requests
+    @POST("api/v1/series-requests")
+    suspend fun createSeriesRequest(@Body body: SeriesRequest): ApiResponse<JsonElement>
 }

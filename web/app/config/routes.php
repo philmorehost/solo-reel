@@ -97,13 +97,33 @@ $router->post('/admin/settings/payments', 'PaymentSettingsController@index');
 // API Routes
 $router->post('/api/v1/auth/login', 'Api\AuthController@login');
 $router->post('/api/v1/auth/register', 'Api\AuthController@register');
+$router->post('/api/v1/auth/google', 'Api\AuthController@googleLogin');
 $router->get('/api/v1/series', 'Api\SeriesController@index');
+$router->get('/api/v1/search', 'Api\SeriesController@search');
 $router->get('/api/v1/banners', 'Api\BannerController@index');
+$router->get('/api/v1/series/{slug}/by-slug', 'Api\SeriesController@showBySlug');
 $router->get('/api/v1/series/{slug}', 'Api\SeriesController@show');
+$router->get('/api/v1/series/{id}/episodes', 'Api\SeriesController@episodes');
 $router->get('/api/v1/coin-packages', 'Api\CoinController@packages');
 $router->get('/api/v1/user/profile', 'Api\UserController@profile');
+$router->put('/api/v1/user/profile', 'Api\UserController@updateProfile');
+$router->get('/api/v1/user/watch-history', 'Api\UserController@watchHistory');
+$router->get('/api/v1/user/favorites', 'Api\UserController@favorites');
+$router->post('/api/v1/user/favorites/{seriesId}', 'Api\UserController@addFavorite');
+$router->delete('/api/v1/user/favorites/{seriesId}', 'Api\UserController@removeFavorite');
+$router->get('/api/v1/user/bonus-status', 'Api\GuestController@bonusStatus');
+$router->post('/api/v1/guest/init', 'Api\GuestController@init');
+$router->get('/api/v1/guest/balance', 'Api\GuestController@balance');
+$router->post('/api/v1/series-requests', 'Api\SeriesRequestController@create');
+$router->get('/api/v1/series-requests', 'Api\SeriesRequestController@index');
+$router->put('/api/v1/series-requests/{id}/mark-available', 'Api\SeriesRequestController@markAvailable');
+$router->get('/api/v1/shelves', 'Api\SeriesController@shelves');
+$router->get('/api/v1/payment/verify', 'Api\TransactionController@verifyPayment');
 $router->post('/api/v1/episodes/unlock/{id}', 'Api\TransactionController@unlock');
 $router->post('/api/v1/coins/purchase', 'Api\TransactionController@purchase');
+$router->post('/api/v1/coins/guest-purchase', 'Api\TransactionController@guestPurchase');
+$router->get('/api/v1/admin/series-requests', 'Api\SeriesRequestController@index');
+
 
 $router->get('/favicon.ico', 'FaviconController@index');
 $router->get('/sitemap.xml', 'SeoController@sitemap');
