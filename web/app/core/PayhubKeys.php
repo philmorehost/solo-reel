@@ -61,10 +61,16 @@ class PayhubKeys {
             'Authorization: Bearer ' . $secretKey,
             'Content-Type: application/json',
         ]);
+        // callback_url must point at THIS site's verify page — the app WebViews
+        // intercept URLs containing "verify" with a reference param. (The current
+        // Payhub gateway ignores callback_url, but if a future version honors it,
+        // a wrong domain here would strand users after payment.)
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'soloshort.pmhserver.name.ng';
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-            'email' => $email, 
+            'email' => $email,
             'amount' => $amount,
-            'callback_url' => 'https://soloreel.tv/callback'
+            'callback_url' => $scheme . '://' . $host . '/pay/verify',
         ]));
         $response = curl_exec($ch);
         $err = curl_error($ch);

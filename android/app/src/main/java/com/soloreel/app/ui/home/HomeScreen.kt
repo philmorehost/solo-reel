@@ -127,9 +127,10 @@ fun HomeScreen(
             }
         }
 
-        // Always show Trending Now if we have series
+        // Latest releases row — distinct from the "Trending Now" shelf below,
+        // which comes from the admin-managed shelves and carries the same name.
         if (state.series.isNotEmpty()) {
-            item { Text("Trending Now", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) }
+            item { Text("Latest Release", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 12.dp)) {
                     items(state.series) { series ->
@@ -161,6 +162,29 @@ fun HomeScreen(
                     }
                 }
                 Spacer(Modifier.height(16.dp))
+            }
+        }
+
+        // All Series grid — every series again in a browsable vertical grid.
+        if (state.series.isNotEmpty()) {
+            item {
+                Text("All Series", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            }
+            items(state.series.chunked(3)) { rowSeries ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    rowSeries.forEach { series ->
+                        Box(modifier = Modifier.weight(1f)) {
+                            GridSeriesCard(series) {
+                                navController.navigate(Screen.SeriesDetail.createRoute(series.slug))
+                            }
+                        }
+                    }
+                    repeat(3 - rowSeries.size) { Spacer(Modifier.weight(1f)) }
+                }
+                Spacer(Modifier.height(12.dp))
             }
         }
 
@@ -204,6 +228,28 @@ fun SeriesCard(series: Series, onClick: () -> Unit) {
         }
         Spacer(Modifier.height(8.dp))
         Text(series.title, color = Color.White, fontSize = 14.sp, maxLines = 2, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+/** Full-width series card for the All Series grid (flexible width, unlike SeriesCard's fixed 140dp). */
+@Composable
+fun GridSeriesCard(series: Series, onClick: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Box(
+            modifier = Modifier.fillMaxWidth().height(170.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF1A1A1A))
+        ) {
+            if (series.cover_image_url != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(series.cover_image_url),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(series.title, color = Color.White, fontSize = 13.sp, maxLines = 1, fontWeight = FontWeight.SemiBold)
+        series.genre?.let { Text(it, color = Color(0xFF888888), fontSize = 11.sp, maxLines = 1) }
     }
 }
 

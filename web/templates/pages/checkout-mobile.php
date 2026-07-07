@@ -1,71 +1,121 @@
-<!DOCTYPE html>
+<?php
+// Self-contained mobile checkout: no external scripts, no inline.js, no
+// document.currentScript detection. The app WebViews load this page; it embeds
+// Payhub's checkout directly in a full-screen iframe and surfaces any failure
+// on screen instead of leaving a blank page.
+$iframeUrl = $payhubBaseUrl . '/checkout.php?ref=' . urlencode($reference)
+           . '&amount=' . urlencode((string)(float)$amount)
+           . '&email=' . urlencode($email)
+           . '&embed=1';
+$hostedUrl = $payhubBaseUrl . '/checkout.php?ref=' . urlencode($reference)
+           . '&amount=' . urlencode((string)(float)$amount)
+           . '&email=' . urlencode($email);
+?><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout - SOLOREEL</title>
-    <script>
-        // Polyfill document.currentScript to support Cloudflare Rocket Loader and async environments
-        Object.defineProperty(document, 'currentScript', {
-            get: function() {
-                var scripts = document.getElementsByTagName('script');
-                for (var i = 0; i < scripts.length; i++) {
-                    if (scripts[i].src.indexOf('inline.js') !== -1) {
-                        return scripts[i];
-                    }
-                }
-                return { src: '<?= htmlspecialchars($payhubBaseUrl) ?>/inline.js' };
-            },
-            configurable: true
-        });
-    </script>
-    <script src="<?= htmlspecialchars($payhubBaseUrl) ?>/inline.js"></script>
     <style>
-        body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; text-align: center; }
-        .spinner { width: 48px; height: 48px; border: 3px solid #333; border-bottom-color: #dc2626; border-radius: 50%; margin: 20px auto 0; animation: spin 1s linear infinite; }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; }
+        body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; display: flex; flex-direction: column; }
+        .topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #0A0A0A; border-bottom: 1px solid #1f1f1f; flex: 0 0 auto; }
+        .topbar .brand { font-weight: 800; font-size: 14px; letter-spacing: 1px; }
+        .topbar .brand span { color: #dc2626; }
+        .topbar a { color: #9ca3af; font-size: 13px; text-decoration: none; padding: 6px 10px; }
+        .stage { position: relative; flex: 1 1 auto; background: #fff; }
+        .stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; background: #fff; }
+        #loading { position: absolute; inset: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+        .spinner { width: 44px; height: 44px; border: 3px solid #333; border-bottom-color: #dc2626; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        h2 { font-size: 20px; margin: 0 16px; }
-        p { color: #9ca3af; font-size: 14px; margin: 16px; }
-        /* Force responsiveness on the Payhub Checkout Iframe and Container */
-        #payhub-checkout-overlay > div {
-            width: 95% !important;
-            max-width: 420px !important;
-            height: 90vh !important;
-            max-height: 580px !important;
-            border-radius: 16px !important;
-        }
-        #payhub-checkout-overlay iframe {
-            border-radius: 16px !important;
-        }
+        #loading h2 { font-size: 18px; margin: 20px 0 8px; }
+        #loading p { color: #9ca3af; font-size: 13px; margin: 0; }
+        #errorbox { position: absolute; inset: 0; background: #000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+        #errorbox .icon { font-size: 42px; }
+        #errorbox h2 { font-size: 18px; margin: 12px 0 8px; }
+        #errorbox p { color: #9ca3af; font-size: 13px; margin: 0 0 20px; word-break: break-word; max-width: 480px; }
+        #errorbox button, #errorbox a.alt { display: block; width: 100%; max-width: 300px; padding: 14px 16px; border-radius: 12px; font-size: 15px; font-weight: 700; margin-bottom: 12px; text-align: center; text-decoration: none; }
+        #errorbox button { background: #dc2626; color: #fff; border: none; }
+        #errorbox a.alt { background: transparent; color: #fff; border: 1px solid #444; }
     </style>
 </head>
 <body>
-    <div>
-        <h2>Initializing Secure Payment...</h2>
-        <div class="spinner"></div>
-        <p>Please wait while we open the payment gateway.</p>
+    <div class="topbar">
+        <div class="brand">SOLO<span>REEL</span> &middot; Secure Checkout</div>
+        <a href="/pay/closed">Cancel</a>
+    </div>
+    <div class="stage">
+        <iframe id="gateway" src="<?= htmlspecialchars($iframeUrl) ?>" allow="payment; clipboard-read; clipboard-write"></iframe>
+        <div id="loading">
+            <div class="spinner"></div>
+            <h2>Loading Secure Payment...</h2>
+            <p>Please wait while we connect to the payment gateway.</p>
+        </div>
+        <div id="errorbox">
+            <div class="icon">&#9888;&#65039;</div>
+            <h2>Couldn't load the payment page</h2>
+            <p id="errormsg"></p>
+            <button onclick="retryGateway()">Retry</button>
+            <a class="alt" href="<?= htmlspecialchars($hostedUrl) ?>">Open payment page directly</a>
+        </div>
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            let handler = PayhubPop.setup({
-              key: '<?= htmlspecialchars($publicKey) ?>',
-              email: '<?= htmlspecialchars($email) ?>',
-              amount: <?= (float)$amount * 100 ?>, // Kobo
-              reference: '<?= htmlspecialchars($reference) ?>',
-              ref: '<?= htmlspecialchars($reference) ?>',
-              onClose: function(){
-                // Neutral URL — must NOT contain "verify"/"callback"/"success" so the
-                // app WebViews don't mistake a cancelled checkout for a payment.
-                window.location.href = "/pay/closed";
-              },
-              callback: function(response){
-                window.location.href = "/pay/verify?reference=<?= urlencode($reference) ?>";
-              }
+        (function () {
+            var frame = document.getElementById('gateway');
+            var loading = document.getElementById('loading');
+            var errorbox = document.getElementById('errorbox');
+            var errormsg = document.getElementById('errormsg');
+            var loaded = false;
+            var timeoutId = null;
+
+            function showError(message) {
+                loading.style.display = 'none';
+                errorbox.style.display = 'flex';
+                errormsg.textContent = message || 'An unknown error occurred.';
+            }
+
+            // Surface script errors on screen — a silent blank page is undebuggable
+            // from a phone; this way the failure reason is always visible.
+            window.onerror = function (msg, src, line) {
+                showError(msg + (line ? (' (line ' + line + ')') : ''));
+                return false;
+            };
+
+            function armTimeout() {
+                if (timeoutId) clearTimeout(timeoutId);
+                timeoutId = setTimeout(function () {
+                    if (!loaded) {
+                        showError('The payment gateway is taking too long to respond. Check your internet connection and try again.');
+                    }
+                }, 25000);
+            }
+
+            frame.addEventListener('load', function () {
+                loaded = true;
+                loading.style.display = 'none';
+                if (timeoutId) clearTimeout(timeoutId);
             });
 
-            handler.openIframe();
-        });
+            window.retryGateway = function () {
+                loaded = false;
+                errorbox.style.display = 'none';
+                loading.style.display = 'flex';
+                armTimeout();
+                frame.src = frame.src;
+            };
+
+            // Payhub's embedded checkout posts {type:'payhub_success'} to its parent
+            // when the payment completes (both sandbox-simulate and live Paystack).
+            window.addEventListener('message', function (event) {
+                if (event.data && event.data.type === 'payhub_success') {
+                    window.location.href = '/pay/verify?reference=<?= urlencode($reference) ?>';
+                }
+            }, false);
+
+            armTimeout();
+        })();
     </script>
 </body>
 </html>

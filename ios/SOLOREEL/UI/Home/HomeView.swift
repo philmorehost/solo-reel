@@ -87,6 +87,35 @@ struct HomeView: View {
 
                     if isLoading { ProgressView().padding() }
                     else {
+                        // Latest releases row — distinct from the admin-managed
+                        // "Trending Now" shelf rendered below.
+                        if !series.isEmpty {
+                            Text("Latest Release").font(.title2).bold().padding(.horizontal, 16).padding(.top, 24)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(series) { s in
+                                        NavigationLink(destination: SeriesDetailView(slug: s.slug)) {
+                                            VStack(alignment: .leading) {
+                                                AsyncImage(url: URL(string: s.cover_image_url ?? "")) { phase in
+                                                    if let image = phase.image {
+                                                        image.resizable()
+                                                            .aspectRatio(contentMode: .fill)
+                                                            .frame(width: 140, height: 200)
+                                                            .cornerRadius(12)
+                                                    } else {
+                                                        Color.gray
+                                                            .frame(width: 140, height: 200)
+                                                            .cornerRadius(12)
+                                                    }
+                                                }
+                                                Text(s.title).font(.caption).foregroundColor(.white).lineLimit(2).frame(width: 140, alignment: .leading)
+                                            }
+                                        }
+                                    }
+                                }.padding(.horizontal, 16)
+                            }
+                        }
+
                         // Display each shelf with its movies listed horizontally
                         ForEach(shelves) { shelf in
                             let list = shelfSeries[shelf.slug] ?? []

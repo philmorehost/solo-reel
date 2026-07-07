@@ -45,9 +45,14 @@ class TransactionController extends BaseApiController {
         return $package;
     }
 
-    private function respondPaymentInit(array $package, string $reference, string $publicKey, string $email, string $authUrl = null) {
+    private function respondPaymentInit(array $package, string $reference, string $publicKey, string $email) {
+        // Always our own /pay/checkout page: it is self-contained (no external
+        // scripts), shows errors on screen instead of a blank page, and its
+        // success/cancel redirects stay on this domain so the app WebViews can
+        // intercept them reliably. Payhub's own hosted page includes the full
+        // Payhub website chrome and redirects to URLs the apps don't control.
         $data = [
-            'authorization_url' => $authUrl ?: ($this->baseUrl() . '/pay/checkout?reference=' . urlencode($reference)),
+            'authorization_url' => $this->baseUrl() . '/pay/checkout?reference=' . urlencode($reference),
             'reference'         => $reference,
             'public_key'        => $publicKey,
             'amount'            => (float)$package['price'] * 100, // Kobo
@@ -164,7 +169,7 @@ class TransactionController extends BaseApiController {
             $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (?, ?, ?, ?, ?, 'pending', ?)");
             $stmt->execute([$userId, $package['id'], $reference, $package['price'], $package['currency'], $package['coins']]);
 
-            $this->respondPaymentInit($package, $reference, $keys['public'], $email, $payhubTxn['authorization_url'] ?? null);
+            $this->respondPaymentInit($package, $reference, $keys['public'], $email);
         } catch (\Throwable $e) {
             $this->respondJson(['status' => false, 'error' => 'Could not initiate payment: ' . $e->getMessage()], 500);
         }
@@ -203,7 +208,7 @@ class TransactionController extends BaseApiController {
             $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, guest_id, package_id, reference, amount, currency, status, coins_awarded) VALUES (NULL, ?, ?, ?, ?, ?, 'pending', ?)");
             $stmt->execute([$guestId, $package['id'], $reference, $package['price'], $package['currency'], $package['coins']]);
 
-            $this->respondPaymentInit($package, $reference, $keys['public'], $email, $payhubTxn['authorization_url'] ?? null);
+            $this->respondPaymentInit($package, $reference, $keys['public'], $email);
         } catch (\Throwable $e) {
             $this->respondJson(['status' => false, 'error' => 'Could not initiate payment: ' . $e->getMessage()], 500);
         }
