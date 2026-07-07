@@ -110,4 +110,8 @@ dependencies {
 
     // Google AdMob (rewarded ads to unlock locked episodes)
     implementation("com.google.android.gms:play-services-ads:23.6.0")
+
+    // Chrome Custom Tabs — payment checkout opens here instead of an embedded
+    // WebView (see MainActivity's soloreel://payment-complete intent-filter).
+    implementation("androidx.browser:browser:1.8.0")
 }

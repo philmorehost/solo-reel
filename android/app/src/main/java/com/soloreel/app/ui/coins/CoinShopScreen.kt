@@ -1,6 +1,7 @@
 package com.soloreel.app.ui.coins
 
-import android.webkit.*
+import android.net.Uri
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,16 +16,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.soloreel.app.data.api.GuestPurchaseBody
+import com.soloreel.app.data.api.PaymentResultBus
 import com.soloreel.app.data.api.SOLOREELApi
 import com.soloreel.app.data.api.TokenManager
 import com.soloreel.app.data.api.apiMessage
@@ -217,113 +219,47 @@ fun CoinPackageCard(pkg: CoinPackage, onClick: () -> Unit) {
     }
 }
 
+/**
+ * Payment checkout opens in a Chrome Custom Tab — a real browser engine, not
+ * an embedded WebView. Payment gateways (Payhub/Paystack here) are notoriously
+ * unreliable inside app WebViews: cookie/storage restrictions, popup-handling
+ * quirks, and fraud-detection heuristics that specifically target them. Custom
+ * Tabs uses the device's actual Chrome, so behavior matches "the website"
+ * exactly. The server redirects to soloreel://payment-complete once the flow
+ * ends; MainActivity forwards that to PaymentResultBus, which this collects.
+ */
 @Composable
 fun PaymentWebView(url: String, onSuccess: (String) -> Unit, onDismiss: () -> Unit) {
-    var loadError by remember { mutableStateOf(false) }
-    var reloadKey by remember { mutableIntStateOf(0) }
-    val loadedUrl = remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+
+    LaunchedEffect(url) {
+        CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(url))
+    }
+
+    LaunchedEffect(Unit) {
+        PaymentResultBus.events.collect { result ->
+            if (result.status == "success") {
+                onSuccess(result.reference ?: "")
+            } else {
+                onDismiss()
+            }
+        }
+    }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxSize(0.95f)) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Row(modifier = Modifier.fillMaxWidth().background(Color(0xFF111111)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Complete Payment", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.weight(1f))
-                    IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, null, tint = Color.White) }
-                }
-                Box(modifier = Modifier.weight(1f).fillMaxSize()) {
-                    AndroidView(
-                        factory = { ctx ->
-                            WebView(ctx).apply {
-                                settings.javaScriptEnabled = true
-                                settings.domStorageEnabled = true
-                                settings.setSupportMultipleWindows(true)
-                                settings.javaScriptCanOpenWindowsAutomatically = true
-                                settings.useWideViewPort = true
-                                settings.loadWithOverviewMode = true
-                                settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                                // Payment gateways commonly refuse to render for the default Android
-                                // WebView UA (fraud/PCI heuristics key off the "; wv)" marker) — present
-                                // as a normal mobile browser instead.
-                                settings.userAgentString = settings.userAgentString.replace("; wv", "")
-
-                                webViewClient = object : WebViewClient() {
-                                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                                        val redirectUrl = request?.url?.toString() ?: return false
-                                        if (!request.isForMainFrame) return false
-
-                                        val ref = request.url?.getQueryParameter("reference") ?: request.url?.getQueryParameter("trxref")
-                                        // Ensure we actually have a reference before assuming it's our success redirect
-                                        if (!ref.isNullOrBlank() && (redirectUrl.contains("callback") || redirectUrl.contains("verify") || redirectUrl.contains("success"))) {
-                                            onSuccess(ref)
-                                            return true
-                                        }
-                                        return false
-                                    }
-
-                                    override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
-                                        loadError = false
-                                    }
-
-                                    override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
-                                        if (request?.isForMainFrame == true) loadError = true
-                                    }
-
-                                    override fun onReceivedHttpError(view: WebView?, request: WebResourceRequest?, errorResponse: WebResourceResponse?) {
-                                        if (request?.isForMainFrame == true) loadError = true
-                                    }
-                                }
-
-                                // Payment popups (Payhub's inline.js / 3DS challenges) call window.open();
-                                // without this, Android's default WebView silently drops them, leaving a
-                                // blank screen. Reuse this same WebView instance as the popup's target.
-                                webChromeClient = object : WebChromeClient() {
-                                    override fun onCreateWindow(
-                                        view: WebView?,
-                                        isDialog: Boolean,
-                                        isUserGesture: Boolean,
-                                        resultMsg: android.os.Message?
-                                    ): Boolean {
-                                        val transport = resultMsg?.obj as? WebView.WebViewTransport ?: return false
-                                        transport.webView = view
-                                        resultMsg.sendToTarget()
-                                        return true
-                                    }
-                                }
-
-                                loadUrl(url)
-                                loadedUrl.value = url
-                            }
-                        },
-                        update = { view ->
-                            // Only reload when the target URL actually changes (or a manual retry was
-                            // requested) — reloading on every recomposition interrupted the gateway's
-                            // JS mid-init and was a root cause of the blank-page bug.
-                            if (loadedUrl.value != url || reloadKey > 0) {
-                                loadError = false
-                                view.loadUrl(url)
-                                loadedUrl.value = url
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
-
-                    if (loadError) {
-                        Column(
-                            modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A0A)).padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(Icons.Default.ErrorOutline, null, tint = Color(0xFFDC2626), modifier = Modifier.size(40.dp))
-                            Spacer(Modifier.height(12.dp))
-                            Text("Couldn't load the payment page.", color = Color.White, textAlign = TextAlign.Center)
-                            Spacer(Modifier.height(16.dp))
-                            Button(
-                                onClick = { reloadKey++; loadedUrl.value = null },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
-                            ) { Text("Retry") }
-                        }
-                    }
-                }
+        Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF161616))) {
+            Column(
+                modifier = Modifier.padding(28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator(color = Color(0xFFDC2626))
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "Waiting for you to complete payment in your browser...",
+                    color = Color.White, textAlign = TextAlign.Center, fontSize = 15.sp
+                )
+                Spacer(Modifier.height(16.dp))
+                TextButton(onClick = onDismiss) { Text("Cancel", color = Color(0xFF888888)) }
             }
         }
     }

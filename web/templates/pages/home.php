@@ -31,16 +31,11 @@
     <link rel="stylesheet" href="/assets/css/responsive.css">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500;600;700;800&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
         body {
             background-color: #12081b;
             color: #fff;
-            font-family: 'Noto Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             overflow-x: hidden;
-        }
-        .font-anton {
-            font-family: 'Anton', sans-serif;
         }
         .hero-gradient {
             background: linear-gradient(0deg, rgba(15,15,17,1) 0%, rgba(15,15,17,0.8) 20%, rgba(15,15,17,0) 60%);
@@ -90,7 +85,7 @@
 
                 <div class="absolute bottom-[15%] left-[5%] md:left-[8%] z-10 max-w-3xl pr-4">
                     <span class="inline-block px-3 py-1 <?= !empty($banner['is_ad']) ? 'bg-gray-700' : 'bg-red-600' ?> text-white text-xs font-bold tracking-widest uppercase rounded-full mb-4 shadow-lg"><?= !empty($banner['is_ad']) ? 'Sponsored' : 'New Episode' ?></span>
-                    <h2 class="text-3xl md:text-6xl font-anton tracking-wider mb-4 leading-tight drop-shadow-2xl uppercase"><?= htmlspecialchars($banner['title']) ?></h2>
+                    <h2 class="text-2xl md:text-6xl font-extrabold tracking-wider mb-4 leading-tight drop-shadow-2xl uppercase"><?= htmlspecialchars($banner['title']) ?></h2>
                     <?php if (!empty($banner['synopsis'])): ?>
                     <p class="text-lg md:text-xl text-white/90 mb-8 line-clamp-3 font-light leading-relaxed max-w-2xl text-shadow"><?= htmlspecialchars($banner['synopsis']) ?></p>
                     <?php endif; ?>

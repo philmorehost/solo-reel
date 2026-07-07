@@ -29,8 +29,18 @@
                 content.innerHTML = '<div class="icon">' + icon + '</div><h2>' + title + '</h2><p>' + message + '</p>';
             }
 
+            // Payment now runs in the system browser (Chrome Custom Tabs / iOS
+            // ASWebAuthenticationSession), not an embedded WebView — this redirect
+            // is what the app's registered soloreel:// scheme catches to close the
+            // browser session and hand control back, after the user has had a
+            // moment to see the outcome.
+            function returnToApp(status) {
+                window.location.href = 'soloreel://payment-complete?status=' + status + '&reference=' + encodeURIComponent(reference || '');
+            }
+
             if (!reference) {
                 show('&#10060;', 'Missing reference', 'No payment reference was provided.');
+                setTimeout(function() { returnToApp('error'); }, 2500);
                 return;
             }
 
@@ -38,13 +48,16 @@
                 .then(function(r) { return r.json(); })
                 .then(function(res) {
                     if (res && res.status === true) {
-                        show('&#127881;', 'Payment Successful!', 'Your coins have been added. You can close this window and return to the app.');
+                        show('&#127881;', 'Payment Successful!', 'Redirecting you back to the app...');
+                        setTimeout(function() { returnToApp('success'); }, 1500);
                     } else {
                         show('&#9203;', 'Payment Pending', (res && (res.error || res.message)) || 'We could not confirm the payment yet. If you were charged, your coins will be credited shortly.');
+                        setTimeout(function() { returnToApp('pending'); }, 2500);
                     }
                 })
                 .catch(function() {
                     show('&#9888;&#65039;', 'Connection issue', 'We could not confirm the payment. Please reopen the coins page in the app.');
+                    setTimeout(function() { returnToApp('error'); }, 2500);
                 });
         })();
     </script>

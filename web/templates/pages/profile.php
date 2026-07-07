@@ -6,10 +6,9 @@
     <title>My Dashboard - SOLOREEL</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/assets/css/responsive.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Noto Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             background: radial-gradient(circle at top right, rgba(220, 38, 38, 0.08), transparent 45%), #030303;
         }
     </style>

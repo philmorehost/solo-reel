@@ -1,5 +1,4 @@
 import SwiftUI
-import WebKit
 
 struct CoinShopView: View {
     @ObservedObject var tokenManager = TokenManager.shared
@@ -118,143 +117,35 @@ struct CoinShopView: View {
 
 struct PaymentURL: Identifiable { let id = UUID(); let url: String }
 
-// MARK: - In-App Payment WebView
+/// Payment checkout opens via ASWebAuthenticationSession (real Safari engine,
+/// same mechanism already proven for Google Sign-In) instead of an embedded
+/// WKWebView — payment gateways are notoriously unreliable inside app
+/// WebViews (cookie/storage restrictions, popup-handling quirks, fraud
+/// heuristics that specifically target them), which is exactly why this
+/// checkout "worked perfectly" on the website but not in-app: the website was
+/// always being tested in a real browser. This makes the app use one too.
 struct PaymentWebView: View {
     let url: String
     let onSuccess: (String) -> Void
     let onDismiss: () -> Void
-    @State private var loadFailed = false
-    @State private var reloadToken = UUID()
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                WebViewRepresentable(url: url, reloadToken: reloadToken, onSuccess: onSuccess, onDismiss: onDismiss, onFailure: { loadFailed = true })
-                    .ignoresSafeArea()
-
-                if loadFailed {
-                    VStack(spacing: 16) {
-                        Image(systemName: "exclamationmark.triangle.fill").font(.notoSans(size: 36)).foregroundColor(.red)
-                        Text("Couldn't load the payment page.").foregroundColor(.white).multilineTextAlignment(.center)
-                        Button("Retry") { loadFailed = false; reloadToken = UUID() }
-                            .buttonStyle(.borderedProminent).tint(.red)
-                    }
-                    .padding(24)
-                    .background(Color.black.opacity(0.95))
-                }
+        VStack(spacing: 16) {
+            ProgressView().tint(.red)
+            Text("Waiting for you to complete payment in your browser...")
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+            Button("Cancel") {
+                PaymentAuthSession.shared.cancel()
+                onDismiss()
             }
-            .navigationTitle("Complete Payment").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: onDismiss) } }
+            .foregroundColor(Color(white: 0.6))
         }
-    }
-}
-
-struct WebViewRepresentable: UIViewRepresentable {
-    let url: String
-    let reloadToken: UUID
-    let onSuccess: (String) -> Void
-    let onDismiss: () -> Void
-    let onFailure: () -> Void
-
-    func makeUIView(context: Context) -> WKWebView {
-        let config = WKWebViewConfiguration()
-        config.preferences.javaScriptCanOpenWindowsAutomatically = true
-        
-        // Inject script to override window.open and target="_blank" to prevent blank pages and POST body loss
-        let userContentController = WKUserContentController()
-        let scriptSource = """
-        window.open = function(url, target, features) {
-            if (url) {
-                window.location.href = url;
-            }
-            return window;
-        };
-        function rewriteTargets() {
-            document.querySelectorAll('a[target="_blank"]').forEach(function(el) {
-                el.target = '_self';
-            });
-            document.querySelectorAll('form[target="_blank"]').forEach(function(el) {
-                el.target = '_self';
-            });
-        }
-        rewriteTargets();
-        var observer = new MutationObserver(rewriteTargets);
-        observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
-        """
-        // Main-frame only: the payment gateway's own checkout page loads inside a
-        // nested iframe, and injecting this script there too raced its own startup
-        // scripts (Tailwind's CDN JIT compiler, etc.) via a document-wide
-        // MutationObserver firing on every DOM mutation, which could leave the
-        // pay button rendered but unstyled. window.open() from within that iframe
-        // is already handled correctly by the WKUIDelegate below regardless of frame.
-        let userScript = WKUserScript(source: scriptSource, injectionTime: .atDocumentStart, forMainFrameOnly: true)
-        userContentController.addUserScript(userScript)
-        config.userContentController = userContentController
-        
-        let webView = WKWebView(frame: .zero, configuration: config)
-        webView.navigationDelegate = context.coordinator
-        webView.uiDelegate = context.coordinator
-        
-        // Use a standard Safari user-agent so that bank secure 3DS gateways allow rendering
-        webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1"
-        
-        context.coordinator.load(webView, url: url)
-        return webView
-    }
-
-    func updateUIView(_ uiView: WKWebView, context: Context) {
-        if context.coordinator.loadedToken != reloadToken {
-            context.coordinator.loadedToken = reloadToken
-            context.coordinator.load(uiView, url: url)
-        }
-    }
-
-    func makeCoordinator() -> Coordinator { Coordinator(onSuccess: onSuccess, onDismiss: onDismiss, onFailure: onFailure) }
-
-    class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
-        let onSuccess: (String) -> Void
-        let onDismiss: () -> Void
-        let onFailure: () -> Void
-        var loadedToken: UUID?
-
-        init(onSuccess: @escaping (String) -> Void, onDismiss: @escaping () -> Void, onFailure: @escaping () -> Void) {
-            self.onSuccess = onSuccess; self.onDismiss = onDismiss; self.onFailure = onFailure
-        }
-
-        func load(_ webView: WKWebView, url: String) {
-            if let u = URL(string: url) { webView.load(URLRequest(url: u)) }
-        }
-
-        func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-            // Only react to top-level redirects — the Payhub iframe navigates internally too
-            if action.targetFrame?.isMainFrame == true, let url = action.request.url?.absoluteString {
-                if url.contains("callback") || url.contains("verify") || url.contains("success") {
-                    let components = URLComponents(string: url)
-                    let ref = components?.queryItems?.first(where: { $0.name == "reference" || $0.name == "trxref" })?.value ?? ""
-                    if !ref.isEmpty { onSuccess(ref); decisionHandler(.cancel); return }
-                    else { onDismiss(); decisionHandler(.cancel); return }
-                }
-            }
-            decisionHandler(.allow)
-        }
-
-        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-            onFailure()
-        }
-
-        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-            onFailure()
-        }
-
-        /// Loads window.open()-style popups (payment popups, 3DS challenges) in the
-        /// same web view instead of silently dropping them (the default WKWebView
-        /// behavior when no WKUIDelegate is set) — a root cause of the blank
-        /// checkout page.
-        func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-            if navigationAction.targetFrame == nil {
-                webView.load(navigationAction.request)
-            }
-            return nil
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(red: 0.04, green: 0.04, blue: 0.04).ignoresSafeArea())
+        .onAppear {
+            PaymentAuthSession.shared.start(url: url, onSuccess: onSuccess, onDismiss: onDismiss)
         }
     }
 }

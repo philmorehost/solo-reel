@@ -43,7 +43,7 @@ $hostedUrl = $payhubBaseUrl . '/checkout.php?ref=' . urlencode($reference)
 <body>
     <div class="topbar">
         <div class="brand">SOLO<span>REEL</span> &middot; Secure Checkout</div>
-        <a href="/pay/closed">Cancel</a>
+        <a href="soloreel://payment-complete?status=cancelled&reference=<?= urlencode($reference) ?>">Cancel</a>
     </div>
     <div class="stage">
         <iframe id="gateway" src="<?= htmlspecialchars($iframeUrl) ?>" allow="payment; clipboard-read; clipboard-write"></iframe>

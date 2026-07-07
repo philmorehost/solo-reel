@@ -24,11 +24,23 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.SOLOREEL">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Payment checkout runs in a Chrome Custom Tab (real browser engine,
+                 not an embedded WebView) — payment gateways are notoriously
+                 unreliable inside WebViews (cookie/storage restrictions, popup
+                 handling, fraud-detection heuristics that specifically target
+                 them). The server redirects here once payment completes. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="soloreel" android:host="payment-complete" />
             </intent-filter>
         </activity>
 
