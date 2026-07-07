@@ -15,6 +15,11 @@ struct ProfileView: View {
                     }
                 }
             }
+            .refreshable {
+                if tokenManager.isLoggedIn {
+                    bonusStatus = try? await APIClient.shared.getBonusStatus()
+                }
+            }
             .background(Color(red: 0.04, green: 0.04, blue: 0.04))
             .preferredColorScheme(.dark)
         }

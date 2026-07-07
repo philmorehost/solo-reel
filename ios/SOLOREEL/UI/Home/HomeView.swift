@@ -89,7 +89,15 @@ struct HomeView: View {
                         }
                     }
                 }
-                }.background(Color.black)
+                }
+                .refreshable {
+                    do {
+                        banners = try await APIClient.shared.getBanners()
+                        series = try await APIClient.shared.getSeries()
+                    } catch {}
+                    await NotificationCenterStore.shared.load(postSystemNotifications: false)
+                }
+                .background(Color.black)
             }
             .background(Color.black).preferredColorScheme(.dark)
         }

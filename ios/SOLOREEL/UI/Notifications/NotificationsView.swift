@@ -127,6 +127,7 @@ struct NotificationsView: View {
                         }
                     }.padding(16)
                 }
+                .refreshable { await store.load() }
             }
         }
         .background(Color(red: 0.04, green: 0.04, blue: 0.04))

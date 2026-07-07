@@ -51,7 +51,14 @@ struct SeriesDetailView: View {
                     }
                 }
             }
-        }.background(Color.black).preferredColorScheme(.dark)
+        }
+        .refreshable {
+            do {
+                series = try await APIClient.shared.getSeriesDetail(slug: slug)
+                if let id = series?.id { episodes = try await APIClient.shared.getEpisodes(seriesId: id) }
+            } catch {}
+        }
+        .background(Color.black).preferredColorScheme(.dark)
         .task {
             do {
                 series = try await APIClient.shared.getSeriesDetail(slug: slug)

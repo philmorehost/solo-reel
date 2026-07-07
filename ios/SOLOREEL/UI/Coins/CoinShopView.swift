@@ -1,4 +1,4 @@
-﻿import SwiftUI
+import SwiftUI
 import WebKit
 
 struct CoinShopView: View {
@@ -50,6 +50,7 @@ struct CoinShopView: View {
                     }
                 }.padding(.vertical, 16)
             }
+            .refreshable { await loadPackages() }
             .background(Color(red: 0.04, green: 0.04, blue: 0.04))
             .preferredColorScheme(.dark)
             .navigationTitle("Coin Shop").navigationBarTitleDisplayMode(.inline)
