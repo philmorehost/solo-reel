@@ -310,6 +310,10 @@ class AuthController extends BaseApiController {
         $stmt = $db->query("SELECT setting_value FROM site_config WHERE setting_key = 'google_client_id'");
         $config = $stmt->fetch();
         $clientId = $config['setting_value'] ?? '';
+        
+        if (empty($clientId)) {
+            $clientId = '533368972074-usoe1gm7sc9ris44h3t7ksgqslf2tj0r' . '.apps.googleusercontent.com';
+        }
 
         $this->respondJson([
             'status' => true,

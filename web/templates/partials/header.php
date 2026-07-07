@@ -68,3 +68,83 @@ $coinBalance = \App\Core\Session::get('user_coin_balance');
         </div>
     </div>
 </nav>
+
+<!-- Website Anti-Screenshot & Anti-Screen Recording Protection -->
+<style>
+    /* Disable print stylesheet to prevent saving page as PDF / print screenshots */
+    @media print {
+        html, body {
+            display: none !important;
+        }
+    }
+    /* Disable text selection and dragging of media */
+    html, body {
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        user-select: none !important;
+        -webkit-user-drag: none !important;
+    }
+</style>
+<script>
+    // 1. Disable Right Click (Context Menu)
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    });
+
+    // 2. Disable Copy, Cut, and Paste
+    document.addEventListener('copy', function(e) {
+        e.preventDefault();
+    });
+    document.addEventListener('cut', function(e) {
+        e.preventDefault();
+    });
+
+    // 3. Detect and block common screenshot/recording keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Prevent F12 (Developer Tools)
+        if (e.key === 'F12') {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Prevent Ctrl+Shift+I / Cmd+Opt+I (Developer Tools)
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
+            e.preventDefault();
+            return false;
+        }
+
+        // Prevent Ctrl+Shift+J / Cmd+Opt+J (Console)
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'J' || e.key === 'j')) {
+            e.preventDefault();
+            return false;
+        }
+
+        // Prevent Ctrl+U / Cmd+Opt+U (View Source)
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'U' || e.key === 'u')) {
+            e.preventDefault();
+            return false;
+        }
+
+        // Prevent Ctrl+S / Cmd+S (Save Page)
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'S' || e.key === 's')) {
+            e.preventDefault();
+            return false;
+        }
+
+        // Attempt to detect and empty clipboard on PrintScreen keypress
+        if (e.key === 'PrintScreen' || e.keyCode === 44) {
+            e.preventDefault();
+            navigator.clipboard.writeText('').catch(function() {});
+            alert('Screenshots are disabled on this platform.');
+            return false;
+        }
+    });
+
+    // 4. Continuously empty clipboard if the window is in focus to prevent screenshot pasting
+    setInterval(function() {
+        if (document.hasFocus()) {
+            navigator.clipboard.writeText('').catch(function() {});
+        }
+    }, 1000);
+</script>

@@ -158,12 +158,40 @@ struct WebViewRepresentable: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
-        // Some payment gateways' popup/3DS challenge flows call window.open();
-        // without this, WKWebView silently drops them, leaving a blank screen.
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
+        
+        // Inject script to override window.open and target="_blank" to prevent blank pages and POST body loss
+        let userContentController = WKUserContentController()
+        let scriptSource = """
+        window.open = function(url, target, features) {
+            if (url) {
+                window.location.href = url;
+            }
+            return window;
+        };
+        function rewriteTargets() {
+            document.querySelectorAll('a[target="_blank"]').forEach(function(el) {
+                el.target = '_self';
+            });
+            document.querySelectorAll('form[target="_blank"]').forEach(function(el) {
+                el.target = '_self';
+            });
+        }
+        rewriteTargets();
+        var observer = new MutationObserver(rewriteTargets);
+        observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
+        """
+        let userScript = WKUserScript(source: scriptSource, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+        userContentController.addUserScript(userScript)
+        config.userContentController = userContentController
+        
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
+        
+        // Use a standard Safari user-agent so that bank secure 3DS gateways allow rendering
+        webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1"
+        
         context.coordinator.load(webView, url: url)
         return webView
     }

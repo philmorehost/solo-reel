@@ -18,6 +18,7 @@ import com.soloreel.app.data.api.TokenManager
 import javax.inject.Inject
 import dagger.hilt.android.AndroidEntryPoint
 
+import android.view.WindowManager
 import androidx.fragment.app.FragmentActivity
 
 @AndroidEntryPoint
@@ -30,6 +31,12 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Prevent screenshots and screen recording
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_SECURE,
+            WindowManager.LayoutParams.FLAG_SECURE
+        )
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
             androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
                 != android.content.pm.PackageManager.PERMISSION_GRANTED

@@ -5,6 +5,14 @@
 # Navigate to the directory where this script is located
 cd "$(dirname "$0")"
 
+# Regenerate the Xcode project first if xcodegen is installed
+if command -v xcodegen &> /dev/null; then
+    echo "Regenerating Xcode project using xcodegen..."
+    xcodegen generate
+else
+    echo "xcodegen not found, skipping project regeneration."
+fi
+
 echo "Building SOLOREEL for iOS Simulator..."
 echo "Using flag: -disable-xcframework-signature-validation"
 

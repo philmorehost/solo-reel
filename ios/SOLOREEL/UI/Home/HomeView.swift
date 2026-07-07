@@ -6,17 +6,30 @@ struct HomeView: View {
     @State private var series: [Series] = []
     @State private var shelves: [Shelf] = []
     @State private var shelfSeries: [String: [Series]] = [:]
-    @State private var selectedShelf = 0
     @State private var isLoading = true
     @State private var currentBanner = 0
 
-    private func loadShelfSeries(_ shelf: Shelf) {
-        guard shelfSeries[shelf.slug] == nil else { return }
-        Task {
-            if let result = try? await APIClient.shared.getSeries(shelf: shelf.slug) {
-                shelfSeries[shelf.slug] = result
+    private func loadHomeData() async {
+        do {
+            banners = try await APIClient.shared.getBanners()
+            series = try await APIClient.shared.getSeries()
+            let fetchedShelves = try await APIClient.shared.getShelves()
+            
+            // Ensure trending-now is always sorted to be first in list
+            let sorted = fetchedShelves.sorted { s1, s2 in
+                if s1.slug == "trending-now" { return true }
+                if s2.slug == "trending-now" { return false }
+                return s1.id < s2.id
             }
-        }
+            shelves = sorted
+            
+            // Pre-load series for each shelf
+            for shelf in sorted {
+                if let result = try? await APIClient.shared.getSeries(shelf: shelf.slug) {
+                    shelfSeries[shelf.slug] = result
+                }
+            }
+        } catch {}
     }
 
     var body: some View {
@@ -73,35 +86,15 @@ struct HomeView: View {
                     }
 
                     if isLoading { ProgressView().padding() }
-                    else if !shelves.isEmpty {
-                        // Category tabs — tapping a tab or swiping the pager below
-                        // moves between shelves, mirroring the banner carousel's
-                        // left/right paging pattern.
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                ForEach(Array(shelves.enumerated()), id: \.offset) { index, shelf in
-                                    let selected = selectedShelf == index
-                                    HStack(spacing: 4) {
-                                        if let emoji = shelf.emoji, !emoji.isEmpty { Text(emoji) }
-                                        Text(shelf.name).font(.footnote).fontWeight(selected ? .bold : .regular)
-                                    }
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
-                                    .background(selected ? Color(red: 0.86, green: 0.15, blue: 0.15) : Color(white: 0.1))
-                                    .cornerRadius(20)
-                                    .onTapGesture {
-                                        withAnimation { selectedShelf = index }
-                                    }
-                                }
-                            }.padding(.horizontal, 16).padding(.top, 16)
-                        }
-
-                        TabView(selection: $selectedShelf) {
-                            ForEach(Array(shelves.enumerated()), id: \.offset) { index, shelf in
+                    else {
+                        // Display each shelf with its movies listed horizontally
+                        ForEach(shelves) { shelf in
+                            let list = shelfSeries[shelf.slug] ?? []
+                            if !list.isEmpty {
+                                Text(shelf.name).font(.title2).bold().padding(.horizontal, 16).padding(.top, 24)
                                 ScrollView(.horizontal, showsIndicators: false) {
                                     HStack(spacing: 12) {
-                                        ForEach(shelfSeries[shelf.slug] ?? []) { s in
+                                        ForEach(list) { s in
                                             NavigationLink(destination: SeriesDetailView(slug: s.slug)) {
                                                 VStack(alignment: .leading) {
                                                     AsyncImage(url: URL(string: s.cover_image_url ?? "")) { phase in
@@ -120,52 +113,50 @@ struct HomeView: View {
                                                 }
                                             }
                                         }
-                                    }.padding(.horizontal, 12)
+                                    }.padding(.horizontal, 16)
                                 }
-                                .tag(index)
                             }
                         }
-                        .frame(height: 240)
-                        .tabViewStyle(.page(indexDisplayMode: .never))
-                        .onChange(of: selectedShelf) { newValue in
-                            if newValue >= 0 && newValue < shelves.count { loadShelfSeries(shelves[newValue]) }
-                        }
-                    } else {
-                        Text("Trending Now").font(.title2).bold().padding(.horizontal, 16).padding(.top, 16)
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
+
+                        // Bottom "All Series" section
+                        if !series.isEmpty {
+                            Text("All Series").font(.title2).bold().padding(.horizontal, 16).padding(.top, 28)
+                            
+                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                                 ForEach(series) { s in
-                                NavigationLink(destination: SeriesDetailView(slug: s.slug)) {
-                                    VStack(alignment: .leading) {
-                                        AsyncImage(url: URL(string: s.cover_image_url ?? "")) { phase in
-                                            if let image = phase.image {
-                                                image.resizable()
-                                                    .aspectRatio(contentMode: .fill)
-                                                    .frame(width: 140, height: 200)
-                                                    .cornerRadius(12)
-                                            } else {
-                                                Color.gray
-                                                    .frame(width: 140, height: 200)
-                                                    .cornerRadius(12)
+                                    NavigationLink(destination: SeriesDetailView(slug: s.slug)) {
+                                        VStack(alignment: .leading, spacing: 6) {
+                                            AsyncImage(url: URL(string: s.cover_image_url ?? "")) { phase in
+                                                if let image = phase.image {
+                                                    image.resizable()
+                                                        .aspectRatio(contentMode: .fill)
+                                                        .frame(height: 220)
+                                                        .cornerRadius(12)
+                                                } else {
+                                                    Color.gray
+                                                        .frame(height: 220)
+                                                        .cornerRadius(12)
+                                                }
+                                            }
+                                            .frame(maxWidth: .infinity)
+                                            .clipped()
+                                            
+                                            Text(s.title).font(.caption).bold().foregroundColor(.white).lineLimit(1)
+                                            if let genre = s.genre {
+                                                Text(genre).font(.caption2).foregroundColor(.gray)
                                             }
                                         }
-                                        Text(s.title).font(.caption).foregroundColor(.white).lineLimit(2).frame(width: 140, alignment: .leading)
                                     }
                                 }
-                                }
-                            }.padding(.horizontal, 12)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 30)
                         }
                     }
                 }
                 }
                 .refreshable {
-                    do {
-                        banners = try await APIClient.shared.getBanners()
-                        series = try await APIClient.shared.getSeries()
-                        shelves = try await APIClient.shared.getShelves()
-                        shelfSeries = [:]
-                        if let first = shelves.first { loadShelfSeries(first) }
-                    } catch {}
+                    await loadHomeData()
                     await NotificationCenterStore.shared.load(postSystemNotifications: false)
                 }
                 .background(Color.black)
@@ -174,14 +165,8 @@ struct HomeView: View {
         }
         .task {
             isLoading = true
-            do {
-                banners = try await APIClient.shared.getBanners()
-                series = try await APIClient.shared.getSeries()
-                shelves = try await APIClient.shared.getShelves()
-                if let first = shelves.first { loadShelfSeries(first) }
-                isLoading = false
-            }
-            catch { isLoading = false }
+            await loadHomeData()
+            isLoading = false
             await NotificationCenterStore.shared.load(postSystemNotifications: true)
             if let adsConfig = try? await APIClient.shared.getAdsConfig(), let unitId = adsConfig["admob_ios_rewarded_unit_id"] {
                 RewardedAdManager.shared.configure(adUnitID: unitId)
