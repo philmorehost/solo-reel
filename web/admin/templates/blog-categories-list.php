@@ -33,8 +33,11 @@
                 </div>
 
                 <div class="md:col-span-2 bg-white rounded-lg shadow overflow-hidden">
+                    <div class="p-4 border-b border-gray-200">
+                        <input type="text" id="blog-categories-search" placeholder="Search by name or slug..." class="w-full max-w-md border rounded px-3 py-2 text-sm">
+                    </div>
                     <div class="table-responsive">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200" id="blog-categories-table">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
@@ -43,11 +46,14 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <?php foreach($categories as $c): ?>
-                            <tr>
+                            <tr data-search="<?= htmlspecialchars(strtolower($c['name'] . ' ' . $c['slug'])) ?>">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><?= htmlspecialchars($c['name']) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?= htmlspecialchars($c['slug']) ?></td>
                             </tr>
                             <?php endforeach; ?>
+                            <tr id="blog-categories-no-results" style="display:none;">
+                                <td colspan="2" class="px-6 py-8 text-center text-sm text-gray-500">No categories match your search.</td>
+                            </tr>
                         </tbody>
                     </table>
                     </div>
@@ -55,5 +61,9 @@
             </div>
         </main>
     </div>
+    <script src="/assets/js/admin-table-filter.js"></script>
+    <script>
+        initAdminTableFilter('blog-categories-search', '#blog-categories-table tbody tr[data-search]', { emptyMessageId: 'blog-categories-no-results' });
+    </script>
 </body>
 </html>

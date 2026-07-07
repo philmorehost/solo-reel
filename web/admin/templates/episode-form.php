@@ -48,8 +48,8 @@
                         <div class="mb-4 p-4 border border-dashed border-gray-400 rounded bg-gray-50">
                             <label class="block text-gray-700 font-bold mb-2">Upload Video (MP4)</label>
                             <input type="file" id="video_file" name="video_file" accept="video/mp4" <?= !isset($episode) ? 'required' : '' ?> class="w-full">
-                            <p class="text-sm text-gray-500 mt-2">File will be queued for HLS conversion processing.</p>
-                            
+                            <p class="text-sm text-gray-500 mt-2">Video is published immediately upon upload<?= isset($episode) ? ' (leave blank to keep the current video)' : '' ?>.</p>
+
                             <!-- Progress Bar Container -->
                             <div id="upload-progress-container" class="hidden mt-4">
                                 <div class="flex justify-between mb-1">
@@ -61,6 +61,82 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Cover Image / Thumbnail Field -->
+                        <div class="mb-4 p-4 border border-dashed border-gray-400 rounded bg-gray-50">
+                            <label class="block text-gray-700 font-bold mb-2">Cover Image (Thumbnail)</label>
+                            <?php if (isset($episode) && !empty($episode['thumbnail_url'])): ?>
+                                <img id="thumbnail-preview" src="<?= htmlspecialchars($episode['thumbnail_url']) ?>" class="w-24 aspect-[2/3] object-cover rounded mb-2 border">
+                            <?php else: ?>
+                                <img id="thumbnail-preview" class="w-24 aspect-[2/3] object-cover rounded mb-2 border hidden">
+                            <?php endif; ?>
+                            <input type="file" id="thumbnail_file" name="thumbnail_file" accept="image/jpeg,image/png,image/webp" class="w-full">
+                            <p id="thumbnail-help" class="text-sm text-gray-500 mt-2">
+                                Optional — a frame is automatically captured from the video you upload above<?= isset($episode) ? ' when you choose a new one' : '' ?>. Pick a file here to use your own cover instead.
+                            </p>
+                        </div>
+
+                        <script>
+                            var thumbnailInput = document.getElementById('thumbnail_file');
+                            var thumbnailPreview = document.getElementById('thumbnail-preview');
+                            var thumbnailHelp = document.getElementById('thumbnail-help');
+
+                            thumbnailInput.addEventListener('change', function (e) {
+                                var file = e.target.files[0];
+                                if (!file) return;
+                                thumbnailPreview.src = URL.createObjectURL(file);
+                                thumbnailPreview.classList.remove('hidden');
+                                thumbnailHelp.textContent = 'Using the cover image you selected.';
+                            });
+
+                            // Auto-capture a cover image from the uploaded video, entirely in the
+                            // browser (HTML5 <video> + <canvas>) — no server-side ffmpeg involved,
+                            // since this host doesn't have it. Only runs if the admin hasn't already
+                            // picked their own cover image.
+                            document.getElementById('video_file').addEventListener('change', function (e) {
+                                var file = e.target.files[0];
+                                if (!file || (thumbnailInput.files && thumbnailInput.files.length > 0)) return;
+
+                                var video = document.createElement('video');
+                                video.preload = 'metadata';
+                                video.muted = true;
+                                video.playsInline = true;
+                                video.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;';
+                                document.body.appendChild(video);
+                                video.src = URL.createObjectURL(file);
+
+                                function cleanup() {
+                                    URL.revokeObjectURL(video.src);
+                                    if (video.parentNode) video.parentNode.removeChild(video);
+                                }
+
+                                video.addEventListener('loadedmetadata', function () {
+                                    video.currentTime = Math.min(1, (video.duration || 0) / 2);
+                                });
+
+                                video.addEventListener('seeked', function () {
+                                    var canvas = document.createElement('canvas');
+                                    canvas.width = video.videoWidth;
+                                    canvas.height = video.videoHeight;
+                                    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                                    canvas.toBlob(function (blob) {
+                                        if (blob && (!thumbnailInput.files || thumbnailInput.files.length === 0)) {
+                                            var dataTransfer = new DataTransfer();
+                                            dataTransfer.items.add(new File([blob], 'auto-thumbnail.jpg', { type: 'image/jpeg' }));
+                                            thumbnailInput.files = dataTransfer.files;
+
+                                            thumbnailPreview.src = URL.createObjectURL(blob);
+                                            thumbnailPreview.classList.remove('hidden');
+                                            thumbnailHelp.textContent = 'Cover image auto-captured from your video — pick a file above to use your own instead.';
+                                        }
+                                        cleanup();
+                                    }, 'image/jpeg', 0.85);
+                                });
+
+                                video.addEventListener('error', cleanup);
+                            });
+                        </script>
 
                         <div class="mb-4 flex items-center">
                             <input type="checkbox" name="is_free" id="is_free" class="mr-2" <?= (!isset($episode) || $episode['is_free']) ? 'checked' : '' ?>>
@@ -118,7 +194,7 @@
                                     if (percentComplete === 100) {
                                         progressBar.classList.remove('bg-red-600');
                                         progressBar.classList.add('bg-green-600');
-                                        progressPercent.innerText = 'Processing...';
+                                        progressPercent.innerText = 'Saving...';
                                     }
                                 }
                             };

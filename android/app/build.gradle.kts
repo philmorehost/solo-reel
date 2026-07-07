@@ -37,6 +37,29 @@ android {
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
     }
 
+    // Release signing credentials come from local.properties (untracked, for local
+    // builds) or environment variables (for CI) — never hardcoded, since this file
+    // is committed to a shared git repo. See CPANEL_DEPLOY.md-style secrets setup:
+    // CI must inject ANDROID_KEYSTORE_PATH/PASSWORD/ALIAS/KEY_PASSWORD as secrets.
+    signingConfigs {
+        create("release") {
+            storeFile = file(
+                localProps.getProperty("ANDROID_KEYSTORE_PATH")
+                    ?: System.getenv("ANDROID_KEYSTORE_PATH")
+                    ?: "release.keystore"
+            )
+            storePassword = localProps.getProperty("ANDROID_KEYSTORE_PASSWORD")
+                ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                ?: ""
+            keyAlias = localProps.getProperty("ANDROID_KEY_ALIAS")
+                ?: System.getenv("ANDROID_KEY_ALIAS")
+                ?: ""
+            keyPassword = localProps.getProperty("ANDROID_KEY_PASSWORD")
+                ?: System.getenv("ANDROID_KEY_PASSWORD")
+                ?: ""
+        }
+    }
+
     buildTypes {
         debug {
             isMinifyEnabled = false
@@ -45,7 +68,7 @@ android {
             isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {

@@ -8,6 +8,15 @@ require_once __DIR__ . '/../app/core/Database.php';
 require_once __DIR__ . '/../app/core/Env.php';
 \App\Core\Env::load(__DIR__ . '/../.env');
 
+// Block direct web access — this file sits under public_html/cron/ and the
+// site's .htaccess only routes requests through index.php when no real file
+// exists at that path, so a bare HTTP hit serves this script directly. Without
+// this guard, anyone could force-trigger the weekly coin payout to every user
+// on demand. REQUEST_METHOD is only set for real HTTP requests, never for cron.
+if (php_sapi_name() !== 'cli' && isset($_SERVER['REQUEST_METHOD'])) {
+    die("This script can only be run from the command line.");
+}
+
 $db = \App\Core\Database::getInstance();
 
 // Get weekly bonus amount from settings

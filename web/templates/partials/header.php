@@ -5,6 +5,41 @@ $isLoggedIn = \App\Core\Session::isLoggedIn();
 $userName = \App\Core\Session::get('user_name');
 $coinBalance = \App\Core\Session::get('user_coin_balance');
 ?><script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+    /* Prevent text selection and drag */
+    body {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+    }
+    img {
+        -webkit-user-drag: none;
+        -khtml-user-drag: none;
+        -moz-user-drag: none;
+        -o-user-drag: none;
+    }
+</style>
+<script>
+    // Prevent right click
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    // Prevent Print Screen and shortcuts for screenshots/recording
+    document.addEventListener('keyup', (e) => {
+        if (e.key === 'PrintScreen' || e.code === 'PrintScreen') {
+            navigator.clipboard.writeText(''); // Clear clipboard
+            alert("Screenshots are disabled on this website for security reasons.");
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        // Prevent common shortcuts (Ctrl+S, Ctrl+P, Mac equivalents)
+        if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p')) {
+            e.preventDefault();
+        }
+    });
+</script>
 <nav x-data="{ scrolled: false, mobileOpen: false }"
      @scroll.window="scrolled = (window.pageYOffset > 50)"
      :class="{ 'bg-black/90 backdrop-blur-md shadow-lg': scrolled, 'bg-transparent': !scrolled }"

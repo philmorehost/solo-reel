@@ -39,8 +39,11 @@
                 </div>
 
                 <div class="md:col-span-2 bg-white rounded-lg shadow overflow-hidden">
+                    <div class="p-4 border-b border-gray-200">
+                        <input type="text" id="genres-search" placeholder="Search by name or slug..." class="w-full max-w-md border rounded px-3 py-2 text-sm">
+                    </div>
                     <div class="table-responsive">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200" id="genres-table">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
@@ -50,7 +53,7 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <?php foreach($genres as $g): ?>
-                            <tr>
+                            <tr data-search="<?= htmlspecialchars(strtolower($g['name'] . ' ' . $g['slug'])) ?>">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><?= htmlspecialchars($g['name']) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?= htmlspecialchars($g['slug']) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -60,6 +63,9 @@
                                 </td>
                             </tr>
                             <?php endforeach; ?>
+                            <tr id="genres-no-results" style="display:none;">
+                                <td colspan="3" class="px-6 py-8 text-center text-sm text-gray-500">No genres match your search.</td>
+                            </tr>
                         </tbody>
                     </table>
                     </div>
@@ -67,5 +73,9 @@
             </div>
         </main>
     </div>
+    <script src="/assets/js/admin-table-filter.js"></script>
+    <script>
+        initAdminTableFilter('genres-search', '#genres-table tbody tr[data-search]', { emptyMessageId: 'genres-no-results' });
+    </script>
 </body>
 </html>

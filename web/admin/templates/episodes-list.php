@@ -23,19 +23,23 @@
                     <div class="bg-green-100 text-green-700 p-2 rounded mb-4 text-sm"><?= htmlspecialchars($msg) ?></div>
                 <?php endif; ?>
                 <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="p-4 border-b border-gray-200">
+                        <input type="text" id="episodes-search" placeholder="Search by series, episode #, or title..." class="w-full max-w-md border rounded px-3 py-2 text-sm">
+                    </div>
                     <div class="table-responsive">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200" id="episodes-table">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Series</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Episode #</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Video Status</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <?php foreach($episodes as $e): ?>
-                            <tr>
+                            <tr data-search="<?= htmlspecialchars(strtolower($e['series_title'] . ' ' . $e['episode_number'] . ' ' . $e['title'])) ?>">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <?= htmlspecialchars($e['series_title']) ?>
                                 </td>
@@ -45,6 +49,13 @@
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-medium text-gray-900"><?= htmlspecialchars($e['title']) ?></div>
                                 </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <?php if (!empty($e['video_url'])): ?>
+                                        <span class="px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Ready</span>
+                                    <?php else: ?>
+                                        <span class="px-2 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-700">No video</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <a href="/admin/episodes/edit/<?= $e['id'] ?>" class="text-indigo-600 hover:text-indigo-900 mr-2">Edit</a>
                                     <?php if(\App\Core\Session::get('user_role') === 'super_admin'): ?>
@@ -53,6 +64,9 @@
                                 </td>
                             </tr>
                             <?php endforeach; ?>
+                            <tr id="episodes-no-results" style="display:none;">
+                                <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">No episodes match your search.</td>
+                            </tr>
                         </tbody>
                     </table>
                     </div>
@@ -60,5 +74,9 @@
             </div>
         </main>
     </div>
+    <script src="/assets/js/admin-table-filter.js"></script>
+    <script>
+        initAdminTableFilter('episodes-search', '#episodes-table tbody tr[data-search]', { emptyMessageId: 'episodes-no-results' });
+    </script>
 </body>
 </html>

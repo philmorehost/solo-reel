@@ -27,8 +27,13 @@
                 <?php endif; ?>
 
                 <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <?php if (!empty($ads)): ?>
+                    <div class="p-4 border-b border-gray-200">
+                        <input type="text" id="custom-ads-search" placeholder="Search by title or placement..." class="w-full max-w-md border rounded px-3 py-2 text-sm">
+                    </div>
+                    <?php endif; ?>
                     <div class="table-responsive">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200" id="custom-ads-table">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Media</th>
@@ -44,7 +49,7 @@
                             <?php
                                 $expired = !empty($ad['expires_at']) && strtotime($ad['expires_at']) <= time();
                             ?>
-                            <tr>
+                            <tr data-search="<?= htmlspecialchars(strtolower($ad['title'] . ' ' . $ad['placement'])) ?>">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <?php if ($ad['media_type'] === 'video'): ?>
                                         <video src="<?= htmlspecialchars($ad['media_url']) ?>" class="h-12 w-24 object-cover rounded" muted></video>
@@ -74,6 +79,9 @@
                             <?php if (empty($ads)): ?>
                             <tr><td colspan="6" class="px-6 py-8 text-center text-gray-400">No custom ads yet.</td></tr>
                             <?php endif; ?>
+                            <tr id="custom-ads-no-results" style="display:none;">
+                                <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">No ads match your search.</td>
+                            </tr>
                         </tbody>
                     </table>
                     </div>
@@ -81,5 +89,9 @@
             </div>
         </main>
     </div>
+    <script src="/assets/js/admin-table-filter.js"></script>
+    <script>
+        initAdminTableFilter('custom-ads-search', '#custom-ads-table tbody tr[data-search]', { emptyMessageId: 'custom-ads-no-results' });
+    </script>
 </body>
 </html>

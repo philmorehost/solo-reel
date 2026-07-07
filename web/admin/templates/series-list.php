@@ -24,8 +24,11 @@
                     <div class="bg-green-100 text-green-700 p-2 rounded mb-4 text-sm"><?= htmlspecialchars($msg) ?></div>
                 <?php endif; ?>
                 <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="p-4 border-b border-gray-200">
+                        <input type="text" id="series-search" placeholder="Search by title, status, or genre..." class="w-full max-w-md border rounded px-3 py-2 text-sm">
+                    </div>
                     <div class="table-responsive">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200" id="series-table">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
@@ -36,7 +39,7 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <?php foreach($series as $s): ?>
-                            <tr>
+                            <tr data-search="<?= htmlspecialchars(strtolower($s['title'] . ' ' . $s['status'] . ' ' . ($s['genre'] ?? ''))) ?>">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-medium text-gray-900"><?= htmlspecialchars($s['title']) ?></div>
                                 </td>
@@ -56,6 +59,9 @@
                                 </td>
                             </tr>
                             <?php endforeach; ?>
+                            <tr id="series-no-results" style="display:none;">
+                                <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">No series match your search.</td>
+                            </tr>
                         </tbody>
                     </table>
                     </div>
@@ -63,5 +69,9 @@
             </div>
         </main>
     </div>
+    <script src="/assets/js/admin-table-filter.js"></script>
+    <script>
+        initAdminTableFilter('series-search', '#series-table tbody tr[data-search]', { emptyMessageId: 'series-no-results' });
+    </script>
 </body>
 </html>

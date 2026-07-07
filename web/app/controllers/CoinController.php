@@ -45,8 +45,26 @@ class CoinController {
         require __DIR__ . '/../../templates/pages/coin-shop.php';
     }
 
+    private function isAjax(): bool {
+        return ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest';
+    }
+
     public function unlock(int $episodeId) {
-        Security::validateCsrfPost();
+        $isAjax = $this->isAjax();
+
+        if ($isAjax) {
+            // The reel feed unlocks episodes inline via fetch(); respond with JSON
+            // instead of the redirect-based flow used by the no-JS form fallback.
+            if (!Security::verifyCsrfToken($_POST['csrf_token'] ?? '')) {
+                http_response_code(403);
+                header('Content-Type: application/json');
+                echo json_encode(['status' => false, 'error' => 'Session expired. Please refresh and try again.']);
+                die();
+            }
+        } else {
+            Security::validateCsrfPost();
+        }
+
         $userId = Session::get('user_id');
         $guestId = Session::getGuestId();
 
@@ -99,11 +117,25 @@ class CoinController {
             $db->commit();
             Session::set('user_coin_balance', $newBalance);
 
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['status' => true, 'coin_balance' => $newBalance, 'episode_id' => $episodeId]);
+                die();
+            }
+
             header("Location: /episodes/" . $episode['slug']);
             die();
 
         } catch (\Exception $e) {
             $db->rollBack();
+
+            if ($isAjax) {
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode(['status' => false, 'error' => $e->getMessage()]);
+                die();
+            }
+
             Session::setFlash('error', $e->getMessage());
             if (isset($episode['slug'])) {
                 header("Location: /episodes/" . $episode['slug']);

@@ -1,4 +1,5 @@
 storage/temp/
+storage/videos/
 assets/uploads/
 .idea/
 *.class
@@ -14,6 +15,8 @@ web/.env
 
 android/app/build/
 android/.gradle/
+android/local.properties
+*.keystore
 ios/build/
 ios/DerivedData/
 ios/.build/
@@ -23,3 +26,7 @@ android_ls.txt
 soloreel-release-apk*
 *.apk
 *.aab
+*.zip
+
+# OAuth client secret downloaded from Google Cloud Console
+client_secret_*.json

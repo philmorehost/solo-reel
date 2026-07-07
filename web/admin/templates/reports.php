@@ -21,8 +21,11 @@
 
                 <h2 class="text-xl font-bold mb-4">Top Episodes by Traffic</h2>
                 <div class="bg-white rounded-lg shadow overflow-hidden mb-8">
+                    <div class="p-4 border-b border-gray-200">
+                        <input type="text" id="episode-stats-search" placeholder="Search by series or episode..." class="w-full max-w-md border rounded px-3 py-2 text-sm">
+                    </div>
                     <div class="table-responsive">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200" id="episode-stats-table">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Series</th>
@@ -33,13 +36,16 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <?php foreach($episodeStats as $e): ?>
-                            <tr>
+                            <tr data-search="<?= htmlspecialchars(strtolower($e['series_title'] . ' ' . $e['episode_number'] . ' ' . $e['episode_title'])) ?>">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?= htmlspecialchars($e['series_title']) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Ep <?= htmlspecialchars($e['episode_number']) ?> - <?= htmlspecialchars($e['episode_title']) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600"><?= number_format($e['total_views']) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?= gmdate("H:i:s", $e['total_watch_time']) ?></td>
                             </tr>
                             <?php endforeach; ?>
+                            <tr id="episode-stats-no-results" style="display:none;">
+                                <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">No episodes match your search.</td>
+                            </tr>
                         </tbody>
                     </table>
                     </div>
@@ -47,8 +53,11 @@
 
                 <h2 class="text-xl font-bold mb-4">Recent Coin Transactions</h2>
                 <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="p-4 border-b border-gray-200">
+                        <input type="text" id="transactions-search" placeholder="Search by user, type, or description..." class="w-full max-w-md border rounded px-3 py-2 text-sm">
+                    </div>
                     <div class="table-responsive">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200" id="transactions-table">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
@@ -60,7 +69,7 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <?php foreach($transactions as $t): ?>
-                            <tr>
+                            <tr data-search="<?= htmlspecialchars(strtolower($t['username'] . ' ' . $t['type'] . ' ' . $t['description'])) ?>">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?= htmlspecialchars($t['created_at']) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><?= htmlspecialchars($t['username']) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -72,6 +81,9 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?= htmlspecialchars($t['description']) ?></td>
                             </tr>
                             <?php endforeach; ?>
+                            <tr id="transactions-no-results" style="display:none;">
+                                <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">No transactions match your search.</td>
+                            </tr>
                         </tbody>
                     </table>
                     </div>
@@ -80,5 +92,10 @@
             </div>
         </main>
     </div>
+    <script src="/assets/js/admin-table-filter.js"></script>
+    <script>
+        initAdminTableFilter('episode-stats-search', '#episode-stats-table tbody tr[data-search]', { emptyMessageId: 'episode-stats-no-results' });
+        initAdminTableFilter('transactions-search', '#transactions-table tbody tr[data-search]', { emptyMessageId: 'transactions-no-results' });
+    </script>
 </body>
 </html>

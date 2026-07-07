@@ -31,8 +31,13 @@
                 <?php endif; ?>
 
                 <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <?php if (!empty($requests)): ?>
+                    <div class="p-4 border-b border-gray-200">
+                        <input type="text" id="series-requests-search" placeholder="Search by title, requester, or status..." class="w-full max-w-md border rounded px-3 py-2 text-sm">
+                    </div>
+                    <?php endif; ?>
                     <div class="table-responsive">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200" id="series-requests-table">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested Title</th>
@@ -48,7 +53,7 @@
                             <tr><td colspan="6" class="px-6 py-10 text-center text-sm text-gray-500">No series requests yet.</td></tr>
                             <?php endif; ?>
                             <?php foreach($requests as $r): ?>
-                            <tr>
+                            <tr data-search="<?= htmlspecialchars(strtolower($r['title'] . ' ' . ($r['requester_email'] ?? '') . ' ' . $r['requester_type'] . ' ' . $r['status'] . ' ' . ($r['linked_series_title'] ?? ''))) ?>">
                                 <td class="px-6 py-4 text-sm font-medium text-gray-900">
                                     <?= htmlspecialchars($r['title']) ?>
                                     <?php if ($r['is_hot']): ?>
@@ -92,6 +97,9 @@
                                 </td>
                             </tr>
                             <?php endforeach; ?>
+                            <tr id="series-requests-no-results" style="display:none;">
+                                <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">No requests match your search.</td>
+                            </tr>
                         </tbody>
                     </table>
                     </div>
@@ -99,5 +107,9 @@
             </div>
         </main>
     </div>
+    <script src="/assets/js/admin-table-filter.js"></script>
+    <script>
+        initAdminTableFilter('series-requests-search', '#series-requests-table tbody tr[data-search]', { emptyMessageId: 'series-requests-no-results' });
+    </script>
 </body>
 </html>

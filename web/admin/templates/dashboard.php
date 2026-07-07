@@ -120,13 +120,9 @@
                                 <span class="text-white/40">Maintenance</span>
                                 <span><?= ($maintenance ?? false) ? '<span class="text-amber-400">ON</span>' : '<span class="text-emerald-400">OFF</span>' ?></span>
                             </div>
-                            <div class="flex justify-between py-2 border-b border-white/[0.04]">
+                            <div class="flex justify-between py-2">
                                 <span class="text-white/40">Payment Gateway</span>
                                 <span><?= ($paymentConfigured ?? false) ? '<span class="text-emerald-400">Configured</span>' : '<span class="text-red-400">Not Set</span>' ?></span>
-                            </div>
-                            <div class="flex justify-between py-2">
-                                <span class="text-white/40">Pending Queue</span>
-                                <span><?= $stats['pending_videos'] ?? 0 ?> videos</span>
                             </div>
                         </div>
                     </div>

@@ -6,7 +6,11 @@ require_once __DIR__ . '/../app/core/Database.php';
 
 use App\Core\Database;
 
-if (php_sapi_name() !== 'cli') {
+// This doesn't just check php_sapi_name() === 'cli': this host's cron runs a
+// CGI-flavored php binary, so a strict 'cli' check silently kills every cron
+// run. REQUEST_METHOD is only ever set for real HTTP requests, never for
+// cron, regardless of SAPI.
+if (php_sapi_name() !== 'cli' && isset($_SERVER['REQUEST_METHOD'])) {
     die("This script can only be run from the command line.");
 }
 

@@ -70,3 +70,25 @@ img, video { max-width: 100%; height: auto; }
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 /* Fix Tailwind CDN collisions */
 input, textarea, select { font-size: 16px !important; } /* Prevent iOS zoom on focus */
+
+/* Reels-style vertical episode feed (episode-player.php) */
+body.reel-page { overscroll-behavior-y: contain; touch-action: pan-y; }
+.reel-feed {
+  height: 100dvh;
+  width: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  overscroll-behavior-y: contain; /* stop the swipe from bubbling into browser/WebView pull-to-refresh */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge/IE */
+}
+.reel-feed::-webkit-scrollbar { display: none; } /* Chrome/Safari/WebView */
+.reel-card {
+  height: 100dvh;
+  width: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  position: relative;
+  background: #000;
+}
+.reel-card video { width: 100%; height: 100%; object-fit: cover; }

@@ -102,9 +102,6 @@ in) at **Admin → Settings → Cron Jobs Setup**, which is the source of truth 
 add whatever it displays. For reference, the same jobs:
 
 ```
-# Video queue processing — converts uploaded MP4s to HLS (every minute)
-* * * * * php /home/username/public_html/cron/process-video-queue.php
-
 # Email queue processing (every minute)
 * * * * * php /home/username/public_html/cron/process-email-queue.php
 

@@ -190,14 +190,6 @@
 
                             <div class="space-y-4">
                                 <div class="bg-gray-800 rounded-lg p-5 border border-gray-700">
-                                    <h3 class="font-bold text-white mb-2">Video Queue Processing</h3>
-                                    <p class="text-gray-400 text-sm mb-2">Converts uploaded MP4 videos to HLS streaming format. Runs every minute.</p>
-                                    <code class="block bg-black text-green-400 p-3 rounded text-sm font-mono">
-* * * * * /usr/bin/php <?= dirname($_SERVER['SCRIPT_FILENAME']) ?>/cron/process-video-queue.php >> <?= dirname(dirname($_SERVER['SCRIPT_FILENAME'])) ?>/logs/video-queue.log 2>&1
-                                    </code>
-                                </div>
-
-                                <div class="bg-gray-800 rounded-lg p-5 border border-gray-700">
                                     <h3 class="font-bold text-white mb-2">Email Queue Processing</h3>
                                     <p class="text-gray-400 text-sm mb-2">Sends pending emails from the queue. Runs every minute.</p>
                                     <code class="block bg-black text-green-400 p-3 rounded text-sm font-mono">

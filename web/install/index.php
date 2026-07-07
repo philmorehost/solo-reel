@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo = new PDO("mysql:host={$dbConfig['host']};dbname={$dbConfig['name']}", $dbConfig['user'], $dbConfig['pass']);
 
             // Run schema
-            $schemas = ['001_initial_schema_mysql.sql', '002_payment_gateway.sql', '003_add_seo_columns.sql', '004_video_queue.sql', '005_additional_features.sql', '006_update_features.sql', '007_user_dashboard.sql', '008_demo_content.sql'];
+            $schemas = ['001_initial_schema_mysql.sql', '002_payment_gateway.sql', '003_add_seo_columns.sql', '005_additional_features.sql', '006_update_features.sql', '007_user_dashboard.sql', '008_demo_content.sql'];
             foreach ($schemas as $schema) {
                 $sql = file_get_contents(__DIR__ . '/../schema/' . $schema);
                 $pdo->exec($sql);

@@ -20,8 +20,11 @@
 
             <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
                 <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="p-4 border-b border-gray-200">
+                        <input type="text" id="shelves-search" placeholder="Search by name or slug..." class="w-full max-w-md border rounded px-3 py-2 text-sm">
+                    </div>
                     <div class="table-responsive">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200" id="shelves-table">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Icon</th>
@@ -32,7 +35,7 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <?php foreach($shelves as $s): ?>
-                            <tr>
+                            <tr data-search="<?= htmlspecialchars(strtolower($s['name'] . ' ' . $s['slug'])) ?>">
                                 <td class="px-6 py-4 whitespace-nowrap text-2xl"><?= htmlspecialchars($s['emoji']) ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-medium text-gray-900"><?= htmlspecialchars($s['name']) ?></div>
@@ -46,6 +49,9 @@
                                 </td>
                             </tr>
                             <?php endforeach; ?>
+                            <tr id="shelves-no-results" style="display:none;">
+                                <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">No shelves match your search.</td>
+                            </tr>
                         </tbody>
                     </table>
                     </div>
@@ -53,5 +59,9 @@
             </div>
         </main>
     </div>
+    <script src="/assets/js/admin-table-filter.js"></script>
+    <script>
+        initAdminTableFilter('shelves-search', '#shelves-table tbody tr[data-search]', { emptyMessageId: 'shelves-no-results' });
+    </script>
 </body>
 </html>
