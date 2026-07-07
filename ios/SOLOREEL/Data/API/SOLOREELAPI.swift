@@ -26,6 +26,9 @@ struct MyAd: Codable, Identifiable {
     let duration_seconds: Int; let platform_placement: String; let payment_status: String
     let is_active: Bool; let is_expired: Bool; let expires_at: String?
 }
+struct Shelf: Codable, Identifiable {
+    let id: Int; let name: String; let slug: String; let emoji: String?
+}
 struct Series: Codable, Identifiable {
     let id: Int; let title: String; let slug: String
     let cover_image_url: String?; let synopsis: String?; let genre: String?; let status: String?; let episode_count: Int?
@@ -116,6 +119,7 @@ class APIClient {
         try await requestVoid("auth/resend-otp", method: "POST", body: body)
     }
     func getBanners() async throws -> [Banner] { try await request("banners?active=true") }
+    func getShelves() async throws -> [Shelf] { try await request("shelves?active=true") }
     func getSeries(shelf: String? = nil) async throws -> [Series] {
         let q = shelf.map { "shelf=\($0)&" } ?? ""
         return try await request("series?\(q)size=20")

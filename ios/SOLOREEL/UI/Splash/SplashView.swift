@@ -3,7 +3,7 @@ import SwiftUI
 struct SplashView: View {
     @State private var opacity: Double = 0
     @State private var scale: CGFloat = 0.6
-    @State private var rotation: Double = 0
+    @State private var glow: CGFloat = 0.35
     @State private var isAnimating = false
     var onFinished: () -> Void
 
@@ -27,11 +27,12 @@ struct SplashView: View {
                     .frame(width: 240, height: 240)
                     .scaleEffect(scale)
                     .opacity(opacity)
-                    .rotationEffect(.degrees(isAnimating ? rotation : 0))
+                    .shadow(color: Color(red: 0.86, green: 0.15, blue: 0.15).opacity(isAnimating ? glow : 0), radius: 30)
+                    .shadow(color: .white.opacity(isAnimating ? glow * 0.5 : 0), radius: 16)
                     .animation(
-                        .linear(duration: 2)
-                        .repeatForever(autoreverses: false),
-                        value: rotation
+                        .easeInOut(duration: 1.2)
+                        .repeatForever(autoreverses: true),
+                        value: glow
                     )
 
                 Text("SOLOREEL")
@@ -48,7 +49,7 @@ struct SplashView: View {
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 isAnimating = true
-                rotation = 360
+                glow = 1.0
             }
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
