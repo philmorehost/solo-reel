@@ -33,13 +33,35 @@ if (!$isEmbedded) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-        <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
+        <style>
+            body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; }
+            /*
+             * Plain-CSS baseline for the embedded checkout, independent of the
+             * Tailwind CDN <script> above. Mobile app WebViews load this page
+             * nested two levels deep (app WebView -> our iframe -> this iframe),
+             * and the Tailwind CDN runtime-JIT script has been observed to fail
+             * or apply too late in that environment, leaving the pay button
+             * unstyled/invisible even though the markup is present. These rules
+             * guarantee a usable checkout card + button regardless; Tailwind's
+             * own utility classes still take visual precedence when it does load
+             * (its <style> tag is injected later in the document, so it wins).
+             */
+            .ph-embed-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; box-sizing: border-box; }
+            .ph-card { max-width: 420px; width: 100%; background: #fff; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); border: 1px solid #f1f5f9; overflow: hidden; }
+            .ph-card-header { padding: 24px; border-bottom: 1px solid #f1f5f9; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; }
+            .ph-card-body { padding: 24px; }
+            .ph-row { display: flex; align-items: center; gap: 8px; }
+            .ph-customer { padding: 16px; background: #f8fafc; border-radius: 16px; border: 1px solid #f1f5f9; margin-bottom: 24px; }
+            #pay-btn { display: block; width: 100%; box-sizing: border-box; padding: 16px; border: none; border-radius: 16px; font-family: inherit; font-weight: 700; font-size: 15px; color: #fff; cursor: pointer; }
+            #pay-btn.ph-test { background: #f59e0b; }
+            #pay-btn.ph-live { background: #4f46e5; }
+        </style>
     </head>
     <body class="bg-white">
     <?php
 }
 ?>
-<div class="<?php echo $isEmbedded ? '' : 'pt-32 pb-20 bg-slate-50 min-h-screen flex items-center justify-center p-4'; ?>">
+<div class="<?php echo $isEmbedded ? 'ph-embed-wrap' : 'pt-32 pb-20 bg-slate-50 min-h-screen flex items-center justify-center p-4'; ?>">
     <?php if ($isTest): ?>
         <div class="fixed top-0 left-0 right-0 bg-amber-500 text-white text-[10px] font-bold uppercase tracking-[0.2em] py-2 text-center z-[100] flex items-center justify-center gap-2">
             <i class="lucide-shield-alert w-3 h-3"></i>
@@ -47,9 +69,9 @@ if (!$isEmbedded) {
             <i class="lucide-shield-alert w-3 h-3"></i>
         </div>
     <?php endif; ?>
-    <div class="max-w-md w-full bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden relative">
-        <div class="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-            <div class="flex items-center gap-2">
+    <div class="ph-card max-w-md w-full bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden relative">
+        <div class="ph-card-header p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+            <div class="ph-row flex items-center gap-2">
                 <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
                     <i class="lucide-credit-card w-4 h-4"></i>
                 </div>
@@ -60,14 +82,14 @@ if (!$isEmbedded) {
                 <p class="text-lg font-bold text-indigo-600"><?php echo formatCurrency($amount); ?></p>
             </div>
         </div>
-        <div class="p-8">
+        <div class="ph-card-body p-8">
             <div class="mb-8">
                 <p class="text-sm text-slate-500 mb-1">Paying to</p>
                 <p class="font-bold text-slate-900 text-lg"><?php echo getConfig('site_name', 'Payhub'); ?></p>
             </div>
 
             <div class="space-y-4 mb-8">
-                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
+                <div class="ph-customer ph-row p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
                     <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-400">
                         <i class="lucide-user w-5 h-5"></i>
                     </div>
@@ -81,7 +103,7 @@ if (!$isEmbedded) {
             <?php if (!$isTest): ?>
             <script src="https://js.paystack.co/v2/inline.js"></script>
             <?php endif; ?>
-            <button onclick="<?php echo $isTest ? 'simulateSuccess()' : 'payWithPaystack()'; ?>" id="pay-btn" class="w-full <?php echo $isTest ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-100' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'; ?> text-white py-4 rounded-2xl font-bold shadow-lg transition-all flex items-center justify-center gap-2">
+            <button onclick="<?php echo $isTest ? 'simulateSuccess()' : 'payWithPaystack()'; ?>" id="pay-btn" class="<?php echo $isTest ? 'ph-test' : 'ph-live'; ?> w-full <?php echo $isTest ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-100' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'; ?> text-white py-4 rounded-2xl font-bold shadow-lg transition-all flex items-center justify-center gap-2">
                 <i class="lucide-<?php echo $isTest ? 'beaker' : 'shield-check'; ?> w-5 h-5"></i>
                 <?php echo $isTest ? 'Simulate Success' : 'Pay Now'; ?>
             </button>

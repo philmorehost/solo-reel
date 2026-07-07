@@ -181,7 +181,13 @@ struct WebViewRepresentable: UIViewRepresentable {
         var observer = new MutationObserver(rewriteTargets);
         observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
         """
-        let userScript = WKUserScript(source: scriptSource, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+        // Main-frame only: the payment gateway's own checkout page loads inside a
+        // nested iframe, and injecting this script there too raced its own startup
+        // scripts (Tailwind's CDN JIT compiler, etc.) via a document-wide
+        // MutationObserver firing on every DOM mutation, which could leave the
+        // pay button rendered but unstyled. window.open() from within that iframe
+        // is already handled correctly by the WKUIDelegate below regardless of frame.
+        let userScript = WKUserScript(source: scriptSource, injectionTime: .atDocumentStart, forMainFrameOnly: true)
         userContentController.addUserScript(userScript)
         config.userContentController = userContentController
         
