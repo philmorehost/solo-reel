@@ -184,7 +184,7 @@ class PaymentController {
         }
 
         $amount = (float)$txn['amount'];
-        $payhubBaseUrl = rtrim($settings['payhub_base_url'] ?: 'https://merchant.payhub.com.ng', '/');
+        $payhubBaseUrl = \App\Core\PayhubKeys::baseUrl($settings);
         require __DIR__ . '/../../templates/pages/checkout-mobile.php';
         die();
     }
@@ -221,7 +221,7 @@ class PaymentController {
         }
 
         $settings = $this->getPayhubKeys();
-        $secretKey = trim($settings['payhub_secret_key'] ?? '');
+        $secretKey = $settings ? \App\Core\PayhubKeys::active($settings)['secret'] : '';
 
         // HMAC Signature Validation for Security
         $signature = $_SERVER['HTTP_X_PAYHUB_SIGNATURE'] ?? '';

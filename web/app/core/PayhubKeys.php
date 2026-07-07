@@ -9,6 +9,20 @@ namespace App\Core;
  * out of sync on how "mode" is interpreted.
  */
 class PayhubKeys {
+    /**
+     * Resolves the Payhub base URL from settings, always with a protocol prefix.
+     * Centralized here because a missing/relative base URL silently breaks the
+     * checkout page: `<script src="$baseUrl/inline.js">` renders as a same-origin
+     * relative URL, inline.js 404s, and PayhubPop never loads (blank modal).
+     */
+    public static function baseUrl(array $settings): string {
+        $url = rtrim($settings['payhub_base_url'] ?: 'https://merchant.payhub.com.ng', '/');
+        if (!preg_match('~^(?:f|ht)tps?://~i', $url)) {
+            $url = 'https://' . $url;
+        }
+        return $url;
+    }
+
     public static function active(array $settings): array {
         $mode = $settings['mode'] ?? 'sandbox';
         if ($mode === 'live') {

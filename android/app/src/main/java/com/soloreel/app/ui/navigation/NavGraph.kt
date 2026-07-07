@@ -132,8 +132,17 @@ fun NavGraph(isLoggedIn: Boolean) {
             composable(Screen.Notifications.route) { NotificationsScreen(navController = navController) }
             composable(Screen.Search.route) { SearchScreen(navController = navController) }
             composable(Screen.Coins.route) { CoinShopScreen() }
-            composable(Screen.Profile.route) {
+            composable(Screen.Profile.route) { backStackEntry ->
+                val profileVm: com.soloreel.app.ui.profile.ProfileViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+                val profileUpdated by backStackEntry.savedStateHandle.getStateFlow("profile_updated", false).collectAsState()
+                LaunchedEffect(profileUpdated) {
+                    if (profileUpdated) {
+                        profileVm.load()
+                        backStackEntry.savedStateHandle["profile_updated"] = false
+                    }
+                }
                 ProfileScreen(
+                    vm = profileVm,
                     onLogout = {
                         navController.navigate(Screen.Auth.route) {
                             popUpTo(0) { inclusive = true }

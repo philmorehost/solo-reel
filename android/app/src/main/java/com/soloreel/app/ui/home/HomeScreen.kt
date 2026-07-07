@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,7 +35,10 @@ import com.soloreel.app.data.model.Series
 import com.soloreel.app.ui.navigation.Screen
 import com.soloreel.app.ui.notifications.NotificationBell
 import com.soloreel.app.ui.notifications.NotificationsViewModel
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.ExperimentalFoundationApi
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     navController: NavHostController,
@@ -121,8 +127,62 @@ fun HomeScreen(
             }
         }
 
-        // Series Shelves
-        if (state.series.isNotEmpty()) {
+        // Category tabs — swipe left/right between shelves (falls back to a flat
+        // "Trending Now" row when no shelves are configured on the backend).
+        if (state.shelves.isNotEmpty()) {
+            item {
+                val pagerState = rememberPagerState(pageCount = { state.shelves.size })
+                val coroutineScope = rememberCoroutineScope()
+
+                LaunchedEffect(pagerState.currentPage, state.shelves) {
+                    state.shelves.getOrNull(pagerState.currentPage)?.let { viewModel.loadShelfSeries(it.slug) }
+                }
+
+                Column {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        itemsIndexed(state.shelves) { index, shelf ->
+                            val selected = pagerState.currentPage == index
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(if (selected) Color(0xFFDC2626) else Color(0xFF1A1A1A))
+                                    .clickable {
+                                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                                    }
+                                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                if (!shelf.emoji.isNullOrBlank()) {
+                                    Text(shelf.emoji, fontSize = 14.sp)
+                                    Spacer(Modifier.width(4.dp))
+                                }
+                                Text(
+                                    shelf.name,
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    HorizontalPager(state = pagerState, modifier = Modifier.fillMaxWidth()) { page ->
+                        val shelf = state.shelves[page]
+                        val seriesForShelf = state.shelfSeries[shelf.slug] ?: emptyList()
+                        LazyRow(contentPadding = PaddingValues(horizontal = 12.dp)) {
+                            items(seriesForShelf) { series ->
+                                SeriesCard(series) {
+                                    navController.navigate(Screen.SeriesDetail.createRoute(series.slug))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (state.series.isNotEmpty()) {
             item { Text("Trending Now", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) }
             item {
                 LazyRow(contentPadding = PaddingValues(horizontal = 12.dp)) {

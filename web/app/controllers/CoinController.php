@@ -189,7 +189,7 @@ class CoinController {
             $stmt->execute([$userId, $userId ? null : $guestId, $package['id'], $reference, $amount, $package['currency'], $package['coins']]);
 
             $publicKey = $keys['public'];
-            $payhubBaseUrl = rtrim($settings['payhub_base_url'] ?: 'https://merchant.payhub.com.ng', '/');
+            $payhubBaseUrl = \App\Core\PayhubKeys::baseUrl($settings);
             require __DIR__ . '/../../templates/pages/checkout.php';
             die();
 

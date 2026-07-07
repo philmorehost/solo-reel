@@ -7,7 +7,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -23,15 +22,24 @@ fun SplashScreen(onFinished: () -> Unit) {
     val alphaAnim = remember { Animatable(0f) }
     val scaleAnim = remember { Animatable(0.6f) }
 
-    val infiniteTransition = rememberInfiniteTransition(label = "spin")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
+    val infiniteTransition = rememberInfiniteTransition(label = "glow")
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
         ),
-        label = "spin"
+        label = "glowAlpha"
+    )
+    val glowScale by infiniteTransition.animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowScale"
     )
 
     LaunchedEffect(Unit) {
@@ -60,15 +68,32 @@ fun SplashScreen(onFinished: () -> Unit) {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Image(
-                painter = painterResource(id = R.drawable.logo_splash),
-                contentDescription = "SOLOREEL",
-                modifier = Modifier
-                    .size(160.dp)
-                    .scale(scaleAnim.value)
-                    .alpha(alphaAnim.value)
-                    .rotate(if (startAnimation) rotation else 0f)
-            )
+            Box(contentAlignment = Alignment.Center) {
+                if (startAnimation) {
+                    Box(
+                        modifier = Modifier
+                            .size(220.dp)
+                            .scale(glowScale)
+                            .alpha(glowAlpha)
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        Color(0xFFDC2626).copy(alpha = 0.55f),
+                                        Color(0xFFDC2626).copy(alpha = 0f)
+                                    )
+                                )
+                            )
+                    )
+                }
+                Image(
+                    painter = painterResource(id = R.drawable.logo_splash),
+                    contentDescription = "SOLOREEL",
+                    modifier = Modifier
+                        .size(160.dp)
+                        .scale(scaleAnim.value)
+                        .alpha(alphaAnim.value)
+                )
+            }
         }
     }
 }

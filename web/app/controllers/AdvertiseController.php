@@ -113,6 +113,7 @@ class AdvertiseController {
 
             $publicKey = $keys['public'];
             $amount = $price;
+            $payhubBaseUrl = PayhubKeys::baseUrl($settings);
             $cancelUrl = '/my-ads';
             require __DIR__ . '/../../templates/pages/checkout.php';
             die();
@@ -170,6 +171,7 @@ class AdvertiseController {
 
             $publicKey = $keys['public'];
             $amount = $price;
+            $payhubBaseUrl = PayhubKeys::baseUrl($settings);
             $cancelUrl = '/my-ads';
             require __DIR__ . '/../../templates/pages/checkout.php';
             die();
