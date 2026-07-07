@@ -19,14 +19,14 @@ struct CoinShopView: View {
                     // Balance card
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(tokenManager.isLoggedIn ? "Your Balance" : "Guest Balance").font(.caption).foregroundColor(Color(white: 0.6))
-                            Text("\(Int(currentCoins)) Coins").font(.largeTitle).bold().foregroundColor(.yellow)
+                            Text(tokenManager.isLoggedIn ? "Your Balance" : "Guest Balance").font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(Color(white: 0.6))
+                            Text("\(Int(currentCoins)) Coins").font(.notoSans(size: 34, relativeTo: .largeTitle)).bold().foregroundColor(.yellow)
                         }
                         Spacer()
-                        Image(systemName: "dollarsign.circle.fill").font(.system(size: 44)).foregroundColor(.yellow)
+                        Image(systemName: "dollarsign.circle.fill").font(.notoSans(size: 44)).foregroundColor(.yellow)
                     }.padding(20).background(Color(white: 0.1)).cornerRadius(16).padding(.horizontal)
 
-                    Text("Select a Package").font(.subheadline).foregroundColor(Color(white: 0.6)).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal)
+                    Text("Select a Package").font(.notoSans(size: 15, relativeTo: .subheadline)).foregroundColor(Color(white: 0.6)).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal)
 
                     if isLoading {
                         ProgressView().tint(.red)
@@ -34,15 +34,15 @@ struct CoinShopView: View {
                         ForEach(packages) { pkg in
                             Button { purchasePackage(pkg) } label: {
                                 HStack {
-                                    Text("🪙").font(.system(size: 32))
+                                    Text("🪙").font(.notoSans(size: 32))
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(pkg.name).fontWeight(.bold).foregroundColor(.white).font(.headline)
-                                        Text("\(pkg.coins) coins").foregroundColor(.yellow).font(.subheadline).fontWeight(.semibold)
+                                        Text(pkg.name).fontWeight(.bold).foregroundColor(.white).font(.notoSans(size: 17, weight: .semibold, relativeTo: .headline))
+                                        Text("\(pkg.coins) coins").foregroundColor(.yellow).font(.notoSans(size: 15, relativeTo: .subheadline)).fontWeight(.semibold)
                                     }
                                     Spacer()
                                     VStack(alignment: .trailing, spacing: 2) {
-                                        Text("\(pkg.currency) \(String(format: "%.2f", pkg.price))").foregroundColor(Color(red: 0.86, green: 0.15, blue: 0.15)).fontWeight(.heavy).font(.headline)
-                                        Text("Buy Now →").foregroundColor(Color(white: 0.5)).font(.caption)
+                                        Text("\(pkg.currency) \(String(format: "%.2f", pkg.price))").foregroundColor(Color(red: 0.86, green: 0.15, blue: 0.15)).fontWeight(.heavy).font(.notoSans(size: 17, weight: .semibold, relativeTo: .headline))
+                                        Text("Buy Now →").foregroundColor(Color(white: 0.5)).font(.notoSans(size: 12, relativeTo: .caption))
                                     }
                                 }.padding(20).background(Color(white: 0.08)).overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(white: 0.15), lineWidth: 1)).cornerRadius(16).padding(.horizontal)
                             }
@@ -134,7 +134,7 @@ struct PaymentWebView: View {
 
                 if loadFailed {
                     VStack(spacing: 16) {
-                        Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 36)).foregroundColor(.red)
+                        Image(systemName: "exclamationmark.triangle.fill").font(.notoSans(size: 36)).foregroundColor(.red)
                         Text("Couldn't load the payment page.").foregroundColor(.white).multilineTextAlignment(.center)
                         Button("Retry") { loadFailed = false; reloadToken = UUID() }
                             .buttonStyle(.borderedProminent).tint(.red)

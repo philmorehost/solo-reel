@@ -20,15 +20,15 @@ struct VerifyOTPView: View {
                 
                 VStack(spacing: 8) {
                     Text("SOLOREEL")
-                        .font(.system(size: 28, weight: .black))
+                        .font(.notoSans(size: 28, weight: .black))
                         .foregroundColor(Color(hex: "DC2626"))
                     Text("Verify Your Account")
-                        .font(.system(size: 14))
+                        .font(.notoSans(size: 14))
                         .foregroundColor(.gray)
                 }
                 
                 Text("Enter the 6-digit code sent to \(viewModel.email)")
-                    .font(.system(size: 14))
+                    .font(.notoSans(size: 14))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
@@ -40,19 +40,19 @@ struct VerifyOTPView: View {
                     if let error = viewModel.error {
                         Text(error)
                             .foregroundColor(Color(hex: "EF4444"))
-                            .font(.system(size: 13))
+                            .font(.notoSans(size: 13))
                             .multilineTextAlignment(.center)
                     }
                     if let success = viewModel.success {
                         Text(success)
                             .foregroundColor(Color(hex: "22C55E"))
-                            .font(.system(size: 13))
+                            .font(.notoSans(size: 13))
                             .multilineTextAlignment(.center)
                     }
                     if let resendSuccess = viewModel.resendSuccess {
                         Text(resendSuccess)
                             .foregroundColor(Color(hex: "22C55E"))
-                            .font(.system(size: 13))
+                            .font(.notoSans(size: 13))
                             .multilineTextAlignment(.center)
                     }
                 }
@@ -71,7 +71,7 @@ struct VerifyOTPView: View {
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         } else {
                             Text("Verify")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.notoSans(size: 16, weight: .bold))
                                 .foregroundColor(.white)
                         }
                     }
@@ -84,7 +84,7 @@ struct VerifyOTPView: View {
                 }) {
                     Text("Resend Code")
                         .foregroundColor(Color(hex: "DC2626"))
-                        .font(.system(size: 14))
+                        .font(.notoSans(size: 14))
                 }
                 .padding(.top, 8)
                 
@@ -93,7 +93,7 @@ struct VerifyOTPView: View {
                 Button(action: { presentationMode.wrappedValue.dismiss() }) {
                     Text("Back to Login")
                         .foregroundColor(.gray)
-                        .font(.system(size: 14))
+                        .font(.notoSans(size: 14))
                 }
                 .padding(.bottom, 24)
             }

@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.soloreel.app.ui.splash.SplashScreen
 import com.soloreel.app.ui.navigation.NavGraph
+import com.soloreel.app.ui.theme.SoloreelTypography
 import com.soloreel.app.data.api.TokenManager
 import javax.inject.Inject
 import dagger.hilt.android.AndroidEntryPoint
@@ -44,7 +45,7 @@ class MainActivity : FragmentActivity() {
             notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         }
         setContent {
-            MaterialTheme(colorScheme = darkColorScheme()) {
+            MaterialTheme(colorScheme = darkColorScheme(), typography = SoloreelTypography) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

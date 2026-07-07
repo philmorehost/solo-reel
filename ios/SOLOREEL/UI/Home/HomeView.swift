@@ -69,10 +69,10 @@ struct HomeView: View {
                                     .overlay(alignment: .bottomLeading) {
                                         VStack(alignment: .leading) {
                                             if b.is_ad == true {
-                                                Text("SPONSORED").font(.caption2).bold().foregroundColor(.yellow)
+                                                Text("SPONSORED").font(.notoSans(size: 11, relativeTo: .caption2)).bold().foregroundColor(.yellow)
                                             }
-                                            Text(b.title ?? "").font(.title).bold()
-                                            Text(b.subtitle ?? "").font(.subheadline).foregroundColor(.gray)
+                                            Text(b.title ?? "").font(.notoSans(size: 28, relativeTo: .title)).bold()
+                                            Text(b.subtitle ?? "").font(.notoSans(size: 15, relativeTo: .subheadline)).foregroundColor(.gray)
                                         }.padding()
                                     }
                                     .tag(i)
@@ -90,7 +90,7 @@ struct HomeView: View {
                         // Latest releases row — distinct from the admin-managed
                         // "Trending Now" shelf rendered below.
                         if !series.isEmpty {
-                            Text("Latest Release").font(.title2).bold().padding(.horizontal, 16).padding(.top, 24)
+                            Text("Latest Release").font(.notoSans(size: 22, relativeTo: .title2)).bold().padding(.horizontal, 16).padding(.top, 24)
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
                                     ForEach(series) { s in
@@ -108,7 +108,7 @@ struct HomeView: View {
                                                             .cornerRadius(12)
                                                     }
                                                 }
-                                                Text(s.title).font(.caption).foregroundColor(.white).lineLimit(2).frame(width: 140, alignment: .leading)
+                                                Text(s.title).font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(.white).lineLimit(2).frame(width: 140, alignment: .leading)
                                             }
                                         }
                                     }
@@ -120,7 +120,7 @@ struct HomeView: View {
                         ForEach(shelves) { shelf in
                             let list = shelfSeries[shelf.slug] ?? []
                             if !list.isEmpty {
-                                Text(shelf.name).font(.title2).bold().padding(.horizontal, 16).padding(.top, 24)
+                                Text(shelf.name).font(.notoSans(size: 22, relativeTo: .title2)).bold().padding(.horizontal, 16).padding(.top, 24)
                                 ScrollView(.horizontal, showsIndicators: false) {
                                     HStack(spacing: 12) {
                                         ForEach(list) { s in
@@ -138,7 +138,7 @@ struct HomeView: View {
                                                                 .cornerRadius(12)
                                                         }
                                                     }
-                                                    Text(s.title).font(.caption).foregroundColor(.white).lineLimit(2).frame(width: 140, alignment: .leading)
+                                                    Text(s.title).font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(.white).lineLimit(2).frame(width: 140, alignment: .leading)
                                                 }
                                             }
                                         }
@@ -149,7 +149,7 @@ struct HomeView: View {
 
                         // Bottom "All Series" section
                         if !series.isEmpty {
-                            Text("All Series").font(.title2).bold().padding(.horizontal, 16).padding(.top, 28)
+                            Text("All Series").font(.notoSans(size: 22, relativeTo: .title2)).bold().padding(.horizontal, 16).padding(.top, 28)
                             
                             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                                 ForEach(series) { s in
@@ -170,9 +170,9 @@ struct HomeView: View {
                                             .frame(maxWidth: .infinity)
                                             .clipped()
                                             
-                                            Text(s.title).font(.caption).bold().foregroundColor(.white).lineLimit(1)
+                                            Text(s.title).font(.notoSans(size: 12, relativeTo: .caption)).bold().foregroundColor(.white).lineLimit(1)
                                             if let genre = s.genre {
-                                                Text(genre).font(.caption2).foregroundColor(.gray)
+                                                Text(genre).font(.notoSans(size: 11, relativeTo: .caption2)).foregroundColor(.gray)
                                             }
                                         }
                                     }

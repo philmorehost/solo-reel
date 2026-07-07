@@ -74,7 +74,7 @@ struct NotificationBell: View {
                     .clipShape(Circle())
                 if store.unreadCount > 0 {
                     Text(store.unreadCount > 9 ? "9+" : "\(store.unreadCount)")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.notoSans(size: 10, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 5).padding(.vertical, 1)
                         .background(Color.red)
@@ -94,7 +94,7 @@ struct NotificationsView: View {
                 ProgressView().tint(.red).frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if store.items.isEmpty {
                 VStack(spacing: 12) {
-                    Text("🔔").font(.system(size: 52))
+                    Text("🔔").font(.notoSans(size: 52))
                     Text("No notifications yet").foregroundColor(Color(white: 0.35))
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -105,14 +105,14 @@ struct NotificationsView: View {
                                 if !n.is_read { Task { await store.markRead(n.id) } }
                             } label: {
                                 HStack(alignment: .top, spacing: 12) {
-                                    Text(n.type == "series_available" ? "🎬" : "🔔").font(.system(size: 22))
+                                    Text(n.type == "series_available" ? "🎬" : "🔔").font(.notoSans(size: 22))
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(n.title).font(.subheadline).fontWeight(.semibold).foregroundColor(.white).multilineTextAlignment(.leading)
+                                        Text(n.title).font(.notoSans(size: 15, relativeTo: .subheadline)).fontWeight(.semibold).foregroundColor(.white).multilineTextAlignment(.leading)
                                         if let body = n.body {
-                                            Text(body).font(.caption).foregroundColor(Color(white: 0.6)).multilineTextAlignment(.leading)
+                                            Text(body).font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(Color(white: 0.6)).multilineTextAlignment(.leading)
                                         }
                                         if let date = n.created_at {
-                                            Text(date).font(.caption2).foregroundColor(Color(white: 0.35))
+                                            Text(date).font(.notoSans(size: 11, relativeTo: .caption2)).foregroundColor(Color(white: 0.35))
                                         }
                                     }
                                     Spacer()

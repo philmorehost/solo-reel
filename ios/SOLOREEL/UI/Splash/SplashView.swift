@@ -36,7 +36,7 @@ struct SplashView: View {
                     )
 
                 Text("SOLOREEL")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.notoSans(size: 20, weight: .bold))
                     .foregroundColor(.white.opacity(0.6))
                     .opacity(opacity)
             }

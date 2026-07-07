@@ -11,7 +11,7 @@ struct SearchView: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Search").font(.title).bold().foregroundColor(.white).padding(.horizontal).padding(.top, 16)
+                Text("Search").font(.notoSans(size: 28, relativeTo: .title)).bold().foregroundColor(.white).padding(.horizontal).padding(.top, 16)
 
                 // Search bar
                 HStack {
@@ -34,7 +34,7 @@ struct SearchView: View {
                     // Empty catalogue fallback (all series load automatically on open)
                     VStack(spacing: 12) {
                         Spacer()
-                        Text("🎬").font(.system(size: 52))
+                        Text("🎬").font(.notoSans(size: 52))
                         Text("No series available yet").foregroundColor(Color(white: 0.35)).multilineTextAlignment(.center)
                         Spacer()
                     }.frame(maxWidth: .infinity)
@@ -42,13 +42,13 @@ struct SearchView: View {
                     // No results state
                     VStack(spacing: 20) {
                         Spacer().frame(height: 32)
-                        Text("🔍").font(.system(size: 52))
+                        Text("🔍").font(.notoSans(size: 52))
                         Text("No results for").foregroundColor(Color(white: 0.4))
-                        Text("\"\(query)\"").font(.headline).bold().foregroundColor(.white)
+                        Text("\"\(query)\"").font(.notoSans(size: 17, weight: .semibold, relativeTo: .headline)).bold().foregroundColor(.white)
 
                         VStack(spacing: 12) {
-                            Text("Don't see what you want?").font(.headline).foregroundColor(.white)
-                            Text("Request it and we'll notify you when it's available!").font(.subheadline).foregroundColor(Color(white: 0.55)).multilineTextAlignment(.center)
+                            Text("Don't see what you want?").font(.notoSans(size: 17, weight: .semibold, relativeTo: .headline)).foregroundColor(.white)
+                            Text("Request it and we'll notify you when it's available!").font(.notoSans(size: 15, relativeTo: .subheadline)).foregroundColor(Color(white: 0.55)).multilineTextAlignment(.center)
                             if requestSent {
                                 Label("Request sent! We'll notify you.", systemImage: "checkmark.circle.fill").foregroundColor(Color(red: 0.29, green: 0.87, blue: 0.5)).fontWeight(.semibold)
                             } else {
@@ -119,11 +119,11 @@ struct SeriesCard: View {
                 }.frame(height: 200).clipped().cornerRadius(12)
 
                 if let count = series.episode_count, count > 0 {
-                    Text("\(count) EP").font(.caption2).bold().foregroundColor(.white).padding(.horizontal, 6).padding(.vertical, 2).background(Color.black.opacity(0.7)).cornerRadius(6).padding(6)
+                    Text("\(count) EP").font(.notoSans(size: 11, relativeTo: .caption2)).bold().foregroundColor(.white).padding(.horizontal, 6).padding(.vertical, 2).background(Color.black.opacity(0.7)).cornerRadius(6).padding(6)
                 }
             }
-            Text(series.title).font(.caption).fontWeight(.medium).foregroundColor(.white).lineLimit(2)
-            if let genre = series.genre { Text(genre).font(.caption2).foregroundColor(Color(white: 0.4)).lineLimit(1) }
+            Text(series.title).font(.notoSans(size: 12, relativeTo: .caption)).fontWeight(.medium).foregroundColor(.white).lineLimit(2)
+            if let genre = series.genre { Text(genre).font(.notoSans(size: 11, relativeTo: .caption2)).foregroundColor(Color(white: 0.4)).lineLimit(1) }
         }
     }
 }
@@ -146,20 +146,20 @@ struct SeriesRequestSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    HStack { Text("📩").font(.system(size: 28)); Text("Request a Series").font(.title2).bold().foregroundColor(.white) }
-                    Text("We'll notify you when it's available!").foregroundColor(Color(white: 0.55)).font(.subheadline)
+                    HStack { Text("📩").font(.notoSans(size: 28)); Text("Request a Series").font(.notoSans(size: 22, relativeTo: .title2)).bold().foregroundColor(.white) }
+                    Text("We'll notify you when it's available!").foregroundColor(Color(white: 0.55)).font(.notoSans(size: 15, relativeTo: .subheadline))
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Series Title *").font(.caption).foregroundColor(Color(white: 0.55))
+                        Text("Series Title *").font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(Color(white: 0.55))
                         TextField("", text: $title).textFieldStyle(.plain).foregroundColor(.white).padding(12).background(Color(white: 0.1)).cornerRadius(10).overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(white: 0.25), lineWidth: 1))
                     }
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Description (optional)").font(.caption).foregroundColor(Color(white: 0.55))
+                        Text("Description (optional)").font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(Color(white: 0.55))
                         TextEditor(text: $description).foregroundColor(.white).frame(height: 80).padding(8).background(Color(white: 0.1)).cornerRadius(10).overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(white: 0.25), lineWidth: 1))
                     }
                     if TokenManager.shared.isGuest {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Your Email (for notification)").font(.caption).foregroundColor(Color(white: 0.55))
+                            Text("Your Email (for notification)").font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(Color(white: 0.55))
                             TextField("", text: $email).textFieldStyle(.plain).foregroundColor(.white).padding(12).background(Color(white: 0.1)).cornerRadius(10).overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(white: 0.25), lineWidth: 1)).keyboardType(.emailAddress).autocapitalization(.none)
                         }
                     }

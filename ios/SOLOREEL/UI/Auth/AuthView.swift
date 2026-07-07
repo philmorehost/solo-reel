@@ -17,8 +17,8 @@ struct AuthView: View {
             ScrollView {
             VStack(spacing: 20) {
                 Spacer().frame(height: 60)
-                Text("SOLOREEL").font(.system(size: 36, weight: .black)).foregroundColor(.red)
-                Text("Vertical Short Dramas").font(.subheadline).foregroundColor(.gray)
+                Text("SOLOREEL").font(.notoSans(size: 36, weight: .black)).foregroundColor(.red)
+                Text("Vertical Short Dramas").font(.notoSans(size: 15, relativeTo: .subheadline)).foregroundColor(.gray)
                 Spacer().frame(height: 20)
 
                 VStack(spacing: 12) {
@@ -34,7 +34,7 @@ struct AuthView: View {
                     else { Text(isRegister ? "Create Account" : "Sign In").fontWeight(.bold).frame(maxWidth: .infinity) }
                 }.frame(height: 50).frame(maxWidth: .infinity).background(Color.red).foregroundColor(.white).cornerRadius(12).padding(.horizontal)
 
-                if let e = error { Text(e).font(.caption).foregroundColor(.red).multilineTextAlignment(.center).padding(.horizontal) }
+                if let e = error { Text(e).font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(.red).multilineTextAlignment(.center).padding(.horizontal) }
 
                 Button(isRegister ? "Have an account? Sign in" : "Don't have an account? Create one") {
                     withAnimation { isRegister.toggle() }
@@ -42,7 +42,7 @@ struct AuthView: View {
 
                 Button(action: loginWithGoogle) {
                     HStack(spacing: 12) {
-                        Text("G").font(.system(size: 18, weight: .bold))
+                        Text("G").font(.notoSans(size: 18, weight: .bold))
                         Text("Continue with Google").fontWeight(.medium)
                     }.frame(maxWidth: .infinity)
                 }

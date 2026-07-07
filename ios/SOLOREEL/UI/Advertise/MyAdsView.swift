@@ -79,14 +79,14 @@ struct MyAdRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(ad.title ?? "").foregroundColor(.white).bold().lineLimit(1)
-                Text("\(ad.duration_seconds)s • \(ad.platform_placement.capitalized)").font(.caption).foregroundColor(.gray)
-                if let exp = ad.expires_at { Text("Expires \(exp)").font(.caption2).foregroundColor(Color(white: 0.4)) }
-                Text(statusLabel).font(.caption).bold().foregroundColor(statusColor)
+                Text("\(ad.duration_seconds)s • \(ad.platform_placement.capitalized)").font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(.gray)
+                if let exp = ad.expires_at { Text("Expires \(exp)").font(.notoSans(size: 11, relativeTo: .caption2)).foregroundColor(Color(white: 0.4)) }
+                Text(statusLabel).font(.notoSans(size: 12, relativeTo: .caption)).bold().foregroundColor(statusColor)
             }
             Spacer()
             if ad.payment_status != "pending" {
                 Button("Renew", action: onRenew)
-                    .font(.caption).bold()
+                    .font(.notoSans(size: 12, relativeTo: .caption)).bold()
                     .padding(.horizontal, 12).padding(.vertical, 8)
                     .background(Color.indigo).foregroundColor(.white).cornerRadius(8)
             }

@@ -31,7 +31,7 @@ struct PlayerView: View {
 
                 if showNextEpisodeOverlay {
                     VStack(spacing: 16) {
-                        Text("Episode finished").foregroundColor(.white).font(.headline)
+                        Text("Episode finished").foregroundColor(.white).font(.notoSans(size: 17, weight: .semibold, relativeTo: .headline))
                         Button("Next Episode ▶") {
                             showNextEpisodeOverlay = false
                             Task { await loadNextEpisode() }
@@ -85,7 +85,7 @@ struct PlayerView: View {
             }
             VStack {
                 HStack {
-                    Text("Sponsored").font(.caption).bold().foregroundColor(.white)
+                    Text("Sponsored").font(.notoSans(size: 12, relativeTo: .caption)).bold().foregroundColor(.white)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(Color.black.opacity(0.6)).cornerRadius(4)
                     Spacer()
@@ -108,8 +108,8 @@ struct PlayerView: View {
     private func unlockView(for ep: Episode) -> some View {
         let unlockMethod = ep.unlock_method ?? "coins"
         VStack(spacing: 16) {
-            Image(systemName: "lock.fill").font(.system(size: 40)).foregroundColor(.yellow)
-            Text("Unlock Episode").font(.title3).bold().foregroundColor(.white)
+            Image(systemName: "lock.fill").font(.notoSans(size: 40)).foregroundColor(.yellow)
+            Text("Unlock Episode").font(.notoSans(size: 20, relativeTo: .title3)).bold().foregroundColor(.white)
             Text(unlockMethod == "ads"
                  ? "This episode can be unlocked by watching a short ad."
                  : "This episode requires \(Int(ep.coin_cost ?? 0)) coins to unlock.")
@@ -131,7 +131,7 @@ struct PlayerView: View {
                 .buttonStyle(.bordered).tint(.white)
             }
             if let err = errorMessage {
-                Text(err).foregroundColor(.red).font(.caption)
+                Text(err).foregroundColor(.red).font(.notoSans(size: 12, relativeTo: .caption))
             }
         }
         .padding(24)

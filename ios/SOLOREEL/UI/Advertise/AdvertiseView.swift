@@ -24,7 +24,7 @@ struct AdvertiseView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Run your own banner ad on the home screen. Pick a duration, where it shows, and pay once for a campaign.")
-                    .font(.subheadline).foregroundColor(Color(white: 0.6))
+                    .font(.notoSans(size: 15, relativeTo: .subheadline)).foregroundColor(Color(white: 0.6))
 
                 TextField("Ad Title", text: $title)
                     .textFieldStyle(.roundedBorder)
@@ -32,7 +32,7 @@ struct AdvertiseView: View {
                     .textFieldStyle(.roundedBorder)
                     .keyboardType(.URL).autocapitalization(.none)
 
-                Text("Banner Image").font(.headline).foregroundColor(.white)
+                Text("Banner Image").font(.notoSans(size: 17, weight: .semibold, relativeTo: .headline)).foregroundColor(.white)
                 // Self-serve ads are image-only for now (matches Android); video
                 // banners remain an admin-only capability via the web admin panel.
                 PhotosPicker(selection: $pickerItem, matching: .images) {
@@ -43,8 +43,8 @@ struct AdvertiseView: View {
                                 .frame(height: 160).clipShape(RoundedRectangle(cornerRadius: 12))
                         } else {
                             VStack {
-                                Image(systemName: "photo").font(.system(size: 32)).foregroundColor(Color(white: 0.4))
-                                Text("Tap to choose an image (1200x600 recommended)").font(.caption).foregroundColor(Color(white: 0.4))
+                                Image(systemName: "photo").font(.notoSans(size: 32)).foregroundColor(Color(white: 0.4))
+                                Text("Tap to choose an image (1200x600 recommended)").font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(Color(white: 0.4))
                             }
                         }
                     }
@@ -53,7 +53,7 @@ struct AdvertiseView: View {
                     Task { imageData = try? await newItem?.loadTransferable(type: Data.self) }
                 }
 
-                Text("On-Screen Duration").font(.headline).foregroundColor(.white)
+                Text("On-Screen Duration").font(.notoSans(size: 17, weight: .semibold, relativeTo: .headline)).foregroundColor(.white)
                 HStack {
                     ForEach([5, 10, 15], id: \.self) { d in
                         Button("\(d)s") { duration = d }
@@ -63,7 +63,7 @@ struct AdvertiseView: View {
                     }
                 }
 
-                Text("Where should it show?").font(.headline).foregroundColor(.white)
+                Text("Where should it show?").font(.notoSans(size: 17, weight: .semibold, relativeTo: .headline)).foregroundColor(.white)
                 HStack {
                     ForEach([("website", "Website"), ("app", "App"), ("both", "Both")], id: \.0) { value, label in
                         Button(label) { placement = value }
@@ -74,13 +74,13 @@ struct AdvertiseView: View {
                 }
 
                 if let p = price {
-                    Text("Price: ₦\(String(format: "%.2f", p))").font(.title3).bold().foregroundColor(.yellow)
+                    Text("Price: ₦\(String(format: "%.2f", p))").font(.notoSans(size: 20, relativeTo: .title3)).bold().foregroundColor(.yellow)
                 } else {
                     Text("Price unavailable").foregroundColor(.gray)
                 }
 
                 if let err = errorMessage {
-                    Text(err).foregroundColor(.red).font(.caption)
+                    Text(err).foregroundColor(.red).font(.notoSans(size: 12, relativeTo: .caption))
                 }
 
                 Button {

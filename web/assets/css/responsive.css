@@ -1,4 +1,9 @@
 /* Mobile Responsiveness - SOLOREEL */
+/* Site-wide typeface — matches reelshort.com's own body font (Noto Sans, confirmed
+   via their production CSS: --fontFamily:"Noto Sans"). !important needed because
+   Tailwind CDN's .font-sans utility class outranks a plain `body` element selector. */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap');
+body, .font-sans { font-family: 'Noto Sans', ui-sans-serif, system-ui, -apple-system, sans-serif !important; }
 @media (max-width: 639px) {
   .container-px { padding-left: 1rem; padding-right: 1rem; }
   h1 { font-size: 1.5rem !important; }

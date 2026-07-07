@@ -41,6 +41,10 @@
 	</dict>
 	<key>NSFaceIDUsageDescription</key>
 	<string>SOLOREEL uses Face ID to securely log you in.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>NotoSans-VariableFont.ttf</string>
+	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

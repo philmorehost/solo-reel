@@ -27,7 +27,7 @@ struct EditProfileView: View {
                     AuthField(icon: "person.text.rectangle", placeholder: "Display Name", text: $displayName)
                     
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Change Password (Optional)").font(.caption).foregroundColor(.gray)
+                        Text("Change Password (Optional)").font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(.gray)
                         AuthSecureField(icon: "lock", placeholder: "New Password", text: $password)
                         AuthSecureField(icon: "lock.shield", placeholder: "Confirm New Password", text: $confirmPassword)
                     }.padding(.top, 8)

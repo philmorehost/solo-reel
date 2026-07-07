@@ -21,10 +21,10 @@ struct SeriesDetailView: View {
                                 .cornerRadius(16)
                         }
                     }.padding(.horizontal)
-                    Text(s.title).font(.title).bold().padding(.horizontal)
-                    Text(s.synopsis ?? "").foregroundColor(.gray).font(.subheadline).padding(.horizontal)
+                    Text(s.title).font(.notoSans(size: 28, relativeTo: .title)).bold().padding(.horizontal)
+                    Text(s.synopsis ?? "").foregroundColor(.gray).font(.notoSans(size: 15, relativeTo: .subheadline)).padding(.horizontal)
 
-                    Text("Episodes").font(.title3).bold().padding(.horizontal).padding(.top)
+                    Text("Episodes").font(.notoSans(size: 20, relativeTo: .title3)).bold().padding(.horizontal).padding(.top)
                     ForEach(episodes) { ep in
                         NavigationLink(destination: PlayerView(slug: ep.slug)) {
                             HStack {
@@ -41,7 +41,7 @@ struct SeriesDetailView: View {
                                     }
                                 }
                                 VStack(alignment: .leading) {
-                                    Text("Ep \(ep.episode_number ?? 0)").foregroundColor(.red).font(.caption)
+                                    Text("Ep \(ep.episode_number ?? 0)").foregroundColor(.red).font(.notoSans(size: 12, relativeTo: .caption))
                                     Text(ep.title).foregroundColor(.white).fontWeight(.medium).lineLimit(1)
                                 }
                                 Spacer()
