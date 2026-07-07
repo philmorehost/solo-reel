@@ -69,6 +69,7 @@ $hostedUrl = $payhubBaseUrl . '/checkout.php?ref=' . urlencode($reference)
             var errormsg = document.getElementById('errormsg');
             var loaded = false;
             var timeoutId = null;
+            var navStart = Date.now();
 
             function showError(message) {
                 loading.style.display = 'none';
@@ -92,7 +93,15 @@ $hostedUrl = $payhubBaseUrl . '/checkout.php?ref=' . urlencode($reference)
                 }, 25000);
             }
 
+            // WebKit/WebView iframes commonly fire a spurious `load` event for the
+            // initial empty document a split second after the iframe is created,
+            // BEFORE the real cross-origin navigation to the gateway even starts.
+            // That premature event was hiding the spinner (and cancelling the
+            // timeout) while the iframe was still genuinely blank — the "loading
+            // forever then nothing" bug. A real network round-trip to a different
+            // domain can't complete in under ~600ms, so ignore anything faster.
             frame.addEventListener('load', function () {
+                if (Date.now() - navStart < 600) return;
                 loaded = true;
                 loading.style.display = 'none';
                 if (timeoutId) clearTimeout(timeoutId);
@@ -102,6 +111,7 @@ $hostedUrl = $payhubBaseUrl . '/checkout.php?ref=' . urlencode($reference)
                 loaded = false;
                 errorbox.style.display = 'none';
                 loading.style.display = 'flex';
+                navStart = Date.now();
                 armTimeout();
                 frame.src = frame.src;
             };

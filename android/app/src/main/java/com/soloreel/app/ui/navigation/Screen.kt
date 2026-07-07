@@ -20,7 +20,6 @@ sealed class Screen(val route: String) {
     object History : Screen("history")
     object Favorites : Screen("favorites")
     object EditProfile : Screen("edit_profile")
-    object Settings : Screen("settings")
     object Advertise : Screen("advertise")
     object MyAds : Screen("my_ads")
 }

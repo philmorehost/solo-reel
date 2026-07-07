@@ -87,7 +87,6 @@ fun ProfileScreen(
     onNavigateToFavorites: () -> Unit = {},
     onNavigateToEditProfile: () -> Unit = {},
     onNavigateToCoinShop: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {},
     onNavigateToAdvertise: () -> Unit = {},
     onNavigateToMyAds: () -> Unit = {},
     vm: ProfileViewModel = hiltViewModel()
@@ -114,7 +113,6 @@ fun ProfileScreen(
                 onNavigateToFavorites = onNavigateToFavorites,
                 onNavigateToEditProfile = onNavigateToEditProfile,
                 onNavigateToCoinShop = onNavigateToCoinShop,
-                onNavigateToSettings = onNavigateToSettings,
                 onNavigateToAdvertise = onNavigateToAdvertise,
                 onNavigateToMyAds = onNavigateToMyAds
             )
@@ -217,7 +215,6 @@ fun RegisteredProfileScreen(
     onNavigateToFavorites: () -> Unit = {},
     onNavigateToEditProfile: () -> Unit = {},
     onNavigateToCoinShop: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {},
     onNavigateToAdvertise: () -> Unit = {},
     onNavigateToMyAds: () -> Unit = {}
 ) {
@@ -288,7 +285,6 @@ fun RegisteredProfileScreen(
         ProfileMenuItem(Icons.Default.ShoppingCart, "Buy More Coins", onClick = onNavigateToCoinShop)
         ProfileMenuItem(Icons.Default.Campaign, "Advertise With Us", onClick = onNavigateToAdvertise)
         ProfileMenuItem(Icons.Default.Storefront, "My Ads", onClick = onNavigateToMyAds)
-        ProfileMenuItem(Icons.Default.Settings, "Settings", onClick = onNavigateToSettings)
 
         Spacer(Modifier.height(24.dp))
         OutlinedButton(

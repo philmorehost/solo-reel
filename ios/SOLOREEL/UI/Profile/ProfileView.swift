@@ -134,9 +134,6 @@ struct RegisteredProfileSection: View {
                 NavigationLink(destination: MyAdsView()) {
                     ProfileRow(icon: "rectangle.stack", text: "My Ads")
                 }
-                NavigationLink(destination: SettingsView()) {
-                    ProfileRow(icon: "gearshape", text: "Settings")
-                }
             }.padding(.top, 8)
 
             Spacer().frame(height: 16)
@@ -180,18 +177,6 @@ struct FavoritesView: View {
     var body: some View {
         VStack {
             Text("My Favorites").font(.notoSans(size: 28, relativeTo: .title)).bold()
-            Text("Coming soon!").foregroundColor(.gray)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(red: 0.04, green: 0.04, blue: 0.04).ignoresSafeArea())
-        .foregroundColor(.white)
-    }
-}
-
-struct SettingsView: View {
-    var body: some View {
-        VStack {
-            Text("Settings").font(.notoSans(size: 28, relativeTo: .title)).bold()
             Text("Coming soon!").foregroundColor(.gray)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
