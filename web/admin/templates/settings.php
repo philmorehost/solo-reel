@@ -96,6 +96,17 @@
                                 <div class="mb-2"><input type="text" name="social_twitter" value="<?= htmlspecialchars($settings['social_twitter'] ?? '') ?>" placeholder="Twitter/X URL" class="w-full border rounded px-3 py-2"></div>
                                 <div class="mb-2"><input type="text" name="social_instagram" value="<?= htmlspecialchars($settings['social_instagram'] ?? '') ?>" placeholder="Instagram URL" class="w-full border rounded px-3 py-2"></div>
                                 <div class="mb-4"><input type="text" name="social_tiktok" value="<?= htmlspecialchars($settings['social_tiktok'] ?? '') ?>" placeholder="TikTok URL" class="w-full border rounded px-3 py-2"></div>
+
+                                <h2 class="text-xl font-bold mt-8 mb-4 border-b pb-2">Login Security</h2>
+                                <p class="text-sm text-gray-500 mb-3">Locks out an IP/email after too many failed login attempts, for both the website and the mobile apps. Set attempts to 0 to disable.</p>
+                                <div class="mb-3">
+                                    <label class="block text-gray-700 font-bold mb-1 text-sm">Max Failed Attempts</label>
+                                    <input type="number" name="max_login_attempts" min="0" value="<?= htmlspecialchars($settings['max_login_attempts'] ?? '5') ?>" class="w-full border rounded px-3 py-2">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-gray-700 font-bold mb-1 text-sm">Lockout Duration (minutes)</label>
+                                    <input type="number" name="lockout_duration_minutes" min="1" value="<?= htmlspecialchars($settings['lockout_duration_minutes'] ?? '15') ?>" class="w-full border rounded px-3 py-2">
+                                </div>
                             </div>
 
                             <!-- Right Column -->
@@ -193,6 +204,32 @@
 * * * * * /usr/bin/php <?= dirname($_SERVER['SCRIPT_FILENAME']) ?>/cron/process-email-queue.php >> <?= dirname(dirname($_SERVER['SCRIPT_FILENAME'])) ?>/logs/email-queue.log 2>&1
                                     </code>
                                 </div>
+
+                                <div class="bg-gray-800 rounded-lg p-5 border border-gray-700">
+                                    <h3 class="font-bold text-white mb-2">Weekly Bonus</h3>
+                                    <p class="text-gray-400 text-sm mb-2">Credits every active user's weekly bonus coins. Must run once, right at the start of each week.</p>
+                                    <code class="block bg-black text-green-400 p-3 rounded text-sm font-mono">
+0 0 * * 1 /usr/bin/php <?= dirname($_SERVER['SCRIPT_FILENAME']) ?>/cron/weekly_bonus.php >> <?= dirname(dirname($_SERVER['SCRIPT_FILENAME'])) ?>/logs/weekly-bonus.log 2>&1
+                                    </code>
+                                </div>
+
+                                <div class="bg-gray-800 rounded-lg p-5 border border-gray-700">
+                                    <h3 class="font-bold text-white mb-2">Login Attempts Cleanup</h3>
+                                    <p class="text-gray-400 text-sm mb-2">Prunes old brute-force login records (see Login Security above) so the table doesn't grow forever. Runs daily.</p>
+                                    <code class="block bg-black text-green-400 p-3 rounded text-sm font-mono">
+0 4 * * * /usr/bin/php <?= dirname($_SERVER['SCRIPT_FILENAME']) ?>/cron/cleanup-login-attempts.php >> <?= dirname(dirname($_SERVER['SCRIPT_FILENAME'])) ?>/logs/cleanup-login-attempts.log 2>&1
+                                    </code>
+                                </div>
+
+                                <div class="bg-gray-800 rounded-lg p-5 border border-gray-700">
+                                    <h3 class="font-bold text-white mb-2">Session File Cleanup</h3>
+                                    <p class="text-gray-400 text-sm mb-2">Only needed if your host disables PHP's own automatic session garbage collection. Purges stale session files. Runs hourly.</p>
+                                    <code class="block bg-black text-green-400 p-3 rounded text-sm font-mono">
+0 * * * * /usr/bin/php <?= dirname($_SERVER['SCRIPT_FILENAME']) ?>/cron/cleanup-sessions.php >> <?= dirname(dirname($_SERVER['SCRIPT_FILENAME'])) ?>/logs/cleanup-sessions.log 2>&1
+                                    </code>
+                                </div>
+
+                                <p class="text-xs text-gray-500">Note: the sitemap (<code><?= (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]/sitemap.xml" ?></code>) is generated live on every request, not from a cron job — no cron entry needed for it.</p>
 
                                 <div class="bg-gray-800 p-4 rounded text-sm text-gray-400">
                                     <p class="font-bold text-amber-400 mb-1">To add cron jobs via cPanel:</p>

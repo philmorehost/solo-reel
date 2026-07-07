@@ -93,25 +93,35 @@ chmod -R 755 ~/public_html/public/assets
 3. Set up shelves and banners in the admin panel
 4. Upload your first series and episodes
 5. Generate sitemap: **Admin → Settings → Sitemap**
-6. Review security settings: **Admin → Security → Brute Force**
+6. Review security settings: **Admin → Settings → Login Security**
 
 ## Step 8: Cron Jobs
 
-Add these cron jobs in cPanel's **Cron Jobs** section:
+The current, correct list is also shown live (with your actual server path filled
+in) at **Admin → Settings → Cron Jobs Setup**, which is the source of truth —
+add whatever it displays. For reference, the same jobs:
 
 ```
+# Video queue processing — converts uploaded MP4s to HLS (every minute)
+* * * * * php /home/username/public_html/cron/process-video-queue.php
+
 # Email queue processing (every minute)
 * * * * * php /home/username/public_html/cron/process-email-queue.php
 
-# Sitemap regeneration (daily)
-0 3 * * * php /home/username/public_html/cron/generate-sitemap.php
+# Weekly bonus — credits every active user's weekly bonus coins (Monday 00:00)
+0 0 * * 1 php /home/username/public_html/cron/weekly_bonus.php
 
-# Login attempt cleanup (every 15 minutes)
-*/15 * * * * php /home/username/public_html/cron/cleanup-login-attempts.php
+# Login attempt cleanup — prunes old brute-force records, retention only (daily)
+0 4 * * * php /home/username/public_html/cron/cleanup-login-attempts.php
 
-# Session cleanup (hourly)
+# Session file cleanup — only needed if your host disables PHP's own
+# automatic session garbage collection (hourly)
 0 * * * * php /home/username/public_html/cron/cleanup-sessions.php
 ```
+
+Note: the sitemap (`/sitemap.xml`) is generated live on every request by
+`SeoController@sitemap()`, not from a pre-built file — there is no
+`generate-sitemap.php` cron job and none is needed.
 
 ## Troubleshooting
 

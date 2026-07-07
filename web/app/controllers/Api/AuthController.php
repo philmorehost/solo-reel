@@ -59,12 +59,18 @@ class AuthController extends BaseApiController {
             $this->respondError('Email and password are required', 400);
         }
 
+        $ip = \App\Core\BruteForce::clientIp();
+        if (\App\Core\BruteForce::isLockedOut($ip, $email)) {
+            $this->respondError('Too many failed login attempts. Please try again later.', 429);
+        }
+
         $db = Database::getInstance();
         $stmt = $db->prepare("SELECT id, username, email, display_name, password_hash, role, coin_balance, status FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
+            \App\Core\BruteForce::record($ip, $email, false);
             $this->respondError('Invalid credentials', 401);
         }
 
@@ -72,6 +78,7 @@ class AuthController extends BaseApiController {
             $this->respondError('Account is blocked', 403);
         }
 
+        \App\Core\BruteForce::record($ip, $email, true);
         $token = $this->issueToken($user);
         $this->respondAuthSuccess($user, $token, 'Login successful');
     }

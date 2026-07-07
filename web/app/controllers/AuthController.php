@@ -22,6 +22,13 @@ class AuthController {
 
         $email = $_POST['email'] ?? '';
         $password = $_POST['password'] ?? '';
+        $ip = \App\Core\BruteForce::clientIp();
+
+        if (\App\Core\BruteForce::isLockedOut($ip, $email)) {
+            Session::setFlash('error', 'Too many failed login attempts. Please try again later.');
+            header("Location: /login");
+            die();
+        }
 
         $db = Database::getInstance();
         $stmt = $db->prepare("SELECT * FROM users WHERE email = ?");
@@ -29,6 +36,7 @@ class AuthController {
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password_hash'])) {
+            \App\Core\BruteForce::record($ip, $email, true);
             if ($user['status'] === 'blocked') {
                 Session::setFlash('error', 'Your account is blocked.');
                 header("Location: /login");
@@ -43,6 +51,7 @@ class AuthController {
             die();
         }
 
+        \App\Core\BruteForce::record($ip, $email, false);
         Session::setFlash('error', 'Invalid email or password.');
         header("Location: /login");
         die();
