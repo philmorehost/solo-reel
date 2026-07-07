@@ -317,7 +317,9 @@ class AuthController extends BaseApiController {
 
         $this->respondJson([
             'status' => true,
-            'client_id' => $clientId
+            'data' => [
+                'client_id' => $clientId
+            ]
         ]);
     }
 

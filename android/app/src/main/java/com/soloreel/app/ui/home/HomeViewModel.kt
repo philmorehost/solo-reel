@@ -43,7 +43,7 @@ class HomeViewModel @Inject constructor(
                     series = seriesRes.data ?: emptyList(),
                     shelves = shelves
                 )
-                shelves.firstOrNull()?.let { loadShelfSeries(it.slug) }
+                shelves.forEach { loadShelfSeries(it.slug) }
 
                 if (tokenManager.isLoggedIn && !tokenManager.installBonusClaimed) {
                     try {

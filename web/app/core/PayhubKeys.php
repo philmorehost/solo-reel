@@ -61,7 +61,11 @@ class PayhubKeys {
             'Authorization: Bearer ' . $secretKey,
             'Content-Type: application/json',
         ]);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['email' => $email, 'amount' => $amount]));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+            'email' => $email, 
+            'amount' => $amount,
+            'callback_url' => 'https://soloreel.tv/callback'
+        ]));
         $response = curl_exec($ch);
         $err = curl_error($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

@@ -134,7 +134,7 @@ class CustomAdController extends BaseApiController {
             $db->prepare("UPDATE custom_ads SET payment_reference = ? WHERE id = ?")->execute([$reference, $adId]);
 
             $data = [
-                'authorization_url' => $this->baseUrl() . '/pay/checkout?reference=' . urlencode($reference),
+                'authorization_url' => $payhubTxn['authorization_url'] ?? ($this->baseUrl() . '/pay/checkout?reference=' . urlencode($reference)),
                 'reference'         => $reference,
                 'ad_id'             => $adId,
             ];
@@ -219,7 +219,7 @@ class CustomAdController extends BaseApiController {
             $db->prepare("UPDATE custom_ads SET payment_reference = ?, payment_status = 'pending' WHERE id = ?")->execute([$reference, $ad['id']]);
 
             $data = [
-                'authorization_url' => $this->baseUrl() . '/pay/checkout?reference=' . urlencode($reference),
+                'authorization_url' => $payhubTxn['authorization_url'] ?? ($this->baseUrl() . '/pay/checkout?reference=' . urlencode($reference)),
                 'reference'         => $reference,
             ];
             $this->respondJson(['status' => true, 'message' => 'Payment initialized', 'data' => $data] + $data);
