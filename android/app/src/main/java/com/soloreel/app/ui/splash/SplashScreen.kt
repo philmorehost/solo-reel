@@ -1,99 +1,78 @@
 package com.soloreel.app.ui.splash
 
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.Image
-import androidx.compose.ui.unit.dp
-import com.soloreel.app.R
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
 
+/** Video splash — plays once on launch, then hands off to NavGraph.
+ * Muted (consistent with this app's other decorative/background video
+ * convention — see MutedLoopingVideoView in HomeScreen.kt), with a fallback
+ * timeout in case playback fails to start or the video runs unexpectedly long. */
+@UnstableApi
 @Composable
 fun SplashScreen(onFinished: () -> Unit) {
-    var startAnimation by remember { mutableStateOf(false) }
-    val alphaAnim = remember { Animatable(0f) }
-    val scaleAnim = remember { Animatable(0.6f) }
+    val context = LocalContext.current
+    var finished by remember { mutableStateOf(false) }
 
-    val infiniteTransition = rememberInfiniteTransition(label = "glow")
-    val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "glowAlpha"
-    )
-    val glowScale by infiniteTransition.animateFloat(
-        initialValue = 0.92f,
-        targetValue = 1.08f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "glowScale"
-    )
-
-    LaunchedEffect(Unit) {
-        alphaAnim.animateTo(1f, animationSpec = tween(800))
-        scaleAnim.animateTo(1f, animationSpec = tween(800))
-        startAnimation = true
-        delay(800)
-        alphaAnim.animateTo(1.2f, animationSpec = tween(400))
-        delay(200)
-        alphaAnim.animateTo(0f, animationSpec = tween(400))
-        onFinished()
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0A0A0A),
-                        Color(0xFF111111),
-                        Color(0xFF0A0A0A)
-                    )
-                )
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(contentAlignment = Alignment.Center) {
-                if (startAnimation) {
-                    Box(
-                        modifier = Modifier
-                            .size(220.dp)
-                            .scale(glowScale)
-                            .alpha(glowAlpha)
-                            .background(
-                                Brush.radialGradient(
-                                    colors = listOf(
-                                        Color(0xFFDC2626).copy(alpha = 0.55f),
-                                        Color(0xFFDC2626).copy(alpha = 0f)
-                                    )
-                                )
-                            )
-                    )
-                }
-                Image(
-                    painter = painterResource(id = R.drawable.logo_splash),
-                    contentDescription = "SOLOREEL",
-                    modifier = Modifier
-                        .size(160.dp)
-                        .scale(scaleAnim.value)
-                        .alpha(alphaAnim.value)
-                )
-            }
+    fun finish() {
+        if (!finished) {
+            finished = true
+            onFinished()
         }
     }
+
+    val exoPlayer = remember {
+        ExoPlayer.Builder(context).build().apply {
+            val uri = android.net.Uri.parse("android.resource://${context.packageName}/${com.soloreel.app.R.raw.splash_video}")
+            setMediaItem(MediaItem.fromUri(uri))
+            volume = 0f
+            prepare()
+            playWhenReady = true
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val listener = object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_ENDED) finish()
+            }
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                finish()
+            }
+        }
+        exoPlayer.addListener(listener)
+        onDispose {
+            exoPlayer.removeListener(listener)
+            exoPlayer.release()
+        }
+    }
+
+    // Fallback: if playback never fires STATE_ENDED (e.g. a malformed file),
+    // don't strand the user on the splash screen forever.
+    LaunchedEffect(Unit) {
+        delay(8000)
+        finish()
+    }
+
+    AndroidView(
+        modifier = Modifier.fillMaxSize().background(Color.Black),
+        factory = { ctx ->
+            PlayerView(ctx).apply {
+                player = exoPlayer
+                useController = false
+                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            }
+        }
+    )
 }

@@ -4,7 +4,37 @@ $logoHtml = \App\Helpers\Site::getLogoHtml();
 $isLoggedIn = \App\Core\Session::isLoggedIn();
 $userName = \App\Core\Session::get('user_name');
 $coinBalance = \App\Core\Session::get('user_coin_balance');
-?><script src="/assets/js/header-search.js"></script>
+?>
+<!-- Site preload — plays once per browser session (sessionStorage-gated so
+     internal page navigations don't replay it), fades out on video end or a
+     fallback timeout in case autoplay is blocked. -->
+<div id="site-preloader" class="fixed inset-0 z-[100] bg-black flex items-center justify-center">
+    <video id="site-preloader-video" autoplay muted playsinline class="w-full h-full object-cover" src="/assets/video/splash.mp4"></video>
+</div>
+<script>
+(function () {
+    var preloader = document.getElementById('site-preloader');
+    if (!preloader) return;
+    if (sessionStorage.getItem('soloreel_preload_shown')) {
+        preloader.remove();
+        return;
+    }
+    sessionStorage.setItem('soloreel_preload_shown', '1');
+    var video = document.getElementById('site-preloader-video');
+    var hidden = false;
+    function hide() {
+        if (hidden) return;
+        hidden = true;
+        preloader.style.transition = 'opacity 0.5s ease';
+        preloader.style.opacity = '0';
+        setTimeout(function () { preloader.remove(); }, 500);
+    }
+    video.addEventListener('ended', hide);
+    video.addEventListener('error', hide);
+    setTimeout(hide, 6000);
+})();
+</script>
+<script src="/assets/js/header-search.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style>
     /* Prevent text selection and drag */
