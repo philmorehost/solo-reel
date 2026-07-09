@@ -2,6 +2,16 @@ package com.soloreel.app.data.model
 
 import com.google.gson.annotations.SerializedName
 
+data class VipPlan(
+    val id: Int,
+    val name: String,
+    val price: Double,
+    val currency: String,
+    val duration_days: Int,
+    val perk_free_unlocks: Boolean? = false,
+    val perk_ad_free: Boolean? = false
+)
+
 data class Banner(
     val id: Int,
     val title: String?,
@@ -51,7 +61,8 @@ data class Series(
     val synopsis: String?,
     val genre: String?,
     val status: String?,
-    val episode_count: Int?
+    val episode_count: Int?,
+    val episodes: List<Episode>? = null
 )
 
 data class Episode(
@@ -60,6 +71,7 @@ data class Episode(
     val slug: String,
     val series_id: Int?,
     val series_title: String?,
+    val series_slug: String? = null,
     val video_hls_url: String?,
     val thumbnail_url: String?,
     val description: String?,
@@ -68,8 +80,21 @@ data class Episode(
     val coin_cost: Double?,
     val unlock_method: String?,
     val episode_number: Int?,
-    val video_duration_seconds: Int?
+    val video_duration_seconds: Int?,
+    val like_count: Int? = 0,
+    val comment_count: Int? = 0,
+    val save_count: Int? = 0,
+    val share_count: Int? = 0,
+    val is_liked_by_viewer: Boolean? = false,
+    val is_saved_by_viewer: Boolean? = false,
+    val can_share: Boolean? = false
 )
+
+data class LikeSaveResult(val liked: Boolean? = null, val saved: Boolean? = null, val count: Int = 0)
+
+data class Comment(val id: Int, val author: String?, val body: String, val created_at: String?)
+
+data class CommentsPage(val items: List<Comment>, val total: Int)
 
 data class Shelf(val id: Int, val name: String, val slug: String, val emoji: String?)
 
@@ -99,6 +124,18 @@ data class WatchHistoryItem(
 )
 
 data class Favorite(val id: Int, val series: Series?, val title: String?, val slug: String?, val cover_image_url: String?)
+
+data class ContinueWatchingItem(
+    val id: Int,
+    val title: String,
+    val slug: String,
+    val cover_image_url: String?,
+    val episode_count: Int?,
+    val episode_slug: String,
+    val episode_number: Int?
+)
+
+data class ResumeEpisode(val slug: String, val episode_number: Int?, val is_first_watch: Boolean?)
 
 data class GuestWallet(val guest_id: String, val coin_balance: Double)
 

@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use App\Core\Database;
+use App\Core\Session;
+use App\Core\WatchHistory;
 
 class SearchController {
     public function index() {
@@ -39,6 +41,10 @@ class SearchController {
             $stmt = $db->prepare($query);
             $stmt->execute($params);
             $series = $stmt->fetchAll();
+
+            $resumeSlugs = WatchHistory::resumeSlugsForSeries($db, array_map('intval', array_column($series, 'id')), Session::get('user_id'), Session::getGuestId());
+            foreach ($series as &$s) { $s['resume_slug'] = $resumeSlugs[(int)$s['id']] ?? null; }
+            unset($s);
 
             header('Content-Type: application/json');
             echo json_encode(['data' => $series]);

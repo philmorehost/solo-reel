@@ -95,6 +95,33 @@ interface SOLOREELApi {
     @GET("api/v1/user/watch-history")
     suspend fun getWatchHistory(): ApiResponse<List<WatchHistoryItem>>
 
+    @GET("api/v1/user/continue-watching")
+    suspend fun getContinueWatching(@Query("guest_id") guestId: String? = null): ApiResponse<List<ContinueWatchingItem>>
+
+    @GET("api/v1/series/{id}/resume")
+    suspend fun getResumeEpisode(@Path("id") seriesId: Int, @Query("guest_id") guestId: String? = null): ApiResponse<ResumeEpisode>
+
+    @GET("api/v1/series/resume-batch")
+    suspend fun getResumeBatch(@Query("ids") ids: String, @Query("guest_id") guestId: String? = null): ApiResponse<Map<String, String>>
+
+    @POST("api/v1/episodes/{id}/progress")
+    suspend fun recordProgress(@Path("id") episodeId: Int, @Body body: Map<String, String> = emptyMap()): ApiResponse<JsonElement>
+
+    @POST("api/v1/episodes/{id}/like")
+    suspend fun toggleLike(@Path("id") episodeId: Int, @Body body: Map<String, String> = emptyMap()): ApiResponse<LikeSaveResult>
+
+    @POST("api/v1/episodes/{id}/save")
+    suspend fun toggleSave(@Path("id") episodeId: Int, @Body body: Map<String, String> = emptyMap()): ApiResponse<LikeSaveResult>
+
+    @GET("api/v1/episodes/{id}/comments")
+    suspend fun getComments(@Path("id") episodeId: Int, @Query("offset") offset: Int = 0, @Query("limit") limit: Int = 20): ApiResponse<CommentsPage>
+
+    @POST("api/v1/episodes/{id}/comments")
+    suspend fun postComment(@Path("id") episodeId: Int, @Body body: Map<String, String>): ApiResponse<Comment>
+
+    @POST("api/v1/episodes/{id}/share")
+    suspend fun recordShare(@Path("id") episodeId: Int, @Body body: Map<String, String> = emptyMap()): ApiResponse<JsonElement>
+
     @GET("api/v1/user/bonus-status")
     suspend fun getBonusStatus(): ApiResponse<WeeklyBonusStatus>
 
@@ -106,6 +133,17 @@ interface SOLOREELApi {
 
     @GET("api/v1/payment/verify")
     suspend fun verifyPayment(@Query("reference") reference: String): ApiResponse<JsonElement>
+
+    // VIP subscription — an alternative to buying coins, not a replacement;
+    // registered users only (see 021_vip_subscriptions.sql for why).
+    @GET("api/v1/vip/plans")
+    suspend fun getVipPlans(): ApiResponse<List<com.soloreel.app.data.model.VipPlan>>
+
+    @POST("api/v1/vip/purchase")
+    suspend fun purchaseVip(@Body body: Map<String, Int>): ApiResponse<PaymentInit>
+
+    @GET("api/v1/user/vip-status")
+    suspend fun getVipStatus(): ApiResponse<Map<String, JsonElement>>
 
     // Guest endpoints
     @POST("api/v1/guest/init")

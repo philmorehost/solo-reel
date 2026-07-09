@@ -40,6 +40,7 @@ import javax.inject.Inject
 data class SearchState(
     val query: String = "",
     val results: List<Series> = emptyList(),
+    val resumeSlugs: Map<Int, String> = emptyMap(),
     val isLoading: Boolean = false,
     val requestSent: Boolean = false,
     val requestLoading: Boolean = false,
@@ -57,13 +58,17 @@ class SearchViewModel @Inject constructor(
 
     init { loadAllSeries() }
 
+    private val guestIdOrNull: String? get() = if (tokenManager.isLoggedIn) null else tokenManager.guestId
+
     private fun loadAllSeries() {
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
             try {
                 val r = api.search("", size = 100)
-                _state.value = _state.value.copy(results = r.data ?: emptyList(), isLoading = false)
+                val results = r.data ?: emptyList()
+                _state.value = _state.value.copy(results = results, isLoading = false)
+                fetchResumeSlugs(results.map { it.id })
             } catch (e: Exception) {
                 _state.value = _state.value.copy(isLoading = false)
             }
@@ -79,9 +84,26 @@ class SearchViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true)
             try {
                 val r = api.search(q)
-                _state.value = _state.value.copy(results = r.data ?: emptyList(), isLoading = false)
+                val results = r.data ?: emptyList()
+                _state.value = _state.value.copy(results = results, isLoading = false)
+                fetchResumeSlugs(results.map { it.id })
             } catch (e: Exception) {
                 _state.value = _state.value.copy(isLoading = false, results = emptyList())
+            }
+        }
+    }
+
+    /** Skip-to-player: batch-resolve resume episodes for the visible result cards. */
+    private fun fetchResumeSlugs(ids: List<Int>) {
+        val missing = ids.filter { !_state.value.resumeSlugs.containsKey(it) }
+        if (missing.isEmpty()) return
+        viewModelScope.launch {
+            try {
+                val res = api.getResumeBatch(missing.joinToString(","), guestIdOrNull)
+                val fetched = (res.data ?: emptyMap()).mapKeys { it.key.toIntOrNull() ?: -1 }.filterKeys { it >= 0 }
+                _state.value = _state.value.copy(resumeSlugs = _state.value.resumeSlugs + fetched)
+            } catch (e: Exception) {
+                // Cards fall back to series-detail navigation on failure.
             }
         }
     }
@@ -155,7 +177,12 @@ fun SearchScreen(navController: NavHostController, vm: SearchViewModel = hiltVie
                 ) {
                     items(state.results) { series ->
                         SeriesCard(series = series, onClick = {
-                            navController.navigate(Screen.SeriesDetail.createRoute(series.slug))
+                            val resumeSlug = state.resumeSlugs[series.id]
+                            if (resumeSlug != null) {
+                                navController.navigate(Screen.EpisodePlayer.createRoute(resumeSlug))
+                            } else {
+                                navController.navigate(Screen.SeriesDetail.createRoute(series.slug))
+                            }
                         })
                     }
                 }

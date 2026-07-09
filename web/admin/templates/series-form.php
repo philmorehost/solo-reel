@@ -47,6 +47,16 @@
                         </div>
 
                         <div class="mb-4">
+                            <label class="block text-gray-700 font-bold mb-2">Shelf</label>
+                            <select name="shelf_id" class="w-full border rounded px-3 py-2">
+                                <option value="">Unassigned</option>
+                                <?php foreach($shelves as $s): ?>
+                                    <option value="<?= $s['id'] ?>" <?= (isset($series) && $series['shelf_id'] == $s['id']) ? 'selected' : '' ?>><?= htmlspecialchars($s['name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
                             <label class="block text-gray-700 font-bold mb-2">Upload Cover Image</label>
                             <input type="file" name="cover_image" accept="image/*" class="w-full border rounded px-3 py-2 bg-gray-50">
                             <?php if(isset($series) && !empty($series['cover_image'])): ?>
@@ -72,6 +82,7 @@
                             <select name="status" class="w-full border rounded px-3 py-2">
                                 <option value="ongoing" <?= (isset($series) && $series['status'] === 'ongoing') ? 'selected' : '' ?>>Ongoing</option>
                                 <option value="completed" <?= (isset($series) && $series['status'] === 'completed') ? 'selected' : '' ?>>Completed</option>
+                                <option value="coming_soon" <?= (isset($series) && $series['status'] === 'coming_soon') ? 'selected' : '' ?>>Coming Soon</option>
                             </select>
                         </div>
 

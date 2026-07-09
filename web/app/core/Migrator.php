@@ -42,8 +42,11 @@ class Migrator {
             }
             sort($sqlFiles);
 
-            // Optimization: if all are executed, exit early
-            if (count($sqlFiles) === count($executed)) {
+            // Optimization: if every file on disk is already recorded, exit early.
+            // (Comparing counts alone is unsafe: deleting one file while adding
+            // another leaves the counts matching even though the new file was
+            // never actually run.)
+            if (empty(array_diff($sqlFiles, $executed))) {
                 return;
             }
 

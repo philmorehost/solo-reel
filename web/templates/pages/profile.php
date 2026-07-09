@@ -97,7 +97,7 @@
                     <?php else: ?>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <?php foreach($watchHistory as $item): ?>
-                                <a href="/episodes/<?= htmlspecialchars($item['series_slug']) ?>" class="flex items-center gap-4 bg-zinc-900/30 border border-zinc-800/70 hover:border-red-500/50 rounded-xl overflow-hidden hover:bg-zinc-900/50 transition duration-200 group">
+                                <a href="/episodes/<?= htmlspecialchars($item['episode_slug']) ?>" class="flex items-center gap-4 bg-zinc-900/30 border border-zinc-800/70 hover:border-red-500/50 rounded-xl overflow-hidden hover:bg-zinc-900/50 transition duration-200 group">
                                     <div class="relative w-28 h-18 sm:w-32 sm:h-20 flex-shrink-0 bg-zinc-950">
                                         <img src="<?= htmlspecialchars($item['thumbnail_url'] ?? '/assets/img/default-thumb.jpg') ?>" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                                         <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200">

@@ -3,6 +3,7 @@
 namespace App\Controllers\Api;
 
 use App\Core\Database;
+use App\Core\Vip;
 
 class TransactionController extends BaseApiController {
 
@@ -96,7 +97,21 @@ class TransactionController extends BaseApiController {
                 $this->respondJson(['status' => false, 'error' => 'Episode not found'], 404);
             }
 
-            if ($userId) {
+            $vipSubscription = $userId ? Vip::activeSubscription($db, $userId) : null;
+
+            if ($userId && $vipSubscription && $vipSubscription['perk_free_unlocks']) {
+                // VIP free-unlocks perk: bypass the coin balance check/deduction
+                // entirely — nothing was spent, so no coin_transactions row either.
+                $stmt = $db->prepare("INSERT IGNORE INTO user_unlocked_episodes (user_id, episode_id) VALUES (?, ?)");
+                $stmt->execute([$userId, $episodeId]);
+
+                $stmt = $db->prepare("SELECT coin_balance FROM users WHERE id = ?");
+                $stmt->execute([$userId]);
+                $newBalance = (float)($stmt->fetchColumn() ?: 0);
+
+                $db->commit();
+                $this->respondJson(['status' => true, 'message' => 'Episode unlocked with VIP', 'unlocked_via' => 'vip', 'coin_balance' => $newBalance, 'data' => ['coin_balance' => $newBalance]]);
+            } elseif ($userId) {
                 $stmt = $db->prepare("SELECT coin_balance FROM users WHERE id = ? FOR UPDATE");
                 $stmt->execute([$userId]);
                 $user = $stmt->fetch();
@@ -175,6 +190,57 @@ class TransactionController extends BaseApiController {
         }
     }
 
+    private function loadVipPlan(int $planId): array {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT * FROM vip_plans WHERE id = ? AND is_active = 1");
+        $stmt->execute([$planId]);
+        $plan = $stmt->fetch();
+        if (!$plan) {
+            $this->respondJson(['status' => false, 'error' => 'Plan not available'], 400);
+        }
+        return $plan;
+    }
+
+    /** POST /api/v1/vip/purchase - registered users only (VIP needs a durable
+     * identity to enforce/renew against; see 021_vip_subscriptions.sql). Mirrors
+     * purchase() exactly, just against vip_plans instead of coin_packages. */
+    public function purchaseVip() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->respondJson(['status' => false, 'error' => 'Method Not Allowed'], 405);
+        }
+
+        try {
+            $userId = $this->requireUserId();
+            $input = json_decode(file_get_contents('php://input'), true);
+            $plan = $this->loadVipPlan((int)($input['plan_id'] ?? 0));
+            $settings = $this->paymentSettings();
+
+            $db = Database::getInstance();
+            $stmt = $db->prepare("SELECT email FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch();
+            $email = $user['email'] ?? ('user_' . $userId . '@soloreel.tv');
+
+            $keys = $this->activeKeys($settings);
+            $payhubTxn = $this->initializeWithPayhub($settings, $keys['secret'], (float)$plan['price'], $email);
+            $reference = $payhubTxn['reference'];
+
+            $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, type, plan_id, reference, amount, currency, status, coins_awarded) VALUES (?, 'vip_subscription', ?, ?, ?, ?, 'pending', 0)");
+            $stmt->execute([$userId, $plan['id'], $reference, $plan['price'], $plan['currency']]);
+
+            $data = [
+                'authorization_url' => $this->baseUrl() . '/pay/checkout?reference=' . urlencode($reference),
+                'reference'         => $reference,
+                'public_key'        => $keys['public'],
+                'amount'            => (float)$plan['price'] * 100,
+                'email'             => $email,
+            ];
+            $this->respondJson(['status' => true, 'message' => 'Payment initialized'] + $data);
+        } catch (\Throwable $e) {
+            $this->respondJson(['status' => false, 'error' => 'Could not initiate payment: ' . $e->getMessage()], 500);
+        }
+    }
+
     /** POST /api/v1/coins/guest-purchase â€” guests identified by guest_id (no JWT). */
     public function guestPurchase() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -236,9 +302,16 @@ class TransactionController extends BaseApiController {
                 $this->respondJson(['status' => false, 'error' => 'Episode not found'], 404);
             }
 
-            $unlockMethod = $episode['unlock_method'] ?? 'coins';
-            if (!in_array($unlockMethod, ['ads', 'both'], true)) {
-                $this->respondJson(['status' => false, 'error' => 'This episode cannot be unlocked with ads'], 400);
+            // VIP ad-free perk: skip the "episode must support ads" check entirely
+            // and unlock immediately, no ad required.
+            $vipSubscription = $userId ? Vip::activeSubscription($db, $userId) : null;
+            $vipAdFree = $vipSubscription && $vipSubscription['perk_ad_free'];
+
+            if (!$vipAdFree) {
+                $unlockMethod = $episode['unlock_method'] ?? 'coins';
+                if (!in_array($unlockMethod, ['ads', 'both'], true)) {
+                    $this->respondJson(['status' => false, 'error' => 'This episode cannot be unlocked with ads'], 400);
+                }
             }
 
             if ($userId) {
@@ -249,7 +322,7 @@ class TransactionController extends BaseApiController {
                 $stmt->execute([$guestId, $episodeId]);
             }
 
-            $this->respondJson(['status' => true, 'message' => 'Episode unlocked successfully with ad']);
+            $this->respondJson(['status' => true, 'message' => $vipAdFree ? 'Episode unlocked with VIP' : 'Episode unlocked successfully with ad', 'unlocked_via' => $vipAdFree ? 'vip' : 'ad']);
         } catch (\Throwable $e) {
             $this->respondJson(['status' => false, 'error' => 'Failed to unlock episode: ' . $e->getMessage()], 500);
         }
@@ -326,6 +399,18 @@ class TransactionController extends BaseApiController {
 
                 $db->commit();
                 $this->respondJson(['status' => true, 'message' => 'Payment verified. Your ad is now live!', 'data' => ['ad_id' => (int)$txn['ad_id'], 'campaign_days' => $campaignDays]]);
+            }
+
+            if (($txn['type'] ?? 'coin_purchase') === 'vip_subscription') {
+                $stmt = $db->prepare("SELECT duration_days, name FROM vip_plans WHERE id = ?");
+                $stmt->execute([$txn['plan_id']]);
+                $plan = $stmt->fetch();
+
+                $stmt = $db->prepare("INSERT INTO vip_subscriptions (user_id, plan_id, status, expires_at) VALUES (?, ?, 'active', DATE_ADD(NOW(), INTERVAL ? DAY))");
+                $stmt->execute([$txn['user_id'], $txn['plan_id'], $plan['duration_days'] ?? 30]);
+
+                $db->commit();
+                $this->respondJson(['status' => true, 'message' => 'Payment verified. VIP activated!', 'data' => ['plan_name' => $plan['name'] ?? null]]);
             }
 
             $coins = (float)$txn['coins_awarded'];

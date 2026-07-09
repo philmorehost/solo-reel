@@ -62,6 +62,15 @@
                             </div>
                         </div>
 
+                        <!-- Trailer Upload Field (optional) -->
+                        <div class="mb-4 p-4 border border-dashed border-gray-400 rounded bg-gray-50">
+                            <label class="block text-gray-700 font-bold mb-2">Upload Trailer (MP4, optional)</label>
+                            <input type="file" name="trailer_file" accept="video/mp4" class="w-full">
+                            <p class="text-sm text-gray-500 mt-2">
+                                Shown in the "For You" feed as an auto-playing trailer<?= isset($episode) && !empty($episode['trailer_url']) ? ' (leave blank to keep the current trailer)' : '. Leave blank if this episode has no trailer' ?>.
+                            </p>
+                        </div>
+
                         <!-- Cover Image / Thumbnail Field -->
                         <div class="mb-4 p-4 border border-dashed border-gray-400 rounded bg-gray-50">
                             <label class="block text-gray-700 font-bold mb-2">Cover Image (Thumbnail)</label>

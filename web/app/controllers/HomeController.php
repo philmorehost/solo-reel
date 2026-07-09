@@ -3,10 +3,20 @@
 namespace App\Controllers;
 
 use App\Core\Database;
+use App\Core\Session;
+use App\Core\WatchHistory;
 
 class HomeController {
     public function index() {
         $db = Database::getInstance();
+
+        // Continue Watching — per-viewer, computed at request time, never
+        // admin-curated. Rendered above Latest Releases in the template.
+        $continueWatching = WatchHistory::continueWatchingFor(
+            $db,
+            Session::get('user_id'),
+            Session::getGuestId()
+        );
 
         // Fetch featured series for slider
         $stmt = $db->query("SELECT id, title, slug, synopsis, hero_image FROM series WHERE is_featured = 1 AND hero_image IS NOT NULL ORDER BY created_at DESC LIMIT 5");
@@ -56,10 +66,31 @@ class HomeController {
             $stmt->execute([$shelf['id']]);
             $shelf['series'] = $stmt->fetchAll();
         }
+        unset($shelf);
 
         // Fetch latest releases (not assigned to shelves explicitly)
         $stmt = $db->query("SELECT id, title, slug, cover_image, (SELECT COUNT(*) FROM episodes WHERE series_id = series.id) as episode_count FROM series ORDER BY created_at DESC LIMIT 6");
         $latestSeries = $stmt->fetchAll();
+
+        // Skip-to-player: resolve each card's resume episode (or episode 1)
+        // in one batch, so tapping a card jumps straight into the reel feed
+        // instead of a series-detail page first.
+        $seriesIds = array_column($latestSeries, 'id');
+        foreach ($shelves as $shelf) { $seriesIds = array_merge($seriesIds, array_column($shelf['series'], 'id')); }
+        foreach ($featuredSeries as $fs) { if (isset($fs['id'])) $seriesIds[] = $fs['id']; }
+        $seriesIds = array_values(array_unique(array_map('intval', $seriesIds)));
+
+        $resumeSlugs = WatchHistory::resumeSlugsForSeries($db, $seriesIds, Session::get('user_id'), Session::getGuestId());
+
+        foreach ($latestSeries as &$series) { $series['resume_slug'] = $resumeSlugs[(int)$series['id']] ?? null; }
+        unset($series);
+        foreach ($shelves as &$shelf) {
+            foreach ($shelf['series'] as &$series) { $series['resume_slug'] = $resumeSlugs[(int)$series['id']] ?? null; }
+            unset($series);
+        }
+        unset($shelf);
+        foreach ($featuredSeries as &$fs) { if (isset($fs['id'])) $fs['resume_slug'] = $resumeSlugs[(int)$fs['id']] ?? null; }
+        unset($fs);
 
         require __DIR__ . '/../../templates/pages/home.php';
     }

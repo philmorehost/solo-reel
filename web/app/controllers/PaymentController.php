@@ -31,7 +31,13 @@ class PaymentController {
             $txn = $stmt->fetch();
 
             $isAd = $txn && ($txn['type'] ?? 'coin_purchase') === 'ad_placement';
-            $returnUrl = $isAd ? '/my-ads' : '/coin-shop';
+            $isVip = $txn && ($txn['type'] ?? 'coin_purchase') === 'vip_subscription';
+            // The page that initiated checkout (e.g. a locked episode) stores
+            // where to return to in the session — see CoinController::purchase()/
+            // subscribeVip(). Falls back to the old hardcoded destinations if
+            // that's somehow missing (e.g. an old link/bookmark).
+            $storedReturnTo = Session::get('payment_return_to');
+            $returnUrl = $storedReturnTo ?: ($isAd ? '/my-ads' : '/coin-shop');
 
             if (!$txn) {
                 $db->rollBack();
@@ -91,6 +97,20 @@ class PaymentController {
 
                         $db->commit();
                         Session::setFlash('success', 'Payment successful! Your ad is now live for ' . $campaignDays . ' days.');
+                        header("Location: $returnUrl");
+                        die();
+                    }
+
+                    if ($isVip) {
+                        $stmt = $db->prepare("SELECT duration_days, name FROM vip_plans WHERE id = ?");
+                        $stmt->execute([$txn['plan_id']]);
+                        $plan = $stmt->fetch();
+
+                        $stmt = $db->prepare("INSERT INTO vip_subscriptions (user_id, plan_id, status, expires_at) VALUES (?, ?, 'active', DATE_ADD(NOW(), INTERVAL ? DAY))");
+                        $stmt->execute([$txn['user_id'], $txn['plan_id'], $plan['duration_days'] ?? 30]);
+
+                        $db->commit();
+                        Session::setFlash('success', 'Payment successful! ' . htmlspecialchars($plan['name'] ?? 'VIP') . ' is now active.');
                         header("Location: $returnUrl");
                         die();
                     }

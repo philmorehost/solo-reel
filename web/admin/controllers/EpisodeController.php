@@ -46,6 +46,7 @@ class EpisodeController {
             $unlockMethod = $_POST['unlock_method'] ?? 'coins';
             $thumbnailUrl = $this->handleThumbnailUpload();
             $videoUrl = $this->handleVideoUpload();
+            $trailerUrl = $this->handleTrailerUpload();
 
             if ($videoUrl === false) {
                 // handleVideoUpload() already set a flash error
@@ -57,11 +58,15 @@ class EpisodeController {
                 header("Location: /admin/episodes/create");
                 die();
             }
+            if ($trailerUrl === false) {
+                // handleTrailerUpload() already set a flash error; trailer is optional so don't block the save
+                $trailerUrl = null;
+            }
 
             $db->beginTransaction();
             try {
-                $stmt = $db->prepare("INSERT INTO episodes (series_id, episode_number, title, slug, is_free, coin_cost, unlock_method, thumbnail_url, video_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$seriesId, $episodeNumber, $title, $slug, $isFree, $coinCost, $unlockMethod, $thumbnailUrl, $videoUrl]);
+                $stmt = $db->prepare("INSERT INTO episodes (series_id, episode_number, title, slug, is_free, coin_cost, unlock_method, thumbnail_url, video_url, trailer_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$seriesId, $episodeNumber, $title, $slug, $isFree, $coinCost, $unlockMethod, $thumbnailUrl, $videoUrl, $trailerUrl]);
 
                 $db->commit();
 
@@ -96,6 +101,7 @@ class EpisodeController {
             $seriesId = $_POST['series_id'] ?? 0;
             $thumbnailUrl = $this->handleThumbnailUpload();
             $videoUrl = $this->handleVideoUpload();
+            $trailerUrl = $this->handleTrailerUpload();
 
             if ($videoUrl === false) {
                 // handleVideoUpload() already set a flash error
@@ -113,6 +119,10 @@ class EpisodeController {
             if ($videoUrl !== null) {
                 $fields[] = 'video_url = ?';
                 $params[] = $videoUrl;
+            }
+            if ($trailerUrl !== null && $trailerUrl !== false) {
+                $fields[] = 'trailer_url = ?';
+                $params[] = $trailerUrl;
             }
             $params[] = $id;
 
@@ -233,6 +243,49 @@ class EpisodeController {
         $destName = bin2hex(random_bytes(16)) . '.mp4';
         if (!move_uploaded_file($tmpName, $videoDir . '/' . $destName)) {
             \App\Core\Session::setFlash('error', 'Failed to save uploaded video.');
+            return false;
+        }
+
+        return '/storage/videos/' . $destName;
+    }
+
+    /**
+     * Optional trailer video, shown in the "For You" random-trailer feed.
+     * Same validation/storage as the main episode video, just never required
+     * and never blocks the episode save on failure.
+     *
+     * @return string|null|false
+     */
+    private function handleTrailerUpload() {
+        if (!isset($_FILES['trailer_file']) || $_FILES['trailer_file']['error'] === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+        if ($_FILES['trailer_file']['error'] !== UPLOAD_ERR_OK) {
+            \App\Core\Session::setFlash('error', 'Trailer upload failed; the rest of the episode was saved.');
+            return false;
+        }
+
+        $tmpName = $_FILES['trailer_file']['tmp_name'];
+        $fileName = basename($_FILES['trailer_file']['name']);
+
+        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $tmpName);
+        finfo_close($finfo);
+
+        if ($extension !== 'mp4' || $mimeType !== 'video/mp4') {
+            \App\Core\Session::setFlash('error', 'Invalid trailer file type. Only MP4 videos are allowed; the rest of the episode was saved.');
+            return false;
+        }
+
+        $videoDir = __DIR__ . '/../../storage/videos';
+        if (!is_dir($videoDir)) {
+            mkdir($videoDir, 0775, true);
+        }
+
+        $destName = bin2hex(random_bytes(16)) . '.mp4';
+        if (!move_uploaded_file($tmpName, $videoDir . '/' . $destName)) {
+            \App\Core\Session::setFlash('error', 'Failed to save uploaded trailer; the rest of the episode was saved.');
             return false;
         }
 

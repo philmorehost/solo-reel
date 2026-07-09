@@ -2,6 +2,10 @@
 
 $router->get('/', 'HomeController@index');
 $router->get('/movie/{slug}', 'SeriesController@detail');
+// Must be registered before the greedy /episodes/{...slug} wildcard below —
+// the router is first-match-wins by registration order, and {...slug}
+// compiles to `.*` which would otherwise swallow /episodes/5/comments too.
+$router->get('/episodes/{episodeId}/comments', 'EngagementController@listComments');
 $router->get('/episodes/{...slug}', 'EpisodeController@player');
 $router->get('/shelf/{slug}', 'ShelfController@index');
 $router->get('/search', 'SearchController@index');
@@ -37,7 +41,13 @@ $router->get('/coin-shop', 'CoinController@shop');
 require_once __DIR__ . '/../controllers/CoinController.php';
 require_once __DIR__ . '/../controllers/PaymentController.php';
 $router->post('/unlock/{episodeId}', 'CoinController@unlock');
+$router->post('/progress/{episodeId}', 'ProgressController@record');
+$router->post('/episodes/{episodeId}/like', 'EngagementController@toggleLike');
+$router->post('/episodes/{episodeId}/save', 'EngagementController@toggleSave');
+$router->post('/episodes/{episodeId}/comments', 'EngagementController@postComment');
+$router->post('/episodes/{episodeId}/share', 'EngagementController@recordShare');
 $router->post('/coins/purchase', 'CoinController@purchase');
+$router->post('/vip/subscribe', 'CoinController@subscribeVip');
 $router->get('/payment/verify', 'PaymentController@verify');
 $router->post('/payment/webhook', 'PaymentController@webhook');
 // Hosted checkout for the mobile apps (opened inside the in-app WebView)
@@ -78,6 +88,12 @@ $router->post('/admin/coins/create', 'CoinController@create');
 $router->get('/admin/coins/edit/{id}', 'CoinController@edit');
 $router->post('/admin/coins/edit/{id}', 'CoinController@edit');
 $router->get('/admin/coins/delete/{id}', 'CoinController@delete');
+$router->get('/admin/vip-plans', 'VipPlanController@index');
+$router->get('/admin/vip-plans/create', 'VipPlanController@create');
+$router->post('/admin/vip-plans/create', 'VipPlanController@create');
+$router->get('/admin/vip-plans/edit/{id}', 'VipPlanController@edit');
+$router->post('/admin/vip-plans/edit/{id}', 'VipPlanController@edit');
+$router->get('/admin/vip-plans/delete/{id}', 'VipPlanController@delete');
 $router->get('/admin/banners', 'BannerController@index');
 $router->get('/admin/banners/create', 'BannerController@create');
 $router->post('/admin/banners/create', 'BannerController@create');
@@ -128,13 +144,29 @@ $router->get('/api/v1/series', 'Api\SeriesController@index');
 $router->get('/api/v1/search', 'Api\SeriesController@search');
 $router->get('/api/v1/banners', 'Api\BannerController@index');
 $router->get('/api/v1/series/{slug}/by-slug', 'Api\SeriesController@showBySlug');
+// Must be registered before the single-segment /api/v1/series/{slug} below —
+// "resume-batch" would otherwise itself match {slug} and be routed to show().
+$router->get('/api/v1/series/resume-batch', 'Api\SeriesController@resumeBatch');
+// Same ordering concern as resume-batch above: these single-segment literal
+// paths would otherwise be swallowed by /api/v1/series/{slug} below.
+$router->get('/api/v1/series/hot', 'Api\SeriesController@hot');
+$router->get('/api/v1/series/new', 'Api\SeriesController@newReleases');
+$router->get('/api/v1/series/categories', 'Api\SeriesController@categories');
 $router->get('/api/v1/series/{slug}', 'Api\SeriesController@show');
 $router->get('/api/v1/series/{id}/episodes', 'Api\SeriesController@episodes');
 $router->get('/api/v1/episodes/{slug}/by-slug', 'Api\SeriesController@episodeBySlug');
+$router->get('/api/v1/series/{id}/resume', 'Api\SeriesController@resumeEpisode');
+$router->post('/api/v1/episodes/{id}/progress', 'Api\ProgressController@recordProgress');
+$router->post('/api/v1/episodes/{id}/like', 'Api\EngagementController@toggleLike');
+$router->post('/api/v1/episodes/{id}/save', 'Api\EngagementController@toggleSave');
+$router->get('/api/v1/episodes/{id}/comments', 'Api\EngagementController@listComments');
+$router->post('/api/v1/episodes/{id}/comments', 'Api\EngagementController@postComment');
+$router->post('/api/v1/episodes/{id}/share', 'Api\EngagementController@recordShare');
 $router->get('/api/v1/coin-packages', 'Api\CoinController@packages');
 $router->get('/api/v1/user/profile', 'Api\UserController@profile');
 $router->put('/api/v1/user/profile', 'Api\UserController@updateProfile');
 $router->get('/api/v1/user/watch-history', 'Api\UserController@watchHistory');
+$router->get('/api/v1/user/continue-watching', 'Api\UserController@continueWatching');
 $router->get('/api/v1/user/favorites', 'Api\UserController@favorites');
 $router->post('/api/v1/user/favorites/{seriesId}', 'Api\UserController@addFavorite');
 $router->delete('/api/v1/user/favorites/{seriesId}', 'Api\UserController@removeFavorite');
@@ -150,6 +182,14 @@ $router->post('/api/v1/episodes/unlock/{id}', 'Api\TransactionController@unlock'
 $router->post('/api/v1/episodes/unlock-with-ad/{id}', 'Api\TransactionController@unlockWithAd');
 $router->post('/api/v1/coins/purchase', 'Api\TransactionController@purchase');
 $router->post('/api/v1/coins/guest-purchase', 'Api\TransactionController@guestPurchase');
+$router->get('/api/v1/for-you', 'Api\ForYouController@feed');
+$router->get('/api/v1/me/list', 'Api\ListController@myList');
+$router->delete('/api/v1/me/list/saved/{seriesId}', 'Api\ListController@removeSaved');
+$router->get('/api/v1/ranking', 'Api\ListController@ranking');
+$router->delete('/my-list/saved/{seriesId}', 'MyListController@removeSaved');
+$router->get('/api/v1/vip/plans', 'Api\VipController@plans');
+$router->post('/api/v1/vip/purchase', 'Api\TransactionController@purchaseVip');
+$router->get('/api/v1/user/vip-status', 'Api\VipController@status');
 $router->post('/api/v1/user/claim-install-bonus', 'Api\UserController@claimInstallBonus');
 $router->get('/api/v1/admin/series-requests', 'Api\SeriesRequestController@index');
 $router->get('/api/v1/notifications', 'Api\NotificationController@index');

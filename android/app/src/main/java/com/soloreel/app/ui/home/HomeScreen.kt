@@ -31,6 +31,7 @@ import androidx.navigation.NavHostController
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.rememberAsyncImagePainter
 import com.soloreel.app.data.model.Banner
+import com.soloreel.app.data.model.ContinueWatchingItem
 import com.soloreel.app.data.model.Series
 import com.soloreel.app.ui.navigation.Screen
 import com.soloreel.app.ui.notifications.NotificationBell
@@ -48,6 +49,7 @@ fun HomeScreen(
     val state by viewModel.state.collectAsState()
     val notifState by notificationsViewModel.state.collectAsState()
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     LaunchedEffect(Unit) {
         viewModel.load()
         notificationsViewModel.load(context)
@@ -77,7 +79,16 @@ fun HomeScreen(
                             try { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) } catch (_: Exception) {}
                         }
                     } else {
-                        banner.link_url?.substringAfterLast("/")?.let { navController.navigate(Screen.SeriesDetail.createRoute(it)) }
+                        banner.link_url?.substringAfterLast("/")?.let { slug ->
+                            coroutineScope.launch {
+                                val resumeSlug = viewModel.resolveBannerTarget(slug)
+                                if (resumeSlug != null) {
+                                    navController.navigate(Screen.EpisodePlayer.createRoute(resumeSlug))
+                                } else {
+                                    navController.navigate(Screen.SeriesDetail.createRoute(slug))
+                                }
+                            }
+                        }
                     }
                 }
                 Box(
@@ -127,6 +138,22 @@ fun HomeScreen(
             }
         }
 
+        // Continue Watching — per-viewer, computed at request time from watch
+        // history, never admin-curated. Always rendered above Latest Release.
+        if (state.continueWatching.isNotEmpty()) {
+            item { Text("Continue Watching", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) }
+            item {
+                LazyRow(contentPadding = PaddingValues(horizontal = 12.dp)) {
+                    items(state.continueWatching) { item ->
+                        ContinueWatchingCard(item) {
+                            navController.navigate(Screen.EpisodePlayer.createRoute(item.episode_slug))
+                        }
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+            }
+        }
+
         // Latest releases row — distinct from the "Trending Now" shelf below,
         // which comes from the admin-managed shelves and carries the same name.
         if (state.series.isNotEmpty()) {
@@ -135,7 +162,7 @@ fun HomeScreen(
                 LazyRow(contentPadding = PaddingValues(horizontal = 12.dp)) {
                     items(state.series) { series ->
                         SeriesCard(series) {
-                            navController.navigate(Screen.SeriesDetail.createRoute(series.slug))
+                            navigateToSeries(navController, series, state.resumeSlugs)
                         }
                     }
                 }
@@ -157,7 +184,7 @@ fun HomeScreen(
                 LazyRow(contentPadding = PaddingValues(horizontal = 12.dp)) {
                     items(seriesForShelf) { series ->
                         SeriesCard(series) {
-                            navController.navigate(Screen.SeriesDetail.createRoute(series.slug))
+                            navigateToSeries(navController, series, state.resumeSlugs)
                         }
                     }
                 }
@@ -178,7 +205,7 @@ fun HomeScreen(
                     rowSeries.forEach { series ->
                         Box(modifier = Modifier.weight(1f)) {
                             GridSeriesCard(series) {
-                                navController.navigate(Screen.SeriesDetail.createRoute(series.slug))
+                                navigateToSeries(navController, series, state.resumeSlugs)
                             }
                         }
                     }
@@ -197,6 +224,18 @@ fun HomeScreen(
     }
 
 
+    }
+}
+
+/** Skip-to-player: jump straight into the reel feed at the viewer's resume
+ * episode, falling back to the series-detail screen if the batch lookup
+ * hasn't resolved an entry for this series yet (still loading, or failed). */
+fun navigateToSeries(navController: NavHostController, series: Series, resumeSlugs: Map<Int, String>) {
+    val resumeSlug = resumeSlugs[series.id]
+    if (resumeSlug != null) {
+        navController.navigate(Screen.EpisodePlayer.createRoute(resumeSlug))
+    } else {
+        navController.navigate(Screen.SeriesDetail.createRoute(series.slug))
     }
 }
 
@@ -228,6 +267,38 @@ fun SeriesCard(series: Series, onClick: () -> Unit) {
         }
         Spacer(Modifier.height(8.dp))
         Text(series.title, color = Color.White, fontSize = 14.sp, maxLines = 2, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+/** Same footprint as SeriesCard, but links straight into the resume episode instead of the series detail page. */
+@Composable
+fun ContinueWatchingCard(item: ContinueWatchingItem, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier.width(140.dp).padding(horizontal = 4.dp).clickable(onClick = onClick)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF1A1A1A))
+        ) {
+            if (item.cover_image_url != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(item.cover_image_url),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent, Color(0xAA000000))))
+                )
+                Box(
+                    modifier = Modifier.padding(8.dp).align(Alignment.TopStart).background(Color(0x99000000), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text("EP.${item.episode_number ?: 1} / EP.${item.episode_count ?: 1}", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(item.title, color = Color.White, fontSize = 14.sp, maxLines = 2, fontWeight = FontWeight.SemiBold)
     }
 }
 

@@ -3,10 +3,23 @@
 struct SearchView: View {
     @State private var query = ""
     @State private var results: [Series] = []
+    @State private var resumeSlugs: [Int: String] = [:]
     @State private var isLoading = false
     @State private var requestSent = false
     @State private var showRequestSheet = false
     private var showNoResults: Bool { !isLoading && !query.isEmpty && results.isEmpty }
+    private var guestIdOrNil: String? { TokenManager.shared.isLoggedIn ? nil : TokenManager.shared.guestId }
+
+    /** Skip-to-player: batch-resolve resume episodes for the visible result cards. */
+    private func fetchResumeSlugs() async {
+        let missing = results.map { $0.id }.filter { resumeSlugs[$0] == nil }
+        guard !missing.isEmpty else { return }
+        if let fetched = try? await APIClient.shared.getResumeBatch(ids: missing, guestId: guestIdOrNil) {
+            for (key, slug) in fetched {
+                if let seriesId = Int(key) { resumeSlugs[seriesId] = slug }
+            }
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -65,8 +78,14 @@ struct SearchView: View {
                     ScrollView {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                             ForEach(results) { s in
-                                NavigationLink(destination: SeriesDetailView(slug: s.slug)) {
-                                    SeriesCard(series: s)
+                                if let resumeSlug = resumeSlugs[s.id] {
+                                    NavigationLink(destination: PlayerView(slug: resumeSlug)) {
+                                        SeriesCard(series: s)
+                                    }
+                                } else {
+                                    NavigationLink(destination: SeriesDetailView(slug: s.slug)) {
+                                        SeriesCard(series: s)
+                                    }
                                 }
                             }
                         }.padding(12)
@@ -96,6 +115,7 @@ struct SearchView: View {
         isLoading = true
         do { results = try await APIClient.shared.search(q: "") } catch { results = [] }
         isLoading = false
+        await fetchResumeSlugs()
     }
 
     func performSearch() async {
@@ -103,6 +123,7 @@ struct SearchView: View {
         isLoading = true
         do { results = try await APIClient.shared.search(q: query) } catch { results = [] }
         isLoading = false
+        await fetchResumeSlugs()
     }
 }
 

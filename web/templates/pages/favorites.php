@@ -20,7 +20,7 @@
             <?php else: ?>
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
                 <?php foreach ($favorites as $fav): ?>
-                <a href="/movie/<?= htmlspecialchars($fav['slug'] ?? '') ?>" class="group">
+                <a href="<?= !empty($fav['resume_slug']) ? '/episodes/' . htmlspecialchars($fav['resume_slug']) : '/movie/' . htmlspecialchars($fav['slug'] ?? '') ?>" class="group">
                     <div class="aspect-[2/3] rounded-xl overflow-hidden bg-gray-900">
                         <img src="<?= htmlspecialchars($fav['cover_image_url'] ?? '') ?>" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
                     </div>

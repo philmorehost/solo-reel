@@ -74,6 +74,29 @@ class UserController extends BaseApiController {
         $this->respondJson(['status' => true, 'data' => $rows]);
     }
 
+    /** GET /api/v1/user/continue-watching?guest_id=... — one card per series, its most-recently-watched episode. */
+    public function continueWatching() {
+        $userId = $this->optionalUserId();
+        $guestId = trim((string)($_GET['guest_id'] ?? ''));
+        $db = Database::getInstance();
+
+        $rows = \App\Core\WatchHistory::continueWatchingFor($db, $userId, $guestId !== '' ? $guestId : null);
+
+        $data = array_map(function ($row) {
+            return [
+                'id'                 => (int)$row['id'],
+                'title'              => $row['title'],
+                'slug'               => $row['slug'],
+                'cover_image_url'    => $this->absoluteUrl($row['cover_image'] ?? null),
+                'episode_count'      => (int)$row['episode_count'],
+                'episode_slug'       => $row['episode_slug'],
+                'episode_number'     => (int)$row['episode_number'],
+            ];
+        }, $rows);
+
+        $this->respondJson(['status' => true, 'data' => $data]);
+    }
+
     /** GET /api/v1/user/favorites */
     public function favorites() {
         $userId = $this->requireUserId();

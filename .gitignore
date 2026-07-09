@@ -17,6 +17,10 @@ android/app/build/
 android/.gradle/
 android/local.properties
 *.keystore
+
+# Crash/debug dumps from gradle builds (recur under host memory pressure)
+android/hs_err_pid*.log
+android/replay_pid*.log
 ios/build/
 ios/DerivedData/
 ios/.build/

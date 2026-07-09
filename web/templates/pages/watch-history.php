@@ -21,7 +21,7 @@
         <?php else: ?>
             <div class="space-y-3">
                 <?php foreach($history as $item): ?>
-                    <a href="/movie/<?= htmlspecialchars($item['series_slug']) ?>" class="flex flex-col sm:flex-row items-center p-4 bg-gray-900 rounded-lg hover:bg-gray-800/80 transition border border-gray-800 hover:border-gray-700">
+                    <a href="/episodes/<?= htmlspecialchars($item['episode_slug']) ?>" class="flex flex-col sm:flex-row items-center p-4 bg-gray-900 rounded-lg hover:bg-gray-800/80 transition border border-gray-800 hover:border-gray-700">
                         <div class="relative w-full sm:w-40 aspect-video bg-black rounded overflow-hidden sm:mr-4 mb-3 sm:mb-0 flex-shrink-0">
                             <img src="<?= htmlspecialchars($item['thumbnail_url'] ?? '') ?>" class="w-full h-full object-cover" loading="lazy">
                         </div>

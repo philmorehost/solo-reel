@@ -31,6 +31,7 @@ import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.soloreel.app.data.api.SOLOREELApi
 import com.soloreel.app.data.api.ApiResponse
+import com.soloreel.app.data.api.TokenManager
 import com.soloreel.app.data.model.Episode
 import com.soloreel.app.data.model.Series
 import com.soloreel.app.ui.navigation.Screen
@@ -43,13 +44,20 @@ import javax.inject.Inject
 
 data class SeriesDetailState(
     val series: Series? = null, val episodes: List<Episode> = emptyList(),
+    val resumeSlug: String? = null, val hasHistory: Boolean = false,
     val isLoading: Boolean = false, val error: String? = null
 )
 
 @HiltViewModel
-class SeriesDetailViewModel @Inject constructor(private val api: SOLOREELApi) : ViewModel() {
+class SeriesDetailViewModel @Inject constructor(
+    private val api: SOLOREELApi,
+    private val tokenManager: TokenManager
+) : ViewModel() {
     private val _state = MutableStateFlow(SeriesDetailState())
     val state: StateFlow<SeriesDetailState> = _state.asStateFlow()
+
+    private val guestIdOrNull: String? get() = if (tokenManager.isLoggedIn) null else tokenManager.guestId
+
     fun load(slug: String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
@@ -59,7 +67,20 @@ class SeriesDetailViewModel @Inject constructor(private val api: SOLOREELApi) : 
                 val episodesList = if (seriesData?.id != null) {
                     api.getEpisodes(seriesData.id).data ?: emptyList()
                 } else emptyList()
-                _state.value = SeriesDetailState(series = seriesData, episodes = episodesList)
+
+                var resumeSlug: String? = episodesList.firstOrNull()?.slug
+                var hasHistory = false
+                if (seriesData?.id != null) {
+                    try {
+                        val resume = api.getResumeEpisode(seriesData.id, guestIdOrNull).data
+                        if (resume != null) {
+                            resumeSlug = resume.slug
+                            hasHistory = resume.is_first_watch == false
+                        }
+                    } catch (_: Exception) { /* fall back to episode 1 */ }
+                }
+
+                _state.value = SeriesDetailState(series = seriesData, episodes = episodesList, resumeSlug = resumeSlug, hasHistory = hasHistory)
             } catch (e: Exception) { _state.value = SeriesDetailState(error = e.message) }
         }
     }
@@ -101,6 +122,15 @@ fun SeriesDetailScreen(slug: String, navController: NavHostController, vm: Serie
                             Spacer(Modifier.height(12.dp))
                             Text(state.series!!.title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                             state.series!!.synopsis?.let { Text(it, color = Color.LightGray, fontSize = 14.sp, modifier = Modifier.padding(top = 8.dp)) }
+                            state.resumeSlug?.let { resumeSlug ->
+                                Button(
+                                    onClick = { navController.navigate(Screen.EpisodePlayer.createRoute(resumeSlug)) },
+                                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(48.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
+                                ) {
+                                    Text(if (state.hasHistory) "Resume" else "Play Episode 1", fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
                     }
 

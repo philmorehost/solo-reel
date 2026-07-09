@@ -33,6 +33,7 @@ class SeriesController {
             $synopsis = $_POST['synopsis'] ?? '';
             $genre = $_POST['genre'] ?? '';
             $status = $_POST['status'] ?? 'ongoing';
+            $shelfId = ($_POST['shelf_id'] ?? '') !== '' ? (int)$_POST['shelf_id'] : null;
 
                         $coverImage = null;
             if (isset($_FILES['cover_image']) && $_FILES['cover_image']['error'] === UPLOAD_ERR_OK) {
@@ -64,8 +65,8 @@ class SeriesController {
             }
 
             $db = Database::getInstance();
-            $stmt = $db->prepare("INSERT INTO series (title, slug, synopsis, genre, status, cover_image, hero_image, is_featured) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$title, $slug, $synopsis, $genre, $status, $coverImage, $heroImage, $isFeatured]);
+            $stmt = $db->prepare("INSERT INTO series (title, slug, synopsis, genre, status, cover_image, hero_image, is_featured, shelf_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$title, $slug, $synopsis, $genre, $status, $coverImage, $heroImage, $isFeatured, $shelfId]);
 
             \App\Core\Session::setFlash('success', 'Series created successfully.');
             header("Location: /admin/series");
@@ -75,6 +76,8 @@ class SeriesController {
                 $db = \App\Core\Database::getInstance();
         $stmt = $db->query("SELECT id, name FROM genres ORDER BY name ASC");
         $genres = $stmt->fetchAll();
+        $stmt = $db->query("SELECT id, name FROM shelves ORDER BY sort_order ASC");
+        $shelves = $stmt->fetchAll();
         require __DIR__ . '/../templates/series-form.php';
     }
 
@@ -94,6 +97,7 @@ class SeriesController {
             $synopsis = $_POST['synopsis'] ?? '';
             $genre = $_POST['genre'] ?? '';
             $status = $_POST['status'] ?? 'ongoing';
+            $shelfId = ($_POST['shelf_id'] ?? '') !== '' ? (int)$_POST['shelf_id'] : null;
 
             $stmt_sel = $db->prepare("SELECT cover_image FROM series WHERE id = ?");
             $stmt_sel->execute([$id]);
@@ -127,8 +131,8 @@ class SeriesController {
                     }
                 }
             }
-            $stmt = $db->prepare("UPDATE series SET title = ?, slug = ?, synopsis = ?, genre = ?, status = ?, cover_image = ?, hero_image = ?, is_featured = ? WHERE id = ?");
-            $stmt->execute([$title, $slug, $synopsis, $genre, $status, $coverImage, $heroImage, $isFeatured, $id]);
+            $stmt = $db->prepare("UPDATE series SET title = ?, slug = ?, synopsis = ?, genre = ?, status = ?, cover_image = ?, hero_image = ?, is_featured = ?, shelf_id = ? WHERE id = ?");
+            $stmt->execute([$title, $slug, $synopsis, $genre, $status, $coverImage, $heroImage, $isFeatured, $shelfId, $id]);
 
             \App\Core\Session::setFlash('success', 'Series updated successfully.');
             header("Location: /admin/series");
@@ -142,6 +146,8 @@ class SeriesController {
                 $db = \App\Core\Database::getInstance();
         $stmt = $db->query("SELECT id, name FROM genres ORDER BY name ASC");
         $genres = $stmt->fetchAll();
+        $stmt = $db->query("SELECT id, name FROM shelves ORDER BY sort_order ASC");
+        $shelves = $stmt->fetchAll();
         require __DIR__ . '/../templates/series-form.php';
     }
 

@@ -31,6 +31,7 @@ function toggleAdminSidebar() {
                 '/admin/blog-categories' => ['label' => 'Blog Categories', 'icon' => '🏷️'],
                 '/admin/users' => ['label' => 'Users', 'icon' => '👥'],
                 '/admin/coins' => ['label' => 'Coins Mgmt', 'icon' => '🪙'],
+                '/admin/vip-plans' => ['label' => 'VIP Plans', 'icon' => '👑'],
                 '/admin/series-requests' => ['label' => 'Series Requests', 'icon' => '🙋'],
                 '/admin/reports' => ['label' => 'Reports', 'icon' => '📊'],
                 '/admin/security' => ['label' => 'Security', 'icon' => '🛡️'],

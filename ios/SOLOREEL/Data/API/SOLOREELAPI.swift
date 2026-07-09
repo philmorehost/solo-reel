@@ -32,24 +32,40 @@ struct Shelf: Codable, Identifiable {
 struct Series: Codable, Identifiable {
     let id: Int; let title: String; let slug: String
     let cover_image_url: String?; let synopsis: String?; let genre: String?; let status: String?; let episode_count: Int?
+    let episodes: [Episode]?
     enum CodingKeys: String, CodingKey {
-        case id, title, slug, synopsis, genre, status, episode_count
+        case id, title, slug, synopsis, genre, status, episode_count, episodes
         case cover_image_url = "cover_image_url"
     }
 }
 struct Episode: Codable, Identifiable {
     let id: Int; let title: String; let slug: String; let series_id: Int?; let series_title: String?
+    let series_slug: String?
     let video_hls_url: String?; let thumbnail_url: String?; let is_free: Bool?; let coin_cost: Double?
     let episode_number: Int?; let description: String?; let video_duration_seconds: Int?
     let is_unlocked: Bool?; let unlock_method: String?
+    let like_count: Int?; let comment_count: Int?; let save_count: Int?; let share_count: Int?
+    let is_liked_by_viewer: Bool?; let is_saved_by_viewer: Bool?; let can_share: Bool?
 }
+struct LikeSaveResult: Codable { let liked: Bool?; let saved: Bool?; let count: Int }
+struct EpisodeComment: Codable, Identifiable { let id: Int; let author: String?; let body: String; let created_at: String? }
+struct CommentsPage: Codable { let items: [EpisodeComment]; let total: Int }
 struct CoinPackage: Codable, Identifiable { let id: Int; let name: String; let coins: Int; let price: Double; let currency: String }
+struct VipPlan: Codable, Identifiable {
+    let id: Int; let name: String; let price: Double; let currency: String; let duration_days: Int
+    let perk_free_unlocks: Bool?; let perk_ad_free: Bool?
+}
 struct User: Codable {
     let id: Int; let username: String; let email: String; let display_name: String?
     let coin_balance: Double?; let role: String?
     let bonus_coins: Double?; let bonus_expires_at: String?
 }
 struct WatchHistoryItem: Codable, Identifiable { let id: Int; let series_title: String?; let episode_title: String?; let thumbnail_url: String?; let slug: String?; let watched_at: String?; let progress_seconds: Int? }
+struct ContinueWatchingItem: Codable, Identifiable {
+    let id: Int; let title: String; let slug: String; let cover_image_url: String?
+    let episode_count: Int?; let episode_slug: String; let episode_number: Int?
+}
+struct ResumeEpisode: Codable { let slug: String; let episode_number: Int?; let is_first_watch: Bool? }
 struct WeeklyBonusStatus: Codable { let bonus_coins: Double; let bonus_expires_at: String?; let weekly_amount: Double }
 struct PaymentInit: Codable { let authorization_url: String?; let reference: String? }
 struct GuestPurchaseBody: Codable { let package_id: Int; let guest_id: String }
@@ -152,6 +168,50 @@ class APIClient {
         try await requestVoid("user/profile", method: "PUT", body: body)
     }
     func getWatchHistory() async throws -> [WatchHistoryItem] { try await request("user/watch-history") }
+    func getContinueWatching(guestId: String? = nil) async throws -> [ContinueWatchingItem] {
+        let q = guestId.map { "?guest_id=\($0)" } ?? ""
+        return try await request("user/continue-watching\(q)")
+    }
+    func getResumeEpisode(seriesId: Int, guestId: String? = nil) async throws -> ResumeEpisode {
+        let q = guestId.map { "?guest_id=\($0)" } ?? ""
+        return try await request("series/\(seriesId)/resume\(q)")
+    }
+    /** Fire-and-forget: records that an episode is being watched (powers resume + Continue Watching). */
+    func recordProgress(episodeId: Int, guestId: String? = nil) async throws {
+        let body = try JSONEncoder().encode(guestId.map { ["guest_id": $0] } ?? [:])
+        try await requestVoid("episodes/\(episodeId)/progress", method: "POST", body: body)
+    }
+    /** Skip-to-player: resolve each card's resume episode (or episode 1) in one batch call. */
+    func getResumeBatch(ids: [Int], guestId: String? = nil) async throws -> [String: String] {
+        guard !ids.isEmpty else { return [:] }
+        let idsParam = ids.map(String.init).joined(separator: ",")
+        let q = guestId.map { "&guest_id=\($0)" } ?? ""
+        return try await request("series/resume-batch?ids=\(idsParam)\(q)")
+    }
+    func toggleLike(episodeId: Int, guestId: String? = nil) async throws -> LikeSaveResult {
+        let body = try JSONEncoder().encode(guestId.map { ["guest_id": $0] } ?? [:])
+        return try await request("episodes/\(episodeId)/like", method: "POST", body: body)
+    }
+    func toggleSave(episodeId: Int, guestId: String? = nil) async throws -> LikeSaveResult {
+        let body = try JSONEncoder().encode(guestId.map { ["guest_id": $0] } ?? [:])
+        return try await request("episodes/\(episodeId)/save", method: "POST", body: body)
+    }
+    func getComments(episodeId: Int, offset: Int = 0, limit: Int = 50) async throws -> CommentsPage {
+        try await request("episodes/\(episodeId)/comments?offset=\(offset)&limit=\(limit)")
+    }
+    func postComment(episodeId: Int, body text: String, guestId: String? = nil) async throws -> EpisodeComment {
+        var payload: [String: String] = ["body": text]
+        if let g = guestId { payload["guest_id"] = g }
+        let body = try JSONEncoder().encode(payload)
+        return try await request("episodes/\(episodeId)/comments", method: "POST", body: body)
+    }
+    /** Fire-and-forget: recorded the moment the share sheet is invoked, not gated on completion. */
+    func recordShare(episodeId: Int, guestId: String? = nil, platform: String = "ios") async throws {
+        var payload: [String: String] = ["platform": platform]
+        if let g = guestId { payload["guest_id"] = g }
+        let body = try JSONEncoder().encode(payload)
+        try await requestVoid("episodes/\(episodeId)/share", method: "POST", body: body)
+    }
     func getFavorites() async throws -> [Series] { try await request("user/favorites") }
     func getBonusStatus() async throws -> WeeklyBonusStatus { try await request("user/bonus-status") }
     func getAdsConfig() async throws -> [String: String] { try await request("ads-config") }
@@ -205,6 +265,13 @@ class APIClient {
     func guestPurchaseCoins(packageId: Int, guestId: String) async throws -> PaymentInit {
         let body = try JSONEncoder().encode(GuestPurchaseBody(package_id: packageId, guest_id: guestId))
         return try await request("coins/guest-purchase", method: "POST", body: body)
+    }
+    // VIP subscription — an alternative to buying coins, not a replacement;
+    // registered users only (see 021_vip_subscriptions.sql for why).
+    func getVipPlans() async throws -> [VipPlan] { try await request("vip/plans") }
+    func purchaseVip(planId: Int) async throws -> PaymentInit {
+        let body = try JSONEncoder().encode(["plan_id": planId])
+        return try await request("vip/purchase", method: "POST", body: body)
     }
     func verifyPayment(reference: String) async throws -> PaymentVerifyResult {
         let ref = reference.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? reference

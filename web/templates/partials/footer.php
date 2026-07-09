@@ -47,14 +47,18 @@ if ($androidLink || $iosLink):
                 Experience SOLOREEL <br class="sm:hidden">in our Mobile App!
             </div>
         </div>
-        <div class="flex items-center space-x-2 sm:space-x-4">
+        <div class="flex items-center space-x-2 sm:space-x-3">
             <?php if($androidLink): ?>
-                <a href="<?= htmlspecialchars($androidLink) ?>" target="_blank" class="bg-white text-[#FF0055] font-black py-1.5 px-3 sm:px-5 rounded-full text-xs sm:text-sm hover:scale-105 transition-transform shadow-lg uppercase tracking-wider">Android</a>
+                <a href="<?= htmlspecialchars($androidLink) ?>" target="_blank" aria-label="Download on Android" title="Download on Android" class="bg-white text-[#3DDC84] w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-lg flex-shrink-0">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.637.637 0 00-.83.22l-1.88 3.24a11.463 11.463 0 00-8.94 0L5.65 5.67a.643.643 0 00-.87-.2c-.28.18-.37.54-.22.83L6.4 9.48C3.3 11.25 1.28 14.44 1 18h22c-.28-3.56-2.3-6.75-5.4-8.52zM7 15.25a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5zm10 0a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z"/></svg>
+                </a>
             <?php endif; ?>
             <?php if($iosLink): ?>
-                <a href="<?= htmlspecialchars($iosLink) ?>" target="_blank" class="bg-white text-[#FF8800] font-black py-1.5 px-3 sm:px-5 rounded-full text-xs sm:text-sm hover:scale-105 transition-transform shadow-lg uppercase tracking-wider">iOS</a>
+                <a href="<?= htmlspecialchars($iosLink) ?>" target="_blank" aria-label="Download on iOS" title="Download on iOS" class="bg-white text-black w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-lg flex-shrink-0">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zm3.415-3.09c.844-1.026 1.417-2.454 1.26-3.883-1.222.052-2.7.858-3.57 1.883-.78.91-1.466 2.376-1.284 3.767 1.36.104 2.75-.688 3.594-1.767z"/></svg>
+                </a>
             <?php endif; ?>
-            <button id="app-download-close" class="text-white hover:text-gray-200 focus:outline-none ml-2 sm:ml-4 p-1">
+            <button id="app-download-close" class="text-white hover:text-gray-200 focus:outline-none ml-2 sm:ml-3 p-1 flex-shrink-0">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>

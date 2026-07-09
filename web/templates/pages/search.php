@@ -62,7 +62,7 @@
 
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
                 <template x-for="item in results" :key="item.id">
-                    <a :href="'/movie/' + item.slug" class="movie-card group cursor-pointer block relative">
+                    <a :href="item.resume_slug ? '/episodes/' + item.resume_slug : '/movie/' + item.slug" class="movie-card group cursor-pointer block relative">
                         <div class="relative aspect-[2/3] overflow-hidden rounded-lg bg-gray-900 border border-gray-800">
                             <img :src="item.cover_image ? item.cover_image : '/assets/img/default-cover.jpg'" class="w-full h-full object-cover">
                             <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">

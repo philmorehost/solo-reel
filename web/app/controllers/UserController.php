@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Database;
 use App\Core\Session;
+use App\Core\WatchHistory;
 
 class UserController {
     public function profile() {
@@ -25,7 +26,7 @@ class UserController {
 
         // Recent Watch History
         $stmt = $db->prepare("
-            SELECT wh.*, e.title as episode_title, e.thumbnail_url, s.title as series_title, s.slug as series_slug
+            SELECT wh.*, e.title as episode_title, e.slug as episode_slug, e.thumbnail_url, s.title as series_title, s.slug as series_slug
             FROM watch_history wh
             JOIN episodes e ON wh.episode_id = e.id
             JOIN series s ON e.series_id = s.id
@@ -47,7 +48,7 @@ class UserController {
         \App\Core\Auth::requireLogin();
         $db = Database::getInstance();
         $stmt = $db->prepare("
-            SELECT wh.*, e.title as episode_title, e.thumbnail_url, s.title as series_title, s.slug as series_slug
+            SELECT wh.*, e.title as episode_title, e.slug as episode_slug, e.thumbnail_url, s.title as series_title, s.slug as series_slug
             FROM watch_history wh
             JOIN episodes e ON wh.episode_id = e.id
             JOIN series s ON e.series_id = s.id
@@ -64,14 +65,18 @@ class UserController {
         \App\Core\Auth::requireLogin();
         $db = Database::getInstance();
         $stmt = $db->prepare("
-            SELECT f.*, s.title, s.slug, s.cover_image, (SELECT COUNT(*) FROM episodes WHERE series_id = s.id) as episode_count
+            SELECT f.*, s.title, s.slug, s.cover_image AS cover_image_url, (SELECT COUNT(*) FROM episodes WHERE series_id = s.id) as episode_count
             FROM favorites f
             JOIN series s ON f.series_id = s.id
             WHERE f.user_id = ?
             ORDER BY f.created_at DESC
         ");
         $stmt->execute([Session::get('user_id')]);
-        $series = $stmt->fetchAll();
+        $favorites = $stmt->fetchAll();
+
+        $resumeSlugs = WatchHistory::resumeSlugsForSeries($db, array_map('intval', array_column($favorites, 'series_id')), Session::get('user_id'), Session::getGuestId());
+        foreach ($favorites as &$s) { $s['resume_slug'] = $resumeSlugs[(int)$s['series_id']] ?? null; }
+        unset($s);
 
         require __DIR__ . '/../../templates/pages/favorites.php';
     }

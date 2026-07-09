@@ -95,7 +95,7 @@
                             Learn More
                         </a>
                         <?php else: ?>
-                        <a href="/movie/<?= htmlspecialchars($banner['slug']) ?>" class="inline-flex items-center justify-center bg-white text-black font-bold px-8 py-3.5 rounded-md hover:bg-gray-200 transition-colors text-lg">
+                        <a href="<?= !empty($banner['resume_slug']) ? '/episodes/' . htmlspecialchars($banner['resume_slug']) : '/movie/' . htmlspecialchars($banner['slug']) ?>" class="inline-flex items-center justify-center bg-white text-black font-bold px-8 py-3.5 rounded-md hover:bg-gray-200 transition-colors text-lg">
                             <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"></path></svg>
                             Play
                         </a>
@@ -123,13 +123,50 @@
     </div>
 
     <main class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12 -mt-16 relative z-20">
+        <!-- Continue Watching — per-viewer, not admin-curated, always above Latest Releases -->
+        <?php if(!empty($continueWatching)): ?>
+        <div class="mb-14">
+            <h3 class="text-2xl font-bold mb-6 flex items-center"><span class="mr-2">▶️</span>Continue Watching</h3>
+            <div class="flex overflow-x-auto gap-4 pb-8 pt-4 hide-scrollbar snap-x">
+                <?php foreach($continueWatching as $item): ?>
+                    <a href="/episodes/<?= htmlspecialchars($item['episode_slug']) ?>" class="movie-card flex-none w-[140px] sm:w-[180px] md:w-[220px] snap-start relative group rounded-xl bg-[#1a1a1f] shadow-2xl border border-gray-800/50 block">
+                        <div class="relative aspect-[2/3] overflow-hidden rounded-t-xl">
+                            <img src="<?= htmlspecialchars($item['cover_image'] ?? '/assets/img/default-cover.jpg') ?>" class="w-full h-full object-cover">
+
+                            <!-- Play Overlay -->
+                            <div class="play-overlay absolute inset-0 bg-black/50 opacity-0 transform scale-90 transition-all flex items-center justify-center backdrop-blur-sm">
+                                <div class="bg-red-600/90 rounded-full p-4 shadow-[0_0_20px_rgba(220,38,38,0.6)]">
+                                    <svg class="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6z"></path></svg>
+                                </div>
+                            </div>
+
+                            <!-- Episode Badge -->
+                            <div class="absolute top-2 left-2 bg-black/80 backdrop-blur px-2 py-1 rounded text-[10px] font-bold text-white border border-gray-700">
+                                EP.<?= (int)$item['episode_number'] ?> / EP.<?= (int)$item['episode_count'] ?>
+                            </div>
+                        </div>
+                        <div class="p-3">
+                            <h4 class="text-sm font-semibold text-gray-200 group-hover:text-white truncate"><?= htmlspecialchars($item['title']) ?></h4>
+                        </div>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Latest Releases -->
         <?php if(!empty($latestSeries)): ?>
         <div class="mb-14">
-            <h3 class="text-2xl font-bold mb-6 flex items-center">Latest Releases</h3>
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold flex items-center">Latest Releases</h3>
+                <a href="/shelf/top" class="text-sm text-gray-400 hover:text-white transition flex items-center gap-1 flex-none">
+                    See All
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </a>
+            </div>
             <div class="flex overflow-x-auto gap-4 pb-8 pt-4 hide-scrollbar snap-x">
                 <?php foreach($latestSeries as $series): ?>
-                    <a href="/movie/<?= $series['slug'] ?>" class="movie-card flex-none w-[140px] sm:w-[180px] md:w-[220px] snap-start relative group rounded-xl bg-[#1a1a1f] shadow-2xl border border-gray-800/50 block">
+                    <a href="<?= !empty($series['resume_slug']) ? '/episodes/' . htmlspecialchars($series['resume_slug']) : '/movie/' . htmlspecialchars($series['slug']) ?>" class="movie-card flex-none w-[140px] sm:w-[180px] md:w-[220px] snap-start relative group rounded-xl bg-[#1a1a1f] shadow-2xl border border-gray-800/50 block">
                         <div class="relative aspect-[2/3] overflow-hidden rounded-t-xl">
                             <img src="<?= htmlspecialchars($series['cover_image'] ?? '/assets/img/default-cover.jpg') ?>" class="w-full h-full object-cover">
 
@@ -158,13 +195,19 @@
         <?php foreach($shelves as $shelf): ?>
             <?php if(!empty($shelf['series'])): ?>
                 <div class="mb-14">
-                    <h3 class="text-2xl font-bold mb-6 flex items-center">
-                        <span class="mr-2"><?= htmlspecialchars($shelf['emoji'] ?? '') ?></span>
-                        <?= htmlspecialchars($shelf['name']) ?>
-                    </h3>
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-2xl font-bold flex items-center">
+                            <span class="mr-2"><?= htmlspecialchars($shelf['emoji'] ?? '') ?></span>
+                            <?= htmlspecialchars($shelf['name']) ?>
+                        </h3>
+                        <a href="/shelf/<?= htmlspecialchars($shelf['slug']) ?>" class="text-sm text-gray-400 hover:text-white transition flex items-center gap-1 flex-none">
+                            See All
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </a>
+                    </div>
                     <div class="flex overflow-x-auto gap-4 pb-8 pt-4 hide-scrollbar snap-x">
                         <?php foreach($shelf['series'] as $series): ?>
-                            <a href="/movie/<?= $series['slug'] ?>" class="movie-card flex-none w-[140px] sm:w-[180px] md:w-[220px] snap-start relative group rounded-xl bg-[#1a1a1f] shadow-2xl border border-gray-800/50 block">
+                            <a href="<?= !empty($series['resume_slug']) ? '/episodes/' . htmlspecialchars($series['resume_slug']) : '/movie/' . htmlspecialchars($series['slug']) ?>" class="movie-card flex-none w-[140px] sm:w-[180px] md:w-[220px] snap-start relative group rounded-xl bg-[#1a1a1f] shadow-2xl border border-gray-800/50 block">
                                 <div class="relative aspect-[2/3] overflow-hidden rounded-t-xl">
                                     <img src="<?= htmlspecialchars($series['cover_image'] ?? '/assets/img/default-cover.jpg') ?>" class="w-full h-full object-cover">
 

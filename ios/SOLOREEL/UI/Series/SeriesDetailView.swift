@@ -3,6 +3,20 @@ import SwiftUI
 struct SeriesDetailView: View {
     let slug: String
     @State private var series: Series?; @State private var episodes: [Episode] = []; @State private var isLoading = true
+    @State private var resumeSlug: String?
+    @State private var hasHistory = false
+
+    private var guestIdOrNil: String? { TokenManager.shared.isLoggedIn ? nil : TokenManager.shared.guestId }
+
+    private func loadResumeState(seriesId: Int) async {
+        if let resume = try? await APIClient.shared.getResumeEpisode(seriesId: seriesId, guestId: guestIdOrNil) {
+            resumeSlug = resume.slug
+            hasHistory = resume.is_first_watch == false
+        } else {
+            resumeSlug = episodes.first?.slug
+            hasHistory = false
+        }
+    }
 
     var body: some View {
         ScrollView {
@@ -23,6 +37,18 @@ struct SeriesDetailView: View {
                     }.padding(.horizontal)
                     Text(s.title).font(.notoSans(size: 28, relativeTo: .title)).bold().padding(.horizontal)
                     Text(s.synopsis ?? "").foregroundColor(.gray).font(.notoSans(size: 15, relativeTo: .subheadline)).padding(.horizontal)
+
+                    if let resumeSlug {
+                        NavigationLink(destination: PlayerView(slug: resumeSlug)) {
+                            Text(hasHistory ? "Resume" : "Play Episode 1")
+                                .font(.notoSans(size: 16, relativeTo: .headline)).bold()
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.red)
+                                .foregroundColor(.white)
+                                .cornerRadius(24)
+                        }.padding(.horizontal).padding(.top, 8)
+                    }
 
                     Text("Episodes").font(.notoSans(size: 20, relativeTo: .title3)).bold().padding(.horizontal).padding(.top)
                     ForEach(episodes) { ep in
@@ -55,14 +81,20 @@ struct SeriesDetailView: View {
         .refreshable {
             do {
                 series = try await APIClient.shared.getSeriesDetail(slug: slug)
-                if let id = series?.id { episodes = try await APIClient.shared.getEpisodes(seriesId: id) }
+                if let id = series?.id {
+                    episodes = try await APIClient.shared.getEpisodes(seriesId: id)
+                    await loadResumeState(seriesId: id)
+                }
             } catch {}
         }
         .background(Color.black).preferredColorScheme(.dark)
         .task {
             do {
                 series = try await APIClient.shared.getSeriesDetail(slug: slug)
-                if let id = series?.id { episodes = try await APIClient.shared.getEpisodes(seriesId: id) }
+                if let id = series?.id {
+                    episodes = try await APIClient.shared.getEpisodes(seriesId: id)
+                    await loadResumeState(seriesId: id)
+                }
                 isLoading = false
             } catch { isLoading = false }
         }

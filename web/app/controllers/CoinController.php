@@ -5,8 +5,19 @@ namespace App\Controllers;
 use App\Core\Database;
 use App\Core\Session;
 use App\Core\Security;
+use App\Core\Vip;
 
 class CoinController {
+    /** Only ever a same-site relative path — never trust this as an absolute
+     * URL (open-redirect risk). Falls back to /coin-shop. */
+    private function sanitizeReturnTo(?string $raw): string {
+        $raw = trim((string) $raw);
+        if ($raw === '' || $raw[0] !== '/' || str_starts_with($raw, '//')) {
+            return '/coin-shop';
+        }
+        return substr($raw, 0, 500);
+    }
+
     public function shop() {
         $userId = Session::get('user_id');
         $guestId = Session::getGuestId();
@@ -78,8 +89,19 @@ class CoinController {
 
             if (!$episode) throw new \Exception("Episode not found");
 
+            $vipSubscription = $userId ? Vip::activeSubscription($db, $userId) : null;
+
             $newBalance = 0;
-            if ($userId) {
+            if ($userId && $vipSubscription && $vipSubscription['perk_free_unlocks']) {
+                // VIP free-unlocks perk: bypass the coin balance check/deduction
+                // entirely — nothing was spent, so no coin_transactions row either.
+                $stmt = $db->prepare("INSERT IGNORE INTO user_unlocked_episodes (user_id, episode_id) VALUES (?, ?)");
+                $stmt->execute([$userId, $episodeId]);
+
+                $stmt = $db->prepare("SELECT coin_balance FROM users WHERE id = ?");
+                $stmt->execute([$userId]);
+                $newBalance = (float) ($stmt->fetchColumn() ?: 0);
+            } elseif ($userId) {
                 $stmt = $db->prepare("SELECT coin_balance FROM users WHERE id = ? FOR UPDATE");
                 $stmt->execute([$userId]);
                 $user = $stmt->fetch();
@@ -150,10 +172,13 @@ class CoinController {
         try {
             Security::validateCsrfPost();
 
+            $returnTo = $this->sanitizeReturnTo($_POST['return_to'] ?? null);
+            Session::set('payment_return_to', $returnTo);
+
             $packageId = (int)($_POST['package_id'] ?? 0);
             if (!$packageId) {
                 Session::setFlash('error', 'Invalid package selected.');
-                header("Location: /coin-shop");
+                header("Location: $returnTo");
                 die();
             }
 
@@ -164,13 +189,13 @@ class CoinController {
 
             if (!$package) {
                 Session::setFlash('error', 'Package not available.');
-                header("Location: /coin-shop");
+                header("Location: $returnTo");
                 die();
             }
 
             $userId = Session::get('user_id');
             $guestId = Session::getGuestId();
-            
+
             $email = Session::get('user_email');
             if (empty($email)) {
                 $email = 'guest_' . substr(md5($guestId), 0, 10) . '@soloreel.tv';
@@ -193,7 +218,7 @@ class CoinController {
 
                     Session::set('user_coin_balance', $newCoins);
                     Session::setFlash('success', number_format((int)$package['coins']) . ' coins added to your account!');
-                    header("Location: /coin-shop");
+                    header("Location: $returnTo");
                     die();
                 }
             }
@@ -206,7 +231,7 @@ class CoinController {
             if (!$settings || $keys['public'] === '' || $keys['secret'] === '') {
                 $mode = $settings['mode'] ?? 'sandbox';
                 Session::setFlash('error', "Card payment is not configured for {$mode} mode. Use Bank Transfer instead or contact support.");
-                header("Location: /coin-shop");
+                header("Location: $returnTo");
                 die();
             }
 
@@ -222,12 +247,86 @@ class CoinController {
 
             $publicKey = $keys['public'];
             $payhubBaseUrl = \App\Core\PayhubKeys::baseUrl($settings);
+            $cancelUrl = $returnTo;
             require __DIR__ . '/../../templates/pages/checkout.php';
             die();
 
         } catch (\Throwable $e) {
             Session::setFlash('error', 'Checkout error: ' . $e->getMessage());
-            header("Location: /coin-shop");
+            header("Location: " . ($returnTo ?? '/coin-shop'));
+            die();
+        }
+    }
+
+    /** POST /vip/subscribe — the VIP alternative to purchase(): registered
+     * users only (VIP needs a durable identity to enforce/renew against; see
+     * 021_vip_subscriptions.sql), same Payhub checkout + return_to handling
+     * as coin purchases, just against vip_plans/vip_subscriptions instead of
+     * coin_packages/coin_transactions. */
+    public function subscribeVip() {
+        try {
+            Security::validateCsrfPost();
+
+            $returnTo = $this->sanitizeReturnTo($_POST['return_to'] ?? null);
+            Session::set('payment_return_to', $returnTo);
+
+            $userId = Session::get('user_id');
+            if (!$userId) {
+                Session::setFlash('error', 'Please sign in to subscribe to VIP.');
+                header("Location: /login");
+                die();
+            }
+
+            $planId = (int)($_POST['plan_id'] ?? 0);
+            if (!$planId) {
+                Session::setFlash('error', 'Invalid plan selected.');
+                header("Location: $returnTo");
+                die();
+            }
+
+            $db = Database::getInstance();
+            $stmt = $db->prepare("SELECT * FROM vip_plans WHERE id = ? AND is_active = 1");
+            $stmt->execute([$planId]);
+            $plan = $stmt->fetch();
+
+            if (!$plan) {
+                Session::setFlash('error', 'Plan not available.');
+                header("Location: $returnTo");
+                die();
+            }
+
+            $stmt = $db->prepare("SELECT email FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch();
+            $email = $user['email'] ?? ('user_' . $userId . '@soloreel.tv');
+
+            $stmt = $db->query("SELECT * FROM payment_settings LIMIT 1");
+            $settings = $stmt->fetch();
+            $keys = $settings ? \App\Core\PayhubKeys::active($settings) : ['public' => '', 'secret' => ''];
+
+            if (!$settings || $keys['public'] === '' || $keys['secret'] === '') {
+                $mode = $settings['mode'] ?? 'sandbox';
+                Session::setFlash('error', "Card payment is not configured for {$mode} mode.");
+                header("Location: $returnTo");
+                die();
+            }
+
+            $amount = $plan['price'];
+            $payhubTxn = \App\Core\PayhubKeys::initialize($settings, $keys['secret'], (float)$amount, $email);
+            $reference = $payhubTxn['reference'];
+
+            $stmt = $db->prepare("INSERT INTO payment_transactions (user_id, type, plan_id, reference, amount, currency, status, coins_awarded) VALUES (?, 'vip_subscription', ?, ?, ?, ?, 'pending', 0)");
+            $stmt->execute([$userId, $plan['id'], $reference, $amount, $plan['currency']]);
+
+            $publicKey = $keys['public'];
+            $payhubBaseUrl = \App\Core\PayhubKeys::baseUrl($settings);
+            $cancelUrl = $returnTo;
+            require __DIR__ . '/../../templates/pages/checkout.php';
+            die();
+
+        } catch (\Throwable $e) {
+            Session::setFlash('error', 'Checkout error: ' . $e->getMessage());
+            header("Location: " . ($returnTo ?? '/coin-shop'));
             die();
         }
     }

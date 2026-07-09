@@ -55,12 +55,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $dbConfig = $_SESSION['install_db'];
             $pdo = new PDO("mysql:host={$dbConfig['host']};dbname={$dbConfig['name']}", $dbConfig['user'], $dbConfig['pass']);
 
-            // Run schema
-            $schemas = ['001_initial_schema_mysql.sql', '002_payment_gateway.sql', '003_add_seo_columns.sql', '005_additional_features.sql', '006_update_features.sql', '007_user_dashboard.sql', '008_demo_content.sql'];
-            foreach ($schemas as $schema) {
-                $sql = file_get_contents(__DIR__ . '/../schema/' . $schema);
-                $pdo->exec($sql);
-            }
+            // Run every schema file via the same self-healing Migrator that
+            // runs on every live request (see web/index.php) — it scans
+            // schema/*.sql dynamically and tracks applied files in a
+            // `migrations` table, so this installer can never go stale again
+            // as new migrations are added (a hardcoded file list here
+            // previously fell 11 migrations behind without anyone noticing).
+            require_once __DIR__ . '/../app/core/Env.php';
+            require_once __DIR__ . '/../app/core/Database.php';
+            require_once __DIR__ . '/../app/core/Migrator.php';
+            \App\Core\Env::load(__DIR__ . '/../.env');
+            \App\Core\Migrator::autoHeal();
 
             // Set site title
             $stmt = $pdo->prepare("UPDATE site_config SET setting_value = ? WHERE setting_key = 'meta_title'");
