@@ -12,7 +12,8 @@ struct ContentView: View {
         } else {
             TabView {
                 HomeView().tabItem { Label("Home", systemImage: "house.fill") }
-                SearchView().tabItem { Label("Search", systemImage: "magnifyingglass") }
+                ForYouView().tabItem { Label("For You", systemImage: "flame.fill") }
+                MyListView().tabItem { Label("My List", systemImage: "bookmark.fill") }
                 CoinShopView().tabItem { Label("Coins", systemImage: "bitcoinsign.circle.fill") }
                 ProfileView().tabItem { Label("Profile", systemImage: "person.circle.fill") }
             }

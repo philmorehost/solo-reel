@@ -54,7 +54,31 @@ interface SOLOREELApi {
     suspend fun getEpisodes(@Path("id") seriesId: Int, @Query("guest_id") guestId: String? = null): ApiResponse<List<Episode>>
 
     @GET("api/v1/search")
-    suspend fun search(@Query("q") query: String, @Query("size") size: Int = 20): ApiResponse<List<Series>>
+    suspend fun search(@Query("q") query: String, @Query("size") size: Int = 20, @Query("category") category: String? = null): ApiResponse<List<Series>>
+
+    // Content hub tabs — HOT / NEW / RANKING / CATEGORIES / TV SERIES / MOVIES.
+    // TV Series and Movies reuse search()'s existing "category" filter above.
+    @GET("api/v1/series/hot")
+    suspend fun getHotSeries(@Query("size") size: Int = 24): ApiResponse<List<Series>>
+
+    @GET("api/v1/series/new")
+    suspend fun getNewSeries(): ApiResponse<com.soloreel.app.data.model.NewReleases>
+
+    @GET("api/v1/series/categories")
+    suspend fun getCategories(): ApiResponse<List<com.soloreel.app.data.model.CategoryGroup>>
+
+    @GET("api/v1/ranking")
+    suspend fun getRanking(@Query("limit") limit: Int = 30): ApiResponse<List<Series>>
+
+    // "For You" — random admin-uploaded trailer feed, and "My List" — history/liked/saved.
+    @GET("api/v1/for-you")
+    suspend fun getForYou(@Query("guest_id") guestId: String? = null, @Query("limit") limit: Int = 20): ApiResponse<List<com.soloreel.app.data.model.ForYouItem>>
+
+    @GET("api/v1/me/list")
+    suspend fun getMyList(@Query("guest_id") guestId: String? = null): ApiResponse<com.soloreel.app.data.model.MyListData>
+
+    @DELETE("api/v1/me/list/saved/{seriesId}")
+    suspend fun removeSavedSeries(@Path("seriesId") seriesId: Int, @Query("guest_id") guestId: String? = null): ApiResponse<JsonElement>
 
     @GET("api/v1/coin-packages")
     suspend fun getCoinPackages(): ApiResponse<List<CoinPackage>>

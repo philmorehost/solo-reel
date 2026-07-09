@@ -9,7 +9,8 @@
                 <h4 class="text-white font-semibold mb-3 text-sm uppercase tracking-wider">Browse</h4>
                 <ul class="space-y-2">
                     <li><a href="/" class="text-gray-400 hover:text-white text-sm transition">Home</a></li>
-                    <li><a href="/search" class="text-gray-400 hover:text-white text-sm transition">Search</a></li>
+                    <li><a href="/for-you" class="text-gray-400 hover:text-white text-sm transition">For You</a></li>
+                    <li><a href="/my-list" class="text-gray-400 hover:text-white text-sm transition">My List</a></li>
                     <li><a href="/shelf/top" class="text-gray-400 hover:text-white text-sm transition">Top Series</a></li>
                     <li><a href="/blog" class="text-gray-400 hover:text-white text-sm transition">Blog</a></li>
                 </ul>
@@ -20,6 +21,7 @@
                     <?php if(\App\Core\Session::isLoggedIn()): ?>
                         <li><a href="/profile" class="text-gray-400 hover:text-white text-sm transition">Profile</a></li>
                         <li><a href="/coin-shop" class="text-gray-400 hover:text-white text-sm transition">Buy Coins</a></li>
+                        <li><a href="/vip" class="text-gray-400 hover:text-white text-sm transition">VIP Membership</a></li>
                     <?php else: ?>
                         <li><a href="/login" class="text-gray-400 hover:text-white text-sm transition">Sign In</a></li>
                         <li><a href="/register" class="text-gray-400 hover:text-white text-sm transition">Sign Up</a></li>

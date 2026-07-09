@@ -62,7 +62,35 @@ data class Series(
     val genre: String?,
     val status: String?,
     val episode_count: Int?,
-    val episodes: List<Episode>? = null
+    val episodes: List<Episode>? = null,
+    val is_hot: Boolean? = false,
+    val is_new: Boolean? = false,
+    // Only populated by the RANKING tab (/api/v1/ranking) — total likes across the series' episodes.
+    val like_count: Int? = null
+)
+
+/** NEW tab: /api/v1/series/new — coming-soon vs. recently released. */
+data class NewReleases(val coming_soon: List<Series>, val all_new: List<Series>)
+
+/** CATEGORIES tab: /api/v1/series/categories — one shelf per genre. */
+data class CategoryGroup(val genre: String, val series: List<Series>)
+
+/** My List page: /api/v1/me/list -> {history, liked, saved}. */
+data class MyListData(
+    val history: List<ContinueWatchingItem>,
+    val liked: List<Series>,
+    val saved: List<Series>
+)
+
+/** For You feed item: /api/v1/for-you — an admin-uploaded trailer, "Watch Now" resumes the series. */
+data class ForYouItem(
+    val episode_id: Int,
+    val trailer_url: String,
+    val series_id: Int,
+    val series_title: String,
+    val series_slug: String,
+    val cover_image_url: String?,
+    val resume_slug: String?
 )
 
 data class Episode(

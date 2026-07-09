@@ -26,6 +26,7 @@ class ForYouController extends BaseApiController {
                 'trailer_url'  => $this->absoluteUrl($t['trailer_url']),
                 'series_id'    => $seriesId,
                 'series_title' => $t['series_title'],
+                'series_slug'  => $t['series_slug'],
                 'cover_image_url' => $this->absoluteUrl($t['cover_image']),
                 'resume_slug'  => $resumeSlugs[$seriesId] ?? null,
             ];

@@ -4,7 +4,8 @@ $logoHtml = \App\Helpers\Site::getLogoHtml();
 $isLoggedIn = \App\Core\Session::isLoggedIn();
 $userName = \App\Core\Session::get('user_name');
 $coinBalance = \App\Core\Session::get('user_coin_balance');
-?><script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+?><script src="/assets/js/header-search.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style>
     /* Prevent text selection and drag */
     body {
@@ -45,17 +46,46 @@ $coinBalance = \App\Core\Session::get('user_coin_balance');
      :class="{ 'bg-black/90 backdrop-blur-md shadow-lg': scrolled, 'bg-transparent': !scrolled }"
      class="fixed w-full z-50 transition-all duration-300">
     <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-50">
-        <div class="flex items-center justify-between h-16 sm:h-20">
-            <div class="flex items-center">
-                <a href="/" class="transition-transform hover:scale-105 mr-6"><?= $logoHtml ?></a>
-                <div class="hidden md:flex items-center space-x-6 lg:space-x-8">
+        <div class="flex items-center justify-between h-16 sm:h-20 gap-3">
+            <div class="flex items-center min-w-0">
+                <a href="/" class="transition-transform hover:scale-105 mr-4 sm:mr-6 flex-shrink-0"><?= $logoHtml ?></a>
+                <div class="hidden lg:flex items-center space-x-6 flex-shrink-0">
                     <a href="/" class="text-white font-semibold hover:text-red-500 transition text-sm lg:text-base">Home</a>
-                    <a href="/search" class="text-gray-300 font-medium hover:text-white transition text-sm lg:text-base">Search</a>
+                    <a href="/for-you" class="text-gray-300 font-medium hover:text-white transition text-sm lg:text-base">For You</a>
+                    <a href="/my-list" class="text-gray-300 font-medium hover:text-white transition text-sm lg:text-base">My List</a>
                     <a href="/blog" class="text-gray-300 font-medium hover:text-white transition text-sm lg:text-base">Blog</a>
-                    <a href="/shelf/top" class="text-gray-300 font-medium hover:text-white transition text-sm lg:text-base">Top Series</a>
+                    <?php if($isLoggedIn): ?><a href="/vip" class="text-yellow-400 font-semibold hover:text-yellow-300 transition text-sm lg:text-base">👑 VIP</a><?php endif; ?>
                 </div>
             </div>
-            <div class="flex items-center space-x-3 sm:space-x-4">
+
+            <!-- Live search with typeahead dropdown -->
+            <div class="flex-1 max-w-md relative" x-data="headerSearch()" @click.outside="showResults = false">
+                <div class="relative">
+                    <input type="text" x-model="query" @input="onInput()" @focus="if (results.length) showResults = true"
+                           placeholder="Search titles..."
+                           class="w-full bg-gray-900/80 border border-gray-700 focus:border-red-500 rounded-full pl-10 pr-4 py-2 sm:py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none transition">
+                    <svg class="w-4 h-4 text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <svg x-show="isLoading" class="w-4 h-4 text-red-500 animate-spin absolute right-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </div>
+                <div x-show="showResults" x-transition x-cloak
+                     class="absolute top-full mt-2 left-0 right-0 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-50 max-h-[70vh] overflow-y-auto">
+                    <template x-if="!isLoading && results.length === 0">
+                        <p class="text-gray-500 text-sm text-center py-6">No titles found.</p>
+                    </template>
+                    <template x-for="item in results" :key="item.id">
+                        <a :href="item.resume_slug ? '/episodes/' + item.resume_slug : '/movie/' + item.slug"
+                           class="flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition border-b border-white/5 last:border-0">
+                            <img :src="item.cover_image_url || '/assets/img/default-cover.jpg'" class="w-10 h-14 object-cover rounded flex-shrink-0 bg-gray-800">
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-white truncate" x-text="item.title"></p>
+                                <p class="text-xs text-gray-500" x-text="(item.genre || 'Drama') + ' · ' + item.episode_count + ' episodes'"></p>
+                            </div>
+                        </a>
+                    </template>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3 sm:space-x-4 flex-shrink-0">
                 <?php if($isLoggedIn): ?>
                     <a href="/coin-shop" class="flex items-center gap-1.5 text-xs sm:text-sm font-bold bg-gray-900/80 border border-gray-700 hover:border-yellow-500 px-2.5 sm:px-3 py-1.5 rounded-full transition">
                         <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"></path></svg>
@@ -67,10 +97,10 @@ $coinBalance = \App\Core\Session::get('user_coin_balance');
                         </div>
                     </a>
                 <?php else: ?>
-                    <a href="/login" class="text-white font-medium hover:text-red-500 transition text-sm">Sign In</a>
-                    <a href="/register" class="bg-red-600 hover:bg-red-700 shadow-[0_0_15px_rgba(220,38,38,0.5)] text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-md font-semibold transition-all text-sm">Sign Up</a>
+                    <a href="/login" class="hidden sm:inline text-white font-medium hover:text-red-500 transition text-sm">Sign In</a>
+                    <a href="/register" class="bg-red-600 hover:bg-red-700 shadow-[0_0_15px_rgba(220,38,38,0.5)] text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-md font-semibold transition-all text-sm whitespace-nowrap">Sign Up</a>
                 <?php endif; ?>
-                <button @click="mobileOpen = !mobileOpen" class="md:hidden p-2 text-white/60 hover:text-white focus:outline-none">
+                <button @click="mobileOpen = !mobileOpen" class="lg:hidden p-2 text-white/60 hover:text-white focus:outline-none">
                     <svg x-show="!mobileOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                     <svg x-show="mobileOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
@@ -82,12 +112,14 @@ $coinBalance = \App\Core\Session::get('user_coin_balance');
     <!-- Mobile Menu -->
     <div x-show="mobileOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-4" x-transition:enter-end="opacity-100 translate-y-0"
          x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-4"
-         class="fixed top-16 sm:top-20 left-0 right-0 z-50 md:hidden bg-black/95 backdrop-blur-xl border-t border-white/10" x-cloak>
+         class="fixed top-16 sm:top-20 left-0 right-0 z-50 lg:hidden bg-black/95 backdrop-blur-xl border-t border-white/10" x-cloak>
         <div class="px-4 py-4 space-y-1">
             <a href="/" @click="mobileOpen = false" class="block px-4 py-3 rounded-lg text-white font-semibold bg-white/5">Home</a>
-            <a href="/search" @click="mobileOpen = false" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 transition">Search</a>
+            <a href="/for-you" @click="mobileOpen = false" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 transition">For You</a>
+            <a href="/my-list" @click="mobileOpen = false" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 transition">My List</a>
             <a href="/blog" @click="mobileOpen = false" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 transition">Blog</a>
             <a href="/shelf/top" @click="mobileOpen = false" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 transition">Top Series</a>
+            <?php if($isLoggedIn): ?><a href="/vip" @click="mobileOpen = false" class="block px-4 py-3 rounded-lg text-yellow-400 font-semibold hover:bg-white/5 transition">👑 VIP</a><?php endif; ?>
             <hr class="border-white/10 my-2">
             <?php if($isLoggedIn): ?>
                 <a href="/profile" @click="mobileOpen = false" class="block px-4 py-3 rounded-lg text-gray-300 hover:bg-white/5 transition">Profile</a>

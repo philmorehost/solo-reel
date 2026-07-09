@@ -2,9 +2,11 @@ package com.soloreel.app.ui.navigation
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
-    object Search : Screen("search")
+    object ForYou : Screen("for_you")
+    object MyList : Screen("my_list")
     object Coins : Screen("coins")
     object Profile : Screen("profile")
+    object VipPlans : Screen("vip_plans")
     object SeriesDetail : Screen("series/{slug}") {
         fun createRoute(slug: String) = "series/$slug"
     }

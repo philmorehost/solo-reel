@@ -9,6 +9,9 @@ $router->get('/episodes/{episodeId}/comments', 'EngagementController@listComment
 $router->get('/episodes/{...slug}', 'EpisodeController@player');
 $router->get('/shelf/{slug}', 'ShelfController@index');
 $router->get('/search', 'SearchController@index');
+$router->get('/for-you', 'ForYouController@index');
+$router->get('/my-list', 'MyListController@index');
+$router->get('/vip', 'VipController@plans');
 $router->get('/blog', 'BlogController@index');
 $router->get('/blog/{slug}', 'BlogController@detail');
 

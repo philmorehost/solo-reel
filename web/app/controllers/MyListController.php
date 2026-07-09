@@ -21,8 +21,11 @@ class MyListController {
         die();
     }
 
+    /** PHP never populates $_POST for DELETE requests, so the token travels
+     * in the query string here (like Api\ListController::removeSaved's
+     * guest_id) rather than a form body. */
     private function requireCsrf() {
-        if (!Security::verifyCsrfToken($_POST['csrf_token'] ?? '')) {
+        if (!Security::verifyCsrfToken($_GET['csrf_token'] ?? '')) {
             $this->respondJson(['status' => false, 'error' => 'Session expired. Please refresh and try again.'], 403);
         }
     }
@@ -35,6 +38,13 @@ class MyListController {
         $history = WatchHistory::continueWatchingFor($db, $userId, $guestId, 50);
         $liked = EpisodeEngagement::likedSeriesFor($db, $userId, $guestId, 50);
         $saved = EpisodeEngagement::savedSeriesFor($db, $userId, $guestId, 50);
+
+        $seriesIds = array_values(array_unique(array_map('intval', array_merge(array_column($liked, 'id'), array_column($saved, 'id')))));
+        $resumeSlugs = WatchHistory::resumeSlugsForSeries($db, $seriesIds, $userId, $guestId);
+        foreach ($liked as &$s) { $s['resume_slug'] = $resumeSlugs[(int) $s['id']] ?? null; }
+        unset($s);
+        foreach ($saved as &$s) { $s['resume_slug'] = $resumeSlugs[(int) $s['id']] ?? null; }
+        unset($s);
 
         require __DIR__ . '/../../templates/pages/my-list.php';
     }

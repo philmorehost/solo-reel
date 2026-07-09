@@ -128,6 +128,9 @@ struct RegisteredProfileSection: View {
                     ProfileRow(icon: "pencil", text: "Edit Profile")
                 }
                 ProfileRow(icon: "cart", text: "Buy More Coins")
+                NavigationLink(destination: VipPlansView()) {
+                    ProfileRow(icon: "crown", text: "VIP Membership")
+                }
                 NavigationLink(destination: AdvertiseView()) {
                     ProfileRow(icon: "megaphone", text: "Advertise With Us")
                 }

@@ -2,10 +2,11 @@ package com.soloreel.app.ui.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -20,12 +21,14 @@ import androidx.navigation.navArgument
 import com.soloreel.app.ui.auth.AuthScreen
 import com.soloreel.app.ui.auth.RegisterScreen
 import com.soloreel.app.ui.coins.CoinShopScreen
+import com.soloreel.app.ui.foryou.ForYouScreen
 import com.soloreel.app.ui.home.HomeScreen
+import com.soloreel.app.ui.mylist.MyListScreen
 import com.soloreel.app.ui.notifications.NotificationsScreen
 import com.soloreel.app.ui.player.PlayerScreen
 import com.soloreel.app.ui.profile.ProfileScreen
-import com.soloreel.app.ui.search.SearchScreen
 import com.soloreel.app.ui.series.SeriesDetailScreen
+import com.soloreel.app.ui.vip.VipPlansScreen
 
 data class BottomNavItem(val label: String, val icon: ImageVector, val route: String)
 
@@ -38,7 +41,8 @@ fun NavGraph(isLoggedIn: Boolean) {
 
     val items = listOf(
         BottomNavItem("Home", Icons.Default.Home, Screen.Home.route),
-        BottomNavItem("Search", Icons.Default.Search, Screen.Search.route),
+        BottomNavItem("For You", Icons.Default.Whatshot, Screen.ForYou.route),
+        BottomNavItem("My List", Icons.Default.Bookmark, Screen.MyList.route),
         BottomNavItem("Coins", Icons.Default.ShoppingCart, Screen.Coins.route),
         BottomNavItem("Profile", Icons.Default.Person, Screen.Profile.route),
     )
@@ -130,8 +134,10 @@ fun NavGraph(isLoggedIn: Boolean) {
             }
             composable(Screen.Home.route) { HomeScreen(navController = navController) }
             composable(Screen.Notifications.route) { NotificationsScreen(navController = navController) }
-            composable(Screen.Search.route) { SearchScreen(navController = navController) }
+            composable(Screen.ForYou.route) { ForYouScreen(navController = navController) }
+            composable(Screen.MyList.route) { MyListScreen(navController = navController) }
             composable(Screen.Coins.route) { CoinShopScreen() }
+            composable(Screen.VipPlans.route) { VipPlansScreen(navController = navController) }
             composable(Screen.Profile.route) { backStackEntry ->
                 val profileVm: com.soloreel.app.ui.profile.ProfileViewModel = androidx.hilt.navigation.compose.hiltViewModel()
                 val profileUpdated by backStackEntry.savedStateHandle.getStateFlow("profile_updated", false).collectAsState()

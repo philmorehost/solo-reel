@@ -20,7 +20,78 @@ struct HomeView: View {
     @State private var currentBanner = 0
     @State private var navPath = NavigationPath()
 
+    // Header live search — same debounced /search endpoint SearchView uses.
+    @State private var searchQuery = ""
+    @State private var searchResults: [Series] = []
+    @State private var isSearching = false
+    @State private var searchTask: Task<Void, Never>? = nil
+
+    // Content Hub Tabs: HOT / NEW / RANKING / CATEGORIES / TV SERIES / MOVIES
+    @State private var activeTab = "hot"
+    @State private var tabSeries: [Series] = []
+    @State private var tabNewReleases: NewReleases? = nil
+    @State private var tabCategories: [CategoryGroup] = []
+    @State private var tabLoading = false
+    @State private var tabCache: Set<String> = []
+
     private var guestIdOrNil: String? { TokenManager.shared.isLoggedIn ? nil : TokenManager.shared.guestId }
+
+    private func onSearchQueryChange(_ q: String) {
+        searchTask?.cancel()
+        if q.trimmingCharacters(in: .whitespaces).isEmpty {
+            searchResults = []
+            isSearching = false
+            return
+        }
+        searchTask = Task {
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            if Task.isCancelled { return }
+            isSearching = true
+            let r = (try? await APIClient.shared.search(q: q, size: 8)) ?? []
+            if Task.isCancelled { return }
+            searchResults = r
+            isSearching = false
+        }
+    }
+
+    private func selectTab(_ tab: String) {
+        activeTab = tab
+        Task { await loadTab(tab) }
+    }
+
+    private func loadTab(_ tab: String) async {
+        if tabCache.contains(tab) { return }
+        tabLoading = true
+        switch tab {
+        case "hot":
+            let list = (try? await APIClient.shared.getHotSeries()) ?? []
+            tabSeries = list
+            await fetchResumeSlugs(ids: list.map { $0.id })
+        case "new":
+            let releases = try? await APIClient.shared.getNewSeries()
+            tabNewReleases = releases
+            if let r = releases { await fetchResumeSlugs(ids: (r.coming_soon + r.all_new).map { $0.id }) }
+        case "ranking":
+            let list = (try? await APIClient.shared.getRanking()) ?? []
+            tabSeries = list
+            await fetchResumeSlugs(ids: list.map { $0.id })
+        case "categories":
+            let groups = (try? await APIClient.shared.getCategories()) ?? []
+            tabCategories = groups
+            await fetchResumeSlugs(ids: groups.flatMap { $0.series }.map { $0.id })
+        case "tv_series":
+            let list = (try? await APIClient.shared.search(q: "", size: 60, category: "tv_series")) ?? []
+            tabSeries = list
+            await fetchResumeSlugs(ids: list.map { $0.id })
+        case "movies":
+            let list = (try? await APIClient.shared.search(q: "", size: 60, category: "movies")) ?? []
+            tabSeries = list
+            await fetchResumeSlugs(ids: list.map { $0.id })
+        default: break
+        }
+        tabCache.insert(tab)
+        tabLoading = false
+    }
 
     private func loadHomeData() async {
         do {
@@ -118,6 +189,47 @@ struct HomeView: View {
                 .padding(.bottom, 8)
                 .background(Color.black)
 
+                // Live search — same debounced /search endpoint SearchView uses,
+                // just inline near the top with a compact dropdown.
+                VStack(spacing: 0) {
+                    HStack {
+                        Image(systemName: "magnifyingglass").foregroundColor(Color(white: 0.4))
+                        TextField("Search titles...", text: $searchQuery).foregroundColor(.white)
+                            .onChange(of: searchQuery) { _ in onSearchQueryChange(searchQuery) }
+                        if !searchQuery.isEmpty {
+                            Button { searchQuery = ""; onSearchQueryChange("") } label: {
+                                Image(systemName: "xmark.circle.fill").foregroundColor(Color(white: 0.4))
+                            }
+                        }
+                    }.padding(12).background(Color(white: 0.08)).cornerRadius(14)
+
+                    if !searchQuery.isEmpty {
+                        VStack(spacing: 0) {
+                            if isSearching {
+                                ProgressView().tint(.red).padding(16)
+                            } else if searchResults.isEmpty {
+                                Text("No titles found.").foregroundColor(Color(white: 0.4)).padding(16)
+                            } else {
+                                ForEach(searchResults) { s in
+                                    NavigationLink(destination: SeriesDetailView(slug: s.slug)) {
+                                        HStack {
+                                            seriesCoverImage(s, width: 36, height: 50)
+                                            VStack(alignment: .leading) {
+                                                Text(s.title).font(.notoSans(size: 13, weight: .medium, relativeTo: .subheadline)).foregroundColor(.white).lineLimit(1)
+                                                Text("\(s.genre ?? "Drama") · \(s.episode_count ?? 0) episodes").font(.notoSans(size: 11, relativeTo: .caption2)).foregroundColor(Color(white: 0.5))
+                                            }
+                                            Spacer()
+                                        }.padding(10)
+                                    }
+                                }
+                            }
+                        }.background(Color(white: 0.06)).cornerRadius(14).padding(.top, 6)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+                .background(Color.black)
+
                 ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 0) {
                     // Banners
@@ -190,6 +302,34 @@ struct HomeView: View {
                                     }
                                 }.padding(.horizontal, 16)
                             }
+                        }
+
+                        // Content Hub Tabs: HOT / NEW / RANKING / CATEGORIES / TV SERIES / MOVIES
+                        VStack(alignment: .leading, spacing: 0) {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(homeHubTabs, id: \.0) { key, label in
+                                        Button { selectTab(key) } label: {
+                                            Text(label)
+                                                .font(.notoSans(size: 13, weight: .bold, relativeTo: .caption))
+                                                .foregroundColor(activeTab == key ? .white : Color(white: 0.65))
+                                                .padding(.horizontal, 16).padding(.vertical, 8)
+                                                .background(activeTab == key ? Color.red : Color(white: 0.1))
+                                                .cornerRadius(20)
+                                        }
+                                    }
+                                }.padding(.horizontal, 16)
+                            }
+                            .padding(.top, 20)
+
+                            ContentHubTabContent(
+                                activeTab: activeTab,
+                                tabSeries: tabSeries,
+                                tabNewReleases: tabNewReleases,
+                                tabCategories: tabCategories,
+                                isLoading: tabLoading,
+                                seriesCardLink: { s, content in AnyView(seriesCardLink(s, content: content)) }
+                            )
                         }
 
                         // Latest releases row — distinct from the admin-managed
@@ -273,6 +413,7 @@ struct HomeView: View {
             isLoading = true
             await loadHomeData()
             isLoading = false
+            await loadTab("hot")
             await NotificationCenterStore.shared.load(postSystemNotifications: true)
             if let adsConfig = try? await APIClient.shared.getAdsConfig(), let unitId = adsConfig["admob_ios_rewarded_unit_id"] {
                 RewardedAdManager.shared.configure(adUnitID: unitId)
@@ -293,5 +434,153 @@ struct HomeView: View {
                 withAnimation { currentBanner = (currentBanner + 1) % banners.count }
             }
         }
+    }
+}
+
+let homeHubTabs: [(String, String)] = [
+    ("hot", "🔥 HOT"),
+    ("new", "✨ NEW"),
+    ("ranking", "🏆 RANKING"),
+    ("categories", "CATEGORIES"),
+    ("tv_series", "TV SERIES"),
+    ("movies", "MOVIES")
+]
+
+/// Content Hub Tabs body — HOT/TV Series/Movies share a grid layout with
+/// HOT/NEW badges, NEW splits into coming-soon/all-new sections, RANKING is a
+/// numbered leaderboard with a like counter, CATEGORIES is one shelf per genre.
+struct ContentHubTabContent: View {
+    let activeTab: String
+    let tabSeries: [Series]
+    let tabNewReleases: NewReleases?
+    let tabCategories: [CategoryGroup]
+    let isLoading: Bool
+    let seriesCardLink: (Series, @escaping () -> AnyView) -> AnyView
+
+    var body: some View {
+        Group {
+            if isLoading {
+                ProgressView().tint(.red).frame(maxWidth: .infinity).padding(32)
+            } else {
+                switch activeTab {
+                case "new":
+                    VStack(alignment: .leading, spacing: 0) {
+                        if let releases = tabNewReleases, !releases.coming_soon.isEmpty {
+                            Text("🔜 Coming Soon").font(.notoSans(size: 18, weight: .bold, relativeTo: .title3)).foregroundColor(.white).padding(.horizontal, 16).padding(.top, 16)
+                            hubRow(releases.coming_soon)
+                        }
+                        if let releases = tabNewReleases, !releases.all_new.isEmpty {
+                            Text("✨ New Releases").font(.notoSans(size: 18, weight: .bold, relativeTo: .title3)).foregroundColor(.white).padding(.horizontal, 16).padding(.top, 16)
+                            hubRow(releases.all_new)
+                        }
+                        if (tabNewReleases?.coming_soon.isEmpty ?? true) && (tabNewReleases?.all_new.isEmpty ?? true) {
+                            Text("No new titles yet.").foregroundColor(Color(white: 0.4)).padding(32)
+                        }
+                    }
+                case "ranking":
+                    if tabSeries.isEmpty {
+                        Text("No rankings yet — be the first to like a series!").foregroundColor(Color(white: 0.4)).padding(32)
+                    } else {
+                        VStack(spacing: 8) {
+                            ForEach(Array(tabSeries.enumerated()), id: \.element.id) { index, s in
+                                rankingRow(s, index + 1)
+                            }
+                        }.padding(.horizontal, 16).padding(.top, 12)
+                    }
+                case "categories":
+                    if tabCategories.isEmpty {
+                        Text("No categories yet.").foregroundColor(Color(white: 0.4)).padding(32)
+                    } else {
+                        VStack(alignment: .leading, spacing: 0) {
+                            ForEach(tabCategories, id: \.genre) { group in
+                                Text(group.genre).font(.notoSans(size: 18, weight: .bold, relativeTo: .title3)).foregroundColor(.white).padding(.horizontal, 16).padding(.top, 16)
+                                hubRow(group.series)
+                            }
+                        }
+                    }
+                default:
+                    // hot / tv_series / movies — same grid treatment.
+                    if tabSeries.isEmpty {
+                        Text("Nothing here yet.").foregroundColor(Color(white: 0.4)).padding(32)
+                    } else {
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                            ForEach(tabSeries) { s in
+                                seriesCardLink(s, { AnyView(hubGridCard(s)) })
+                            }
+                        }.padding(.horizontal, 16).padding(.top, 16)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func hubRow(_ list: [Series]) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                ForEach(list) { s in
+                    seriesCardLink(s, {
+                        AnyView(
+                            VStack(alignment: .leading) {
+                                AsyncImage(url: URL(string: s.cover_image_url ?? "")) { phase in
+                                    if let image = phase.image { image.resizable().aspectRatio(contentMode: .fill).frame(width: 140, height: 200).cornerRadius(12) }
+                                    else { Color.gray.frame(width: 140, height: 200).cornerRadius(12) }
+                                }
+                                Text(s.title).font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(.white).lineLimit(2).frame(width: 140, alignment: .leading)
+                            }
+                        )
+                    })
+                }
+            }.padding(.horizontal, 16)
+        }
+    }
+
+    @ViewBuilder
+    private func hubGridCard(_ s: Series) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ZStack(alignment: .topLeading) {
+                AsyncImage(url: URL(string: s.cover_image_url ?? "")) { phase in
+                    if let image = phase.image { image.resizable().aspectRatio(contentMode: .fill) }
+                    else { Color.gray }
+                }
+                .frame(maxWidth: .infinity, minHeight: 220, maxHeight: 220)
+                .cornerRadius(12)
+                .clipped()
+
+                HStack(spacing: 4) {
+                    if s.is_hot == true {
+                        Text("🔥 HOT").font(.notoSans(size: 9, weight: .bold, relativeTo: .caption2)).foregroundColor(.white).padding(.horizontal, 6).padding(.vertical, 2).background(Color.red).cornerRadius(4)
+                    }
+                    if s.is_new == true {
+                        Text("NEW").font(.notoSans(size: 9, weight: .bold, relativeTo: .caption2)).foregroundColor(.white).padding(.horizontal, 6).padding(.vertical, 2).background(Color.green).cornerRadius(4)
+                    }
+                }.padding(6)
+            }
+            Text(s.title).font(.notoSans(size: 12, weight: .semibold, relativeTo: .caption)).foregroundColor(.white).lineLimit(1)
+            if let genre = s.genre { Text(genre).font(.notoSans(size: 11, relativeTo: .caption2)).foregroundColor(.gray) }
+        }
+    }
+
+    @ViewBuilder
+    private func rankingRow(_ s: Series, _ rank: Int) -> some View {
+        seriesCardLink(s, {
+            AnyView(
+                HStack(spacing: 12) {
+                    Text("\(rank)").font(.notoSans(size: 20, weight: .heavy, relativeTo: .title3)).foregroundColor(rank <= 3 ? .yellow : Color(white: 0.5)).frame(width: 32)
+                    AsyncImage(url: URL(string: s.cover_image_url ?? "")) { phase in
+                        if let image = phase.image { image.resizable().aspectRatio(contentMode: .fill) } else { Color.gray }
+                    }.frame(width: 52, height: 74).cornerRadius(8).clipped()
+                    VStack(alignment: .leading) {
+                        Text(s.title).font(.notoSans(size: 14, weight: .semibold, relativeTo: .subheadline)).foregroundColor(.white).lineLimit(1)
+                        Text("EP.\(s.episode_count ?? 0)").font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(Color(white: 0.55))
+                    }
+                    Spacer()
+                    Text("❤ \(s.like_count ?? 0)").font(.notoSans(size: 13, weight: .bold, relativeTo: .subheadline)).foregroundColor(.red)
+                }
+                .padding(10)
+                .background(Color(white: 0.08))
+                .cornerRadius(12)
+            )
+        })
     }
 }

@@ -154,6 +154,20 @@
         </div>
         <?php endif; ?>
 
+        <!-- Content Hub Tabs: HOT / NEW / RANKING / CATEGORIES / TV SERIES / MOVIES -->
+        <div class="mb-14">
+            <div id="home-tabs" class="flex overflow-x-auto gap-2 pb-4 hide-scrollbar">
+                <button data-tab="hot" class="home-tab-btn flex-none px-5 py-2 rounded-full text-sm font-bold transition bg-red-600 text-white">🔥 HOT</button>
+                <button data-tab="new" class="home-tab-btn flex-none px-5 py-2 rounded-full text-sm font-bold transition bg-gray-900/80 text-gray-300">✨ NEW</button>
+                <button data-tab="ranking" class="home-tab-btn flex-none px-5 py-2 rounded-full text-sm font-bold transition bg-gray-900/80 text-gray-300">🏆 RANKING</button>
+                <button data-tab="categories" class="home-tab-btn flex-none px-5 py-2 rounded-full text-sm font-bold transition bg-gray-900/80 text-gray-300">CATEGORIES</button>
+                <button data-tab="tv_series" class="home-tab-btn flex-none px-5 py-2 rounded-full text-sm font-bold transition bg-gray-900/80 text-gray-300">TV SERIES</button>
+                <button data-tab="movies" class="home-tab-btn flex-none px-5 py-2 rounded-full text-sm font-bold transition bg-gray-900/80 text-gray-300">MOVIES</button>
+            </div>
+            <div id="home-tab-content" class="mt-2"></div>
+        </div>
+        <script src="/assets/js/home-tabs.js"></script>
+
         <!-- Latest Releases -->
         <?php if(!empty($latestSeries)): ?>
         <div class="mb-14">

@@ -5,10 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.soloreel.app.ads.RewardedAdManager
 import com.soloreel.app.data.api.SOLOREELApi
 import com.soloreel.app.data.model.Banner
+import com.soloreel.app.data.model.CategoryGroup
 import com.soloreel.app.data.model.ContinueWatchingItem
+import com.soloreel.app.data.model.NewReleases
 import com.soloreel.app.data.model.Series
 import com.soloreel.app.data.model.Shelf
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,7 +27,17 @@ data class HomeState(
     val shelfSeries: Map<String, List<Series>> = emptyMap(),
     val continueWatching: List<ContinueWatchingItem> = emptyList(),
     val resumeSlugs: Map<Int, String> = emptyMap(),
-    val isLoading: Boolean = false, val error: String? = null
+    val isLoading: Boolean = false, val error: String? = null,
+    // Header search bar
+    val searchQuery: String = "",
+    val searchResults: List<Series> = emptyList(),
+    val isSearching: Boolean = false,
+    // Content hub tabs: HOT / NEW / RANKING / CATEGORIES / TV SERIES / MOVIES
+    val activeTab: String = "hot",
+    val tabSeries: List<Series> = emptyList(),
+    val tabNewReleases: NewReleases? = null,
+    val tabCategories: List<CategoryGroup> = emptyList(),
+    val tabLoading: Boolean = false
 )
 
 @HiltViewModel
@@ -33,8 +47,78 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state.asStateFlow()
+    private var searchJob: Job? = null
+    private val tabCache = mutableMapOf<String, Boolean>()
 
     private val guestIdOrNull: String? get() = if (tokenManager.isLoggedIn) null else tokenManager.guestId
+
+    fun onSearchQueryChange(query: String) {
+        _state.value = _state.value.copy(searchQuery = query)
+        searchJob?.cancel()
+        if (query.isBlank()) {
+            _state.value = _state.value.copy(searchResults = emptyList(), isSearching = false)
+            return
+        }
+        searchJob = viewModelScope.launch {
+            delay(400)
+            _state.value = _state.value.copy(isSearching = true)
+            try {
+                val r = api.search(query, size = 8)
+                _state.value = _state.value.copy(searchResults = r.data ?: emptyList(), isSearching = false)
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(isSearching = false)
+            }
+        }
+    }
+
+    fun selectTab(tab: String) {
+        _state.value = _state.value.copy(activeTab = tab)
+        loadTab(tab)
+    }
+
+    fun loadTab(tab: String) {
+        if (tabCache[tab] == true) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(tabLoading = true)
+            try {
+                when (tab) {
+                    "hot" -> {
+                        val list = api.getHotSeries().data ?: emptyList()
+                        _state.value = _state.value.copy(tabSeries = list, tabLoading = false)
+                        fetchResumeSlugs(list.map { it.id })
+                    }
+                    "new" -> {
+                        val releases = api.getNewSeries().data
+                        _state.value = _state.value.copy(tabNewReleases = releases, tabLoading = false)
+                        releases?.let { fetchResumeSlugs((it.coming_soon + it.all_new).map { s -> s.id }) }
+                    }
+                    "ranking" -> {
+                        val list = api.getRanking().data ?: emptyList()
+                        _state.value = _state.value.copy(tabSeries = list, tabLoading = false)
+                        fetchResumeSlugs(list.map { it.id })
+                    }
+                    "categories" -> {
+                        val groups = api.getCategories().data ?: emptyList()
+                        _state.value = _state.value.copy(tabCategories = groups, tabLoading = false)
+                        fetchResumeSlugs(groups.flatMap { it.series }.map { it.id })
+                    }
+                    "tv_series" -> {
+                        val list = api.search("", size = 60, category = "tv_series").data ?: emptyList()
+                        _state.value = _state.value.copy(tabSeries = list, tabLoading = false)
+                        fetchResumeSlugs(list.map { it.id })
+                    }
+                    "movies" -> {
+                        val list = api.search("", size = 60, category = "movies").data ?: emptyList()
+                        _state.value = _state.value.copy(tabSeries = list, tabLoading = false)
+                        fetchResumeSlugs(list.map { it.id })
+                    }
+                }
+                tabCache[tab] = true
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(tabLoading = false)
+            }
+        }
+    }
 
     fun load() {
         viewModelScope.launch {

@@ -33,11 +33,33 @@ struct Series: Codable, Identifiable {
     let id: Int; let title: String; let slug: String
     let cover_image_url: String?; let synopsis: String?; let genre: String?; let status: String?; let episode_count: Int?
     let episodes: [Episode]?
+    let is_hot: Bool?; let is_new: Bool?
+    // Only populated by the RANKING tab (/api/v1/ranking) — total likes across the series' episodes.
+    let like_count: Int?
     enum CodingKeys: String, CodingKey {
-        case id, title, slug, synopsis, genre, status, episode_count, episodes
+        case id, title, slug, synopsis, genre, status, episode_count, episodes, is_hot, is_new, like_count
         case cover_image_url = "cover_image_url"
     }
 }
+
+/// NEW tab: /api/v1/series/new — coming-soon vs. recently released.
+struct NewReleases: Codable { let coming_soon: [Series]; let all_new: [Series] }
+
+/// CATEGORIES tab: /api/v1/series/categories — one shelf per genre.
+struct CategoryGroup: Codable { let genre: String; let series: [Series] }
+
+/// My List page: /api/v1/me/list -> {history, liked, saved}.
+struct MyListData: Codable { let history: [ContinueWatchingItem]; let liked: [Series]; let saved: [Series] }
+
+/// For You feed item: /api/v1/for-you — an admin-uploaded trailer, "Watch Now" resumes the series.
+struct ForYouItem: Codable, Identifiable {
+    let episode_id: Int; let trailer_url: String; let series_id: Int
+    let series_title: String; let series_slug: String; let cover_image_url: String?; let resume_slug: String?
+    var id: Int { episode_id }
+}
+
+/// GET /api/v1/user/vip-status
+struct VipStatus: Codable { let is_vip: Bool?; let expires_at: String?; let plan_name: String? }
 struct Episode: Codable, Identifiable {
     let id: Int; let title: String; let slug: String; let series_id: Int?; let series_title: String?
     let series_slug: String?
@@ -159,7 +181,32 @@ class APIClient {
         let body = try JSONEncoder().encode(guestId.map { ["guest_id": $0] } ?? [:])
         try await requestVoid("episodes/unlock-with-ad/\(episodeId)", method: "POST", body: body)
     }
-    func search(q: String) async throws -> [Series] { try await request("search?q=\(q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") }
+    func search(q: String, size: Int = 20, category: String? = nil) async throws -> [Series] {
+        let categoryQ = category.map { "&category=\($0)" } ?? ""
+        return try await request("search?q=\(q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&size=\(size)\(categoryQ)")
+    }
+
+    // Content hub tabs — HOT / NEW / RANKING / CATEGORIES / TV SERIES / MOVIES.
+    // TV Series and Movies reuse search()'s existing "category" filter above.
+    func getHotSeries(size: Int = 24) async throws -> [Series] { try await request("series/hot?size=\(size)") }
+    func getNewSeries() async throws -> NewReleases { try await request("series/new") }
+    func getCategories() async throws -> [CategoryGroup] { try await request("series/categories") }
+    func getRanking(limit: Int = 30) async throws -> [Series] { try await request("ranking?limit=\(limit)") }
+
+    // "For You" — random admin-uploaded trailer feed, and "My List" — history/liked/saved.
+    func getForYou(guestId: String? = nil, limit: Int = 20) async throws -> [ForYouItem] {
+        let q = guestId.map { "&guest_id=\($0)" } ?? ""
+        return try await request("for-you?limit=\(limit)\(q)")
+    }
+    func getMyList(guestId: String? = nil) async throws -> MyListData {
+        let q = guestId.map { "?guest_id=\($0)" } ?? ""
+        return try await request("me/list\(q)")
+    }
+    func removeSavedSeries(seriesId: Int, guestId: String? = nil) async throws {
+        let q = guestId.map { "?guest_id=\($0)" } ?? ""
+        try await requestVoid("me/list/saved/\(seriesId)\(q)", method: "DELETE")
+    }
+    func getVipStatus() async throws -> VipStatus { try await request("user/vip-status") }
     func getCoinPackages() async throws -> [CoinPackage] { try await request("coin-packages") }
     func getProfile() async throws -> User { try await request("user/profile") }
     func updateProfile(username: String, displayName: String, password: String?) async throws {
