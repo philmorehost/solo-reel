@@ -9,7 +9,7 @@ $coinBalance = \App\Core\Session::get('user_coin_balance');
      internal page navigations don't replay it), fades out on video end or a
      fallback timeout in case autoplay is blocked. -->
 <div id="site-preloader" class="fixed inset-0 z-[100] bg-black flex items-center justify-center">
-    <video id="site-preloader-video" autoplay muted playsinline class="w-full h-full object-cover" src="/assets/video/splash.mp4"></video>
+    <video id="site-preloader-video" autoplay muted playsinline preload="auto" class="w-full h-full object-cover" src="/assets/video/splash.mp4"></video>
 </div>
 <script>
 (function () {
