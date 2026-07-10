@@ -24,6 +24,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.soloreel.app.data.api.SOLOREELApi
 import com.soloreel.app.data.api.TokenManager
+import com.soloreel.app.data.model.Transaction
 import com.soloreel.app.data.model.User
 import com.soloreel.app.data.model.WeeklyBonusStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,7 +41,11 @@ data class ProfileState(
     val bonusStatus: WeeklyBonusStatus? = null,
     val isLoading: Boolean = false,
     val isLoggedIn: Boolean = false,
-    val guestId: String = ""
+    val guestId: String = "",
+    val isVip: Boolean = false,
+    val vipPlanName: String? = null,
+    val vipExpiresAt: String? = null,
+    val transactions: List<Transaction> = emptyList()
 )
 
 @HiltViewModel
@@ -65,9 +70,15 @@ class ProfileViewModel @Inject constructor(
             try {
                 val r = api.getProfile()
                 val bonus = try { api.getBonusStatus().data } catch (e: Exception) { null }
+                val vipStatus = try { api.getVipStatus().data } catch (e: Exception) { null }
+                val transactions = try { api.getTransactions().data ?: emptyList() } catch (e: Exception) { emptyList() }
                 _state.value = _state.value.copy(
                     user = r.data,
                     bonusStatus = bonus,
+                    isVip = vipStatus?.get("is_vip")?.asBoolean ?: false,
+                    vipPlanName = vipStatus?.get("plan_name")?.takeIf { !it.isJsonNull }?.asString,
+                    vipExpiresAt = vipStatus?.get("expires_at")?.takeIf { !it.isJsonNull }?.asString,
+                    transactions = transactions,
                     isLoading = false
                 )
             } catch (e: Exception) {
@@ -89,6 +100,7 @@ fun ProfileScreen(
     onNavigateToCoinShop: () -> Unit = {},
     onNavigateToAdvertise: () -> Unit = {},
     onNavigateToMyAds: () -> Unit = {},
+    onNavigateToVip: () -> Unit = {},
     vm: ProfileViewModel = hiltViewModel()
 ) {
     val state by vm.state.collectAsState()
@@ -114,7 +126,8 @@ fun ProfileScreen(
                 onNavigateToEditProfile = onNavigateToEditProfile,
                 onNavigateToCoinShop = onNavigateToCoinShop,
                 onNavigateToAdvertise = onNavigateToAdvertise,
-                onNavigateToMyAds = onNavigateToMyAds
+                onNavigateToMyAds = onNavigateToMyAds,
+                onNavigateToVip = onNavigateToVip
             )
         }
     }
@@ -216,7 +229,8 @@ fun RegisteredProfileScreen(
     onNavigateToEditProfile: () -> Unit = {},
     onNavigateToCoinShop: () -> Unit = {},
     onNavigateToAdvertise: () -> Unit = {},
-    onNavigateToMyAds: () -> Unit = {}
+    onNavigateToMyAds: () -> Unit = {},
+    onNavigateToVip: () -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.height(32.dp))
@@ -236,6 +250,22 @@ fun RegisteredProfileScreen(
         Spacer(Modifier.height(12.dp))
         Text(state.user?.displayName ?: state.user?.username ?: "User", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Text(state.user?.email ?: "", color = Color(0xFF666666), fontSize = 14.sp)
+
+        if (state.isVip) {
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Brush.horizontalGradient(listOf(Color(0x33F59E0B), Color(0x33EAB308))))
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("👑", fontSize = 16.sp)
+                Spacer(Modifier.width(6.dp))
+                Text("VIP · ${state.vipPlanName ?: "Member"}", color = Color(0xFFEAB308), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+
         Spacer(Modifier.height(20.dp))
 
         // Coin Balance Card
@@ -276,11 +306,53 @@ fun RegisteredProfileScreen(
             }
         }
 
+        // Recent Transactions — coin purchases + VIP subscription payments, merged.
+        if (state.transactions.isNotEmpty()) {
+            Spacer(Modifier.height(20.dp))
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("Recent Transactions", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Start))
+                Spacer(Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF141414)),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Column {
+                        state.transactions.forEachIndexed { index, txn ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(txn.description, color = Color(0xFFDDDDDD), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                    Text(txn.created_at.take(10), color = Color(0xFF666666), fontSize = 11.sp)
+                                }
+                                if (txn.kind == "vip") {
+                                    Text("${txn.currency ?: ""} ${String.format("%.2f", txn.amount)}", color = Color(0xFFEAB308), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                } else {
+                                    Text(
+                                        "${if (txn.amount > 0) "+" else ""}${txn.amount.toInt()} Coins",
+                                        color = if (txn.amount > 0) Color(0xFF4ADE80) else Color(0xFFEF4444),
+                                        fontSize = 13.sp, fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            if (index < state.transactions.size - 1) {
+                                HorizontalDivider(color = Color(0xFF222222))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         Spacer(Modifier.height(24.dp))
 
         // Menu items
         ProfileMenuItem(Icons.Default.History, "Watch History", onClick = onNavigateToHistory)
         ProfileMenuItem(Icons.Default.Favorite, "My Favorites", onClick = onNavigateToFavorites)
+        ProfileMenuItem(Icons.Default.Shield, "VIP Membership", onClick = onNavigateToVip)
         ProfileMenuItem(Icons.Default.Edit, "Edit Profile", onClick = onNavigateToEditProfile)
         ProfileMenuItem(Icons.Default.ShoppingCart, "Buy More Coins", onClick = onNavigateToCoinShop)
         ProfileMenuItem(Icons.Default.Campaign, "Advertise With Us", onClick = onNavigateToAdvertise)

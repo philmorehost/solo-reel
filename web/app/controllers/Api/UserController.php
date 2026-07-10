@@ -49,6 +49,42 @@ class UserController extends BaseApiController {
         $this->respondJson(['status' => true, 'message' => 'Profile updated']);
     }
 
+    /** GET /api/v1/user/transactions — coin ledger entries + successful VIP
+     * subscription purchases merged into one list, newest first (mirrors the
+     * web profile page's "Recent Transactions" section). */
+    public function transactions() {
+        $userId = $this->requireUserId();
+        $db = Database::getInstance();
+
+        $stmt = $db->prepare("SELECT description, amount, created_at, 'coins' as kind FROM coin_transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 10");
+        $stmt->execute([$userId]);
+        $coinRows = $stmt->fetchAll();
+
+        $stmt = $db->prepare("
+            SELECT CONCAT('VIP Subscription - ', vp.name) as description, pt.amount, pt.currency, pt.created_at, 'vip' as kind
+            FROM payment_transactions pt
+            JOIN vip_plans vp ON vp.id = pt.plan_id
+            WHERE pt.user_id = ? AND pt.type = 'vip_subscription' AND pt.status = 'successful'
+            ORDER BY pt.created_at DESC LIMIT 10
+        ");
+        $stmt->execute([$userId]);
+        $vipRows = $stmt->fetchAll();
+
+        $transactions = array_merge($coinRows, $vipRows);
+        usort($transactions, function ($a, $b) { return strtotime($b['created_at']) <=> strtotime($a['created_at']); });
+        $transactions = array_map(function ($t) {
+            return [
+                'description' => $t['description'],
+                'amount'      => (float) $t['amount'],
+                'currency'    => $t['currency'] ?? null,
+                'kind'        => $t['kind'],
+                'created_at'  => $t['created_at'],
+            ];
+        }, array_slice($transactions, 0, 8));
+
+        $this->respondJson(['status' => true, 'data' => $transactions]);
+    }
+
     /** GET /api/v1/user/watch-history */
     public function watchHistory() {
         $userId = $this->requireUserId();

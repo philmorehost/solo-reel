@@ -119,6 +119,9 @@ interface SOLOREELApi {
     @GET("api/v1/user/watch-history")
     suspend fun getWatchHistory(): ApiResponse<List<WatchHistoryItem>>
 
+    @GET("api/v1/user/transactions")
+    suspend fun getTransactions(): ApiResponse<List<com.soloreel.app.data.model.Transaction>>
+
     @GET("api/v1/user/continue-watching")
     suspend fun getContinueWatching(@Query("guest_id") guestId: String? = null): ApiResponse<List<ContinueWatchingItem>>
 

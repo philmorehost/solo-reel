@@ -169,6 +169,7 @@ $router->get('/api/v1/coin-packages', 'Api\CoinController@packages');
 $router->get('/api/v1/user/profile', 'Api\UserController@profile');
 $router->put('/api/v1/user/profile', 'Api\UserController@updateProfile');
 $router->get('/api/v1/user/watch-history', 'Api\UserController@watchHistory');
+$router->get('/api/v1/user/transactions', 'Api\UserController@transactions');
 $router->get('/api/v1/user/continue-watching', 'Api\UserController@continueWatching');
 $router->get('/api/v1/user/favorites', 'Api\UserController@favorites');
 $router->post('/api/v1/user/favorites/{seriesId}', 'Api\UserController@addFavorite');

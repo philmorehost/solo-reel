@@ -153,6 +153,15 @@ data class WatchHistoryItem(
 
 data class Favorite(val id: Int, val series: Series?, val title: String?, val slug: String?, val cover_image_url: String?)
 
+/** GET /api/v1/user/transactions — coin ledger entries + VIP subscription purchases, merged. */
+data class Transaction(
+    val description: String,
+    val amount: Double,
+    val currency: String?,
+    val kind: String, // "coins" | "vip"
+    val created_at: String
+)
+
 data class ContinueWatchingItem(
     val id: Int,
     val title: String,

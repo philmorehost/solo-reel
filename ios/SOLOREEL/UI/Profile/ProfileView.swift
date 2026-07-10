@@ -3,6 +3,15 @@ import SwiftUI
 struct ProfileView: View {
     @ObservedObject var tokenManager = TokenManager.shared
     @State private var bonusStatus: WeeklyBonusStatus? = nil
+    @State private var vipStatus: VipStatus? = nil
+    @State private var transactions: [Transaction] = []
+
+    private func loadExtras() async {
+        guard tokenManager.isLoggedIn else { return }
+        bonusStatus = try? await APIClient.shared.getBonusStatus()
+        vipStatus = try? await APIClient.shared.getVipStatus()
+        transactions = (try? await APIClient.shared.getTransactions()) ?? []
+    }
 
     var body: some View {
         NavigationStack {
@@ -11,23 +20,15 @@ struct ProfileView: View {
                     if tokenManager.isGuest {
                         GuestProfileSection(onLogin: {})
                     } else {
-                        RegisteredProfileSection(bonusStatus: bonusStatus, onLogout: { tokenManager.logout() })
+                        RegisteredProfileSection(bonusStatus: bonusStatus, vipStatus: vipStatus, transactions: transactions, onLogout: { tokenManager.logout() })
                     }
                 }
             }
-            .refreshable {
-                if tokenManager.isLoggedIn {
-                    bonusStatus = try? await APIClient.shared.getBonusStatus()
-                }
-            }
+            .refreshable { await loadExtras() }
             .background(Color(red: 0.04, green: 0.04, blue: 0.04))
             .preferredColorScheme(.dark)
         }
-        .task {
-            if tokenManager.isLoggedIn {
-                bonusStatus = try? await APIClient.shared.getBonusStatus()
-            }
-        }
+        .task { await loadExtras() }
     }
 }
 
@@ -82,6 +83,8 @@ struct GuestProfileSection: View {
 // MARK: - Registered Profile
 struct RegisteredProfileSection: View {
     let bonusStatus: WeeklyBonusStatus?
+    let vipStatus: VipStatus?
+    let transactions: [Transaction]
     let onLogout: () -> Void
     var body: some View {
         VStack(spacing: 16) {
@@ -93,6 +96,17 @@ struct RegisteredProfileSection: View {
             }
             Text(TokenManager.shared.username ?? "User").font(.notoSans(size: 22, relativeTo: .title2)).bold().foregroundColor(.white)
             Text(TokenManager.shared.email ?? "").foregroundColor(Color(white: 0.4)).font(.notoSans(size: 15, relativeTo: .subheadline))
+
+            if vipStatus?.is_vip == true {
+                HStack(spacing: 6) {
+                    Text("👑").font(.notoSans(size: 13))
+                    Text("VIP · \(vipStatus?.plan_name ?? "Member")").font(.notoSans(size: 13, weight: .bold, relativeTo: .caption))
+                }
+                .foregroundColor(Color(red: 0.96, green: 0.62, blue: 0.04))
+                .padding(.horizontal, 14).padding(.vertical, 6)
+                .background(LinearGradient(colors: [Color(red: 0.96, green: 0.62, blue: 0.04).opacity(0.2), Color(red: 0.92, green: 0.7, blue: 0.03).opacity(0.2)], startPoint: .leading, endPoint: .trailing))
+                .cornerRadius(20)
+            }
 
             // Coin balance
             HStack {
@@ -117,11 +131,40 @@ struct RegisteredProfileSection: View {
                 }.padding(16).background(Color(red: 0.06, green: 0.1, blue: 0.06)).overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(red: 0.29, green: 0.87, blue: 0.5), lineWidth: 1)).cornerRadius(14).padding(.horizontal)
             }
 
+            // Recent Transactions — coin purchases + VIP subscription payments, merged.
+            if !transactions.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Recent Transactions").font(.notoSans(size: 16, weight: .bold, relativeTo: .headline)).foregroundColor(.white)
+                    VStack(spacing: 0) {
+                        ForEach(Array(transactions.enumerated()), id: \.element.id) { index, txn in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(txn.description).font(.notoSans(size: 13, weight: .semibold, relativeTo: .subheadline)).foregroundColor(Color(white: 0.85)).lineLimit(1)
+                                    Text(String(txn.created_at.prefix(10))).font(.notoSans(size: 11, relativeTo: .caption2)).foregroundColor(Color(white: 0.4))
+                                }
+                                Spacer()
+                                if txn.kind == "vip" {
+                                    Text("\(txn.currency ?? "") \(String(format: "%.2f", txn.amount))").font(.notoSans(size: 13, weight: .bold, relativeTo: .subheadline)).foregroundColor(Color(red: 0.96, green: 0.62, blue: 0.04))
+                                } else {
+                                    Text("\(txn.amount > 0 ? "+" : "")\(Int(txn.amount)) Coins")
+                                        .font(.notoSans(size: 13, weight: .bold, relativeTo: .subheadline))
+                                        .foregroundColor(txn.amount > 0 ? Color(red: 0.29, green: 0.87, blue: 0.5) : Color(red: 0.94, green: 0.27, blue: 0.27))
+                                }
+                            }
+                            .padding(14)
+                            if index < transactions.count - 1 { Divider().background(Color(white: 0.15)) }
+                        }
+                    }
+                    .background(Color(white: 0.08))
+                    .cornerRadius(14)
+                }.padding(.horizontal)
+            }
+
             VStack(spacing: 8) {
                 NavigationLink(destination: WatchHistoryView()) {
                     ProfileRow(icon: "clock", text: "Watch History")
                 }
-                NavigationLink(destination: FavoritesView()) {
+                NavigationLink(destination: MyListView()) {
                     ProfileRow(icon: "heart", text: "My Favorites")
                 }
                 NavigationLink(destination: EditProfileView()) {
@@ -163,27 +206,65 @@ struct ProfileRow: View {
     }
 }
 
-// MARK: - Placeholder Views
+// MARK: - Watch History
 struct WatchHistoryView: View {
-    var body: some View {
-        VStack {
-            Text("Watch History").font(.notoSans(size: 28, relativeTo: .title)).bold()
-            Text("Coming soon!").foregroundColor(.gray)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(red: 0.04, green: 0.04, blue: 0.04).ignoresSafeArea())
-        .foregroundColor(.white)
-    }
-}
+    @State private var items: [WatchHistoryItem] = []
+    @State private var isLoading = true
 
-struct FavoritesView: View {
     var body: some View {
-        VStack {
-            Text("My Favorites").font(.notoSans(size: 28, relativeTo: .title)).bold()
-            Text("Coming soon!").foregroundColor(.gray)
+        Group {
+            if isLoading {
+                ProgressView().tint(.red)
+            } else if items.isEmpty {
+                Text("You haven't watched anything yet.").foregroundColor(Color(white: 0.4))
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(items) { item in
+                            NavigationLink(destination: destinationFor(item)) {
+                                HStack(spacing: 12) {
+                                    AsyncImage(url: URL(string: item.thumbnail_url ?? "")) { phase in
+                                        if let image = phase.image { image.resizable().aspectRatio(contentMode: .fill) }
+                                        else { Color(white: 0.15) }
+                                    }
+                                    .frame(width: 90, height: 60)
+                                    .cornerRadius(8)
+                                    .clipped()
+
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(item.series_title ?? "Unknown series").font(.notoSans(size: 14, weight: .semibold, relativeTo: .subheadline)).foregroundColor(.white).lineLimit(1)
+                                        Text(item.episode_title ?? "").font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(Color(white: 0.55)).lineLimit(1)
+                                        if let watched = item.watched_at {
+                                            Text(String(watched.prefix(10))).font(.notoSans(size: 11, relativeTo: .caption2)).foregroundColor(Color(white: 0.35))
+                                        }
+                                    }
+                                    Spacer()
+                                }
+                                .padding(12)
+                                .background(Color(white: 0.09))
+                                .cornerRadius(12)
+                            }
+                        }
+                    }.padding(16)
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(red: 0.04, green: 0.04, blue: 0.04).ignoresSafeArea())
-        .foregroundColor(.white)
+        .navigationTitle("Watch History")
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            items = (try? await APIClient.shared.getWatchHistory()) ?? []
+            isLoading = false
+        }
+    }
+
+    @ViewBuilder
+    private func destinationFor(_ item: WatchHistoryItem) -> some View {
+        if let slug = item.slug {
+            PlayerView(slug: slug)
+        } else {
+            EmptyView()
+        }
     }
 }

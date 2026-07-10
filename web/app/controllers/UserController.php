@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Database;
 use App\Core\Session;
+use App\Core\Vip;
 use App\Core\WatchHistory;
 
 class UserController {
@@ -36,10 +37,31 @@ class UserController {
         $stmt->execute([$userId]);
         $watchHistory = $stmt->fetchAll();
 
-        // Recent Purchase History
-        $stmt = $db->prepare("SELECT * FROM coin_transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 5");
+        // Current VIP tier — shown as a shield badge next to the coin balance.
+        $activeVip = Vip::activeSubscription($db, $userId);
+
+        // Recent Transactions — coin ledger entries + successful VIP subscription
+        // purchases merged into one list, newest first. Kept as two separate
+        // queries (rather than a schema change to coin_transactions.type) since
+        // the two tables track fundamentally different things: coins credited
+        // vs. real-money payments.
+        $stmt = $db->prepare("SELECT description, amount, created_at, 'coins' as kind FROM coin_transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 10");
         $stmt->execute([$userId]);
-        $coinHistory = $stmt->fetchAll();
+        $coinRows = $stmt->fetchAll();
+
+        $stmt = $db->prepare("
+            SELECT CONCAT('VIP Subscription - ', vp.name) as description, pt.amount, pt.currency, pt.created_at, 'vip' as kind
+            FROM payment_transactions pt
+            JOIN vip_plans vp ON vp.id = pt.plan_id
+            WHERE pt.user_id = ? AND pt.type = 'vip_subscription' AND pt.status = 'successful'
+            ORDER BY pt.created_at DESC LIMIT 10
+        ");
+        $stmt->execute([$userId]);
+        $vipRows = $stmt->fetchAll();
+
+        $transactions = array_merge($coinRows, $vipRows);
+        usort($transactions, function ($a, $b) { return strtotime($b['created_at']) <=> strtotime($a['created_at']); });
+        $transactions = array_slice($transactions, 0, 8);
 
         require __DIR__ . '/../../templates/pages/profile.php';
     }

@@ -26,7 +26,14 @@
                     <?= strtoupper(substr(htmlspecialchars($user['username']), 0, 1)) ?>
                 </div>
                 <div class="text-center sm:text-left flex-1">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 mb-2">Member</span>
+                    <?php if ($activeVip): ?>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-yellow-500/20 to-amber-600/20 text-yellow-400 border border-yellow-500/40 mb-2">
+                            <span class="text-sm leading-none">👑</span>
+                            VIP · <?= htmlspecialchars($activeVip['plan_name']) ?>
+                        </span>
+                    <?php else: ?>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 mb-2">Member</span>
+                    <?php endif; ?>
                     <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-white"><?= htmlspecialchars($user['username']) ?></h1>
                     <p class="text-zinc-400 text-sm mt-1"><?= htmlspecialchars($user['email']) ?></p>
                 </div>
@@ -53,6 +60,23 @@
                     <a href="/coin-shop" class="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-lg shadow-red-950/40 text-sm">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
                         Buy Coin Packages
+                    </a>
+                </div>
+
+                <!-- VIP Membership Card -->
+                <div class="bg-gradient-to-br from-yellow-500/10 to-zinc-900/40 backdrop-blur-md border border-yellow-600/30 rounded-2xl p-6 shadow-xl">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-lg leading-none">👑</span>
+                        <h3 class="text-white font-bold text-lg">VIP Membership</h3>
+                    </div>
+                    <?php if ($activeVip): ?>
+                        <p class="text-yellow-400 font-semibold text-sm mb-1"><?= htmlspecialchars($activeVip['plan_name']) ?></p>
+                        <p class="text-zinc-400 text-xs mb-4">Renews/expires <?= htmlspecialchars(date('M j, Y', strtotime($activeVip['expires_at']))) ?></p>
+                    <?php else: ?>
+                        <p class="text-zinc-400 text-sm mb-4">Unlock every episode free, no ads, no per-episode coins.</p>
+                    <?php endif; ?>
+                    <a href="/vip" class="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:brightness-110 text-black font-bold py-3 px-4 rounded-xl transition duration-200 shadow-lg text-sm">
+                        <?= $activeVip ? 'Manage / Renew VIP' : 'Upgrade to VIP' ?>
                     </a>
                 </div>
 
@@ -123,22 +147,28 @@
                         </h2>
                     </div>
 
-                    <?php if(empty($coinHistory)): ?>
+                    <?php if(empty($transactions)): ?>
                         <div class="bg-zinc-900/20 border border-dashed border-zinc-800 rounded-2xl p-8 text-center">
                             <p class="text-zinc-500 text-sm">No transaction records found.</p>
                         </div>
                     <?php else: ?>
                         <div class="bg-zinc-900/30 border border-zinc-800/70 rounded-2xl overflow-hidden shadow-lg">
                             <div class="divide-y divide-zinc-800/80">
-                                <?php foreach($coinHistory as $txn): ?>
+                                <?php foreach($transactions as $txn): ?>
                                     <div class="flex items-center justify-between p-4 hover:bg-zinc-900/20 transition">
                                         <div class="min-w-0 pr-4">
                                             <p class="text-sm font-semibold text-zinc-200 truncate"><?= htmlspecialchars($txn['description']) ?></p>
                                             <p class="text-xs text-zinc-500 mt-0.5"><?= date('M d, Y', strtotime($txn['created_at'])) ?></p>
                                         </div>
-                                        <div class="font-extrabold text-sm flex-shrink-0 <?= (float)$txn['amount'] > 0 ? 'text-emerald-500' : 'text-rose-500' ?>">
-                                            <?= (float)$txn['amount'] > 0 ? '+' : '' ?><?= (float)$txn['amount'] ?> Coins
-                                        </div>
+                                        <?php if ($txn['kind'] === 'vip'): ?>
+                                            <div class="font-extrabold text-sm flex-shrink-0 text-yellow-400">
+                                                <?= htmlspecialchars($txn['currency']) ?> <?= number_format((float)$txn['amount'], 2) ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="font-extrabold text-sm flex-shrink-0 <?= (float)$txn['amount'] > 0 ? 'text-emerald-500' : 'text-rose-500' ?>">
+                                                <?= (float)$txn['amount'] > 0 ? '+' : '' ?><?= (float)$txn['amount'] ?> Coins
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 <?php endforeach; ?>
                             </div>

@@ -182,6 +182,16 @@ struct HomeView: View {
                         .aspectRatio(contentMode: .fit)
                         .frame(height: 38)
                     Spacer()
+                    NavigationLink(destination: VipPlansView()) {
+                        HStack(spacing: 4) {
+                            Text("👑").font(.notoSans(size: 15))
+                            Text("VIP").font(.notoSans(size: 13, weight: .bold, relativeTo: .caption)).foregroundColor(Color(red: 0.96, green: 0.62, blue: 0.04))
+                        }
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .background(Color(red: 0.96, green: 0.62, blue: 0.04).opacity(0.15))
+                        .clipShape(Capsule())
+                    }
+                    Spacer().frame(width: 8)
                     NotificationBell()
                 }
                 .padding(.horizontal, 16)
@@ -275,35 +285,6 @@ struct HomeView: View {
 
                     if isLoading { ProgressView().padding() }
                     else {
-                        // Continue Watching — per-viewer, computed from watch
-                        // history, never admin-curated. Always above Latest Release.
-                        if !continueWatching.isEmpty {
-                            Text("Continue Watching").font(.notoSans(size: 22, relativeTo: .title2)).bold().padding(.horizontal, 16).padding(.top, 24)
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    ForEach(continueWatching) { item in
-                                        NavigationLink(destination: PlayerView(slug: item.episode_slug)) {
-                                            VStack(alignment: .leading) {
-                                                AsyncImage(url: URL(string: item.cover_image_url ?? "")) { phase in
-                                                    if let image = phase.image {
-                                                        image.resizable()
-                                                            .aspectRatio(contentMode: .fill)
-                                                            .frame(width: 140, height: 200)
-                                                            .cornerRadius(12)
-                                                    } else {
-                                                        Color.gray
-                                                            .frame(width: 140, height: 200)
-                                                            .cornerRadius(12)
-                                                    }
-                                                }
-                                                Text(item.title).font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(.white).lineLimit(2).frame(width: 140, alignment: .leading)
-                                            }
-                                        }
-                                    }
-                                }.padding(.horizontal, 16)
-                            }
-                        }
-
                         // Content Hub Tabs: HOT / NEW / RANKING / CATEGORIES / TV SERIES / MOVIES
                         VStack(alignment: .leading, spacing: 0) {
                             ScrollView(.horizontal, showsIndicators: false) {
@@ -330,6 +311,34 @@ struct HomeView: View {
                                 isLoading: tabLoading,
                                 seriesCardLink: { s, content in AnyView(seriesCardLink(s, content: content)) }
                             )
+                        }
+
+                        // Continue Watching — per-viewer, computed from watch history, never admin-curated.
+                        if !continueWatching.isEmpty {
+                            Text("Continue Watching").font(.notoSans(size: 22, relativeTo: .title2)).bold().padding(.horizontal, 16).padding(.top, 24)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(continueWatching) { item in
+                                        NavigationLink(destination: PlayerView(slug: item.episode_slug)) {
+                                            VStack(alignment: .leading) {
+                                                AsyncImage(url: URL(string: item.cover_image_url ?? "")) { phase in
+                                                    if let image = phase.image {
+                                                        image.resizable()
+                                                            .aspectRatio(contentMode: .fill)
+                                                            .frame(width: 140, height: 200)
+                                                            .cornerRadius(12)
+                                                    } else {
+                                                        Color.gray
+                                                            .frame(width: 140, height: 200)
+                                                            .cornerRadius(12)
+                                                    }
+                                                }
+                                                Text(item.title).font(.notoSans(size: 12, relativeTo: .caption)).foregroundColor(.white).lineLimit(2).frame(width: 140, alignment: .leading)
+                                            }
+                                        }
+                                    }
+                                }.padding(.horizontal, 16)
+                            }
                         }
 
                         // Latest releases row — distinct from the admin-managed

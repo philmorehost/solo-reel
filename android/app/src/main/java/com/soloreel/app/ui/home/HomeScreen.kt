@@ -155,22 +155,6 @@ fun HomeScreen(
             }
         }
 
-        // Continue Watching — per-viewer, computed at request time from watch
-        // history, never admin-curated. Always rendered above Latest Release.
-        if (state.continueWatching.isNotEmpty()) {
-            item { Text("Continue Watching", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) }
-            item {
-                LazyRow(contentPadding = PaddingValues(horizontal = 12.dp)) {
-                    items(state.continueWatching) { item ->
-                        ContinueWatchingCard(item) {
-                            navController.navigate(Screen.EpisodePlayer.createRoute(item.episode_slug))
-                        }
-                    }
-                }
-                Spacer(Modifier.height(16.dp))
-            }
-        }
-
         // Content Hub Tabs: HOT / NEW / RANKING / CATEGORIES / TV SERIES / MOVIES
         item {
             ContentHubTabs(
@@ -189,6 +173,21 @@ fun HomeScreen(
                 onSeriesClick = { series -> navigateToSeries(navController, series, state.resumeSlugs) }
             )
             Spacer(Modifier.height(16.dp))
+        }
+
+        // Continue Watching — per-viewer, computed at request time from watch history, never admin-curated.
+        if (state.continueWatching.isNotEmpty()) {
+            item { Text("Continue Watching", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) }
+            item {
+                LazyRow(contentPadding = PaddingValues(horizontal = 12.dp)) {
+                    items(state.continueWatching) { item ->
+                        ContinueWatchingCard(item) {
+                            navController.navigate(Screen.EpisodePlayer.createRoute(item.episode_slug))
+                        }
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+            }
         }
 
         // Latest releases row — distinct from the "Trending Now" shelf below,

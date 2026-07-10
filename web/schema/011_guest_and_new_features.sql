@@ -1,4 +1,4 @@
-﻿-- Guest wallets for coin storage without registration
+-- Guest wallets for coin storage without registration
 CREATE TABLE IF NOT EXISTS `guest_wallets` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `guest_id` varchar(64) NOT NULL,

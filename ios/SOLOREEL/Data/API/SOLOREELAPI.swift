@@ -60,6 +60,16 @@ struct ForYouItem: Codable, Identifiable {
 
 /// GET /api/v1/user/vip-status
 struct VipStatus: Codable { let is_vip: Bool?; let expires_at: String?; let plan_name: String? }
+
+/// GET /api/v1/user/transactions — coin ledger entries + VIP subscription purchases, merged.
+struct Transaction: Codable, Identifiable {
+    let description: String
+    let amount: Double
+    let currency: String?
+    let kind: String // "coins" | "vip"
+    let created_at: String
+    var id: String { description + created_at }
+}
 struct Episode: Codable, Identifiable {
     let id: Int; let title: String; let slug: String; let series_id: Int?; let series_title: String?
     let series_slug: String?
@@ -207,6 +217,7 @@ class APIClient {
         try await requestVoid("me/list/saved/\(seriesId)\(q)", method: "DELETE")
     }
     func getVipStatus() async throws -> VipStatus { try await request("user/vip-status") }
+    func getTransactions() async throws -> [Transaction] { try await request("user/transactions") }
     func getCoinPackages() async throws -> [CoinPackage] { try await request("coin-packages") }
     func getProfile() async throws -> User { try await request("user/profile") }
     func updateProfile(username: String, displayName: String, password: String?) async throws {

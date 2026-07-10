@@ -130,9 +130,7 @@ fun VipPlansScreen(navController: NavHostController, vm: VipPlansViewModel = hil
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = Color(0xFFEAB308))
             }
-            return@Column
-        }
-
+        } else {
         LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
             item {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp)) {
@@ -162,6 +160,17 @@ fun VipPlansScreen(navController: NavHostController, vm: VipPlansViewModel = hil
                             )
                         }
                     }
+                }
+            }
+
+            if (state.plans.isEmpty()) {
+                item {
+                    Text(
+                        "No VIP plans are available yet. Please check back later.",
+                        color = Color(0xFF888888), fontSize = 13.sp,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
                 }
             }
 
@@ -209,6 +218,7 @@ fun VipPlansScreen(navController: NavHostController, vm: VipPlansViewModel = hil
             }
 
             item { Spacer(Modifier.height(24.dp)) }
+        }
         }
     }
 }

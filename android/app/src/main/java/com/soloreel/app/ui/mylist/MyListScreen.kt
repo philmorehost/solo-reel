@@ -103,19 +103,18 @@ fun MyListScreen(navController: NavHostController, vm: MyListViewModel = hiltVie
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = Color(0xFFDC2626))
             }
-            return@Column
-        }
-
-        when (tab) {
-            0 -> HistoryGrid(state.history) { item ->
-                navController.navigate(Screen.EpisodePlayer.createRoute(item.episode_slug))
+        } else {
+            when (tab) {
+                0 -> HistoryGrid(state.history) { item ->
+                    navController.navigate(Screen.EpisodePlayer.createRoute(item.episode_slug))
+                }
+                1 -> LikedGrid(state.liked) { series ->
+                    navController.navigate(Screen.SeriesDetail.createRoute(series.slug))
+                }
+                2 -> SavedGrid(state.saved, onClick = { series ->
+                    navController.navigate(Screen.SeriesDetail.createRoute(series.slug))
+                }, onRemove = { series -> vm.removeSaved(series.id) })
             }
-            1 -> LikedGrid(state.liked) { series ->
-                navController.navigate(Screen.SeriesDetail.createRoute(series.slug))
-            }
-            2 -> SavedGrid(state.saved, onClick = { series ->
-                navController.navigate(Screen.SeriesDetail.createRoute(series.slug))
-            }, onRemove = { series -> vm.removeSaved(series.id) })
         }
     }
 }

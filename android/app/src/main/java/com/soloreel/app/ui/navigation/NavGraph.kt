@@ -158,11 +158,14 @@ fun NavGraph(isLoggedIn: Boolean) {
                         navController.navigate(Screen.Auth.route)
                     },
                     onNavigateToHistory = { navController.navigate(Screen.History.route) },
-                    onNavigateToFavorites = { navController.navigate(Screen.Favorites.route) },
+                    // "My Favorites" now opens My List (Liked/Saved/History) — the
+                    // old standalone Favorites screen is superseded by it.
+                    onNavigateToFavorites = { navController.navigate(Screen.MyList.route) },
                     onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) },
                     onNavigateToCoinShop = { navController.navigate(Screen.Coins.route) },
                     onNavigateToAdvertise = { navController.navigate(Screen.Advertise.route) },
-                    onNavigateToMyAds = { navController.navigate(Screen.MyAds.route) }
+                    onNavigateToMyAds = { navController.navigate(Screen.MyAds.route) },
+                    onNavigateToVip = { navController.navigate(Screen.VipPlans.route) }
                 )
             }
             composable(Screen.History.route) { com.soloreel.app.ui.profile.HistoryScreen(navController) }
